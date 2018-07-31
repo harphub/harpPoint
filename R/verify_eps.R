@@ -211,10 +211,10 @@ verify_eps <- function(
     scores_thresh$ROC    <- verif_thresh$roc %>% lapply(function(x) x$roc_data)
 
   } else {
-    ScoresThresh = NULL
+    scores_thresh = NULL
   }
 
-# Return the Scores and ScoresThresh tibbles
+# Return the scores and scores_thresh tibbles
 
   list(scores = scores, scores_thresh = scores_thresh)
 

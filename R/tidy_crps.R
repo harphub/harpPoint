@@ -14,7 +14,7 @@ tidy_crps <- function (FCST) {
 	heavisideN <- rep(0, nObs)
 	dim(alpha) <- c(nObs, nMember + 1)
 	dim(beta) <- c(nObs, nMember + 1)
-	prev <- qsort.table(eps)
+	prev <- sort2d(eps)
 	index <- which(obs < prev[, 1])
 	beta[index, 1] <- prev[index, 1] - obs[index]
 	index <- which(obs > prev[, nMember])

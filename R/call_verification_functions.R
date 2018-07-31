@@ -13,7 +13,7 @@ call_rank_hist <- function (FCST) {
   obs <- dplyr::pull(FCST, .data$obs)
   eps <- dplyr::select(FCST, dplyr::contains("mbr")) %>%
     as.matrix()
-  HARPrcpp::rankHistogram(obs, eps)
+  rankHistogram(obs, eps)
 
 }
 
@@ -34,7 +34,7 @@ call_fcprob <- function (FCST, thresholds, fcstType = "EPS") {
 # binary observations and convert to tibble
 
   obs              <- dplyr::select(FCST, .data$obs)
-  binObs           <- HARPrcpp::fcprob(as.matrix(obs), thresholds) %>%
+  binObs           <- fcprob(as.matrix(obs), thresholds) %>%
     tibble::as_tibble()
   colnames(binObs) <- c(paste0("obs_", thresholds), "numMember", "ensMean", "ensVar")
 
