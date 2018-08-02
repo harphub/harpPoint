@@ -2,8 +2,12 @@
 
 export("%>%")
 export(fcprob)
+export(gather_members)
+export(harp_crps)
+export(merge_obs)
 export(rankHistogram)
-export(sort2d)
+export(sort_members)
+export(spread_members)
 export(verify_eps)
 importFrom(Rcpp,sourceCpp)
 importFrom(magrittr,"%>%")

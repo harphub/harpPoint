@@ -5,7 +5,7 @@
 
 #####################################################################################
 
-call_rank_hist <- function (FCST) {
+harp_rank_hist <- function (FCST) {
 
 # Separate out a vector of observations and matrix of member
 # forecasts and call the fast rankHistogram function from HARPrcpp
@@ -19,14 +19,14 @@ call_rank_hist <- function (FCST) {
 
 #####################################################################################
 
-call_fcprob <- function (FCST, thresholds, fcstType = "EPS") {
+harp_probs <- function (FCST, thresholds, fcstType = "EPS") {
 
 # Separate out a matrix of member forecasts and call the fast fcprob
 # function from HARPrcpp. The columns then need naming
 
   fcstColName     <- ifelse (fcstType == "EPS", "mbr", "forecast")
   eps             <- dplyr::select(FCST, dplyr::contains(fcstColName))
-  probs           <- HARPrcpp::fcprob(as.matrix(eps), thresholds) %>%
+  probs           <- fcprob(as.matrix(eps), thresholds) %>%
     tibble::as_tibble()
   colnames(probs) <- c(paste0("pred_", thresholds), "num_members", "ens_mean", "ens_var")
 
@@ -41,13 +41,13 @@ call_fcprob <- function (FCST, thresholds, fcstType = "EPS") {
   probs %>%
     dplyr::bind_cols(obs) %>%
     dplyr::bind_cols(binObs) %>%
-    dplyr::mutate(bias = .data$ens_mean - .data$obs)
+    dplyr::mutate(mean_bias = .data$ens_mean - .data$obs)
 
 }
 
 #####################################################################################
 
-call_value <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
+harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
 # We only want to return the outer envelope. Nest in a 'try' as if there
 # are not enough data the value function from the verification package fails.
@@ -70,7 +70,7 @@ call_value <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
 #####################################################################################
 
-call_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
+harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
 
 # If there are not enough data, the roc.plot function from the verification package
 # fails, so wrap in a try.

@@ -6,8 +6,8 @@
 #' @param x A two dimensional numeric array.
 #' @param byrow Set to true sort rows, false to sort columns.
 #' @export
-sort2d <- function(x, byrow = TRUE) {
-    .Call('_harpPoint_sort2d', PACKAGE = 'harpPoint', x, byrow)
+sort_members <- function(x, byrow = TRUE) {
+    .Call('_harpPoint_sort_members', PACKAGE = 'harpPoint', x, byrow)
 }
 
 #' Compute the rank histogram for an EPS

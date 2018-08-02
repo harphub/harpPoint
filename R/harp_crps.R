@@ -1,4 +1,14 @@
-tidy_crps <- function (FCST) {
+#' Compute the CRPS for ensemble prediction systems.
+#'
+#' @param FCST A FCST object with column names: mname, member, SID, fcdate,
+#'   leadtime, validdate, forecast, obs.
+#'
+#' @return A list with named elements: CRPS, CRPSpot, Reli, alpha, beat,
+#'   heaviside0, heavisideN.
+#' @export
+#'
+#' @examples
+harp_crps <- function (FCST) {
 #
 # function to compute the CRPS with tidy data
 #
@@ -14,7 +24,7 @@ tidy_crps <- function (FCST) {
 	heavisideN <- rep(0, nObs)
 	dim(alpha) <- c(nObs, nMember + 1)
 	dim(beta) <- c(nObs, nMember + 1)
-	prev <- sort2d(eps)
+	prev <- sort_members(as.matrix(eps))
 	index <- which(obs < prev[, 1])
 	beta[index, 1] <- prev[index, 1] - obs[index]
 	index <- which(obs > prev[, nMember])

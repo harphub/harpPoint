@@ -4,7 +4,7 @@
 \alias{verify_eps}
 \title{Title}
 \usage{
-verify_eps(FCST, thresholds, scores = c("basic", "full", "uui", "thresh"),
+verify_eps(FCST, thresholds = NA, calc_uui = FALSE,
   obs_error_func = function(x) x + 0)
 }
 \arguments{
@@ -16,14 +16,14 @@ i.e. seconds since 1970-01-01 00:00:00 UTC.}
 \item{thresholds}{A numeric vector of thresholds for which to compute
 threshold based scores.}
 
+\item{obs_error_func}{A function to model the observation error.}
+
 \item{scores}{A character vector of the scores to compute. Can be any
 combination of \cr\code{"basic"} - for bias of the ensemble mean,
 \cr\code{"full"} - for for ensemble scores - i.e. CRPS and rank histogram,
 \cr\code{"uui"} - for unbiased u-statistic spread-skill (this can be slow),
 \cr\code{"thresh"} - for threshold based scores, i.e. Brier score and its
 decomposition, Brier skill score, reliability, ROC and economic value.}
-
-\item{obs_error_func}{A function to model the observation error.}
 }
 \value{
 A list with two data frames: \cr \code{scores} - for non-threshold

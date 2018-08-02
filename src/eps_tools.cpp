@@ -9,7 +9,7 @@ using namespace Rcpp;
 //' @param byrow Set to true sort rows, false to sort columns.
 //' @export
 // [[Rcpp::export]]
-NumericMatrix sort2d(NumericMatrix x, bool byrow=true) {
+NumericMatrix sort_members(NumericMatrix x, bool byrow=true) {
 // sort a matrix by row
 // this is MUCH faster than t(apply(x, 1, sort)) :-)
 // make a copy: don't change the R variable itself by working on x

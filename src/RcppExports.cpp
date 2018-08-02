@@ -5,15 +5,15 @@
 
 using namespace Rcpp;
 
-// sort2d
-NumericMatrix sort2d(NumericMatrix x, bool byrow);
-RcppExport SEXP _harpPoint_sort2d(SEXP xSEXP, SEXP byrowSEXP) {
+// sort_members
+NumericMatrix sort_members(NumericMatrix x, bool byrow);
+RcppExport SEXP _harpPoint_sort_members(SEXP xSEXP, SEXP byrowSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
     Rcpp::traits::input_parameter< bool >::type byrow(byrowSEXP);
-    rcpp_result_gen = Rcpp::wrap(sort2d(x, byrow));
+    rcpp_result_gen = Rcpp::wrap(sort_members(x, byrow));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -43,7 +43,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_harpPoint_sort2d", (DL_FUNC) &_harpPoint_sort2d, 2},
+    {"_harpPoint_sort_members", (DL_FUNC) &_harpPoint_sort_members, 2},
     {"_harpPoint_rankHistogram", (DL_FUNC) &_harpPoint_rankHistogram, 2},
     {"_harpPoint_fcprob", (DL_FUNC) &_harpPoint_fcprob, 2},
     {NULL, NULL, 0}

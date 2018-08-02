@@ -22,8 +22,8 @@
 #'
 verify_eps <- function(
   FCST,
-  thresholds,
-  scores = c("basic", "full", "uui", "thresh"),
+  thresholds     = NA,
+  calc_uui       = FALSE,
   obs_error_func = function(x) x + 0
 ) {
 
@@ -81,14 +81,15 @@ verify_eps <- function(
   verif_full <- FCST %>%
     dplyr::group_by(.data$leadtime, .data$mname) %>%
     dplyr::do(
-      temp_crps      = tidy_crps(tidyr::spread(., member, forecast)),
-      temp_rank_hist = call_rank_hist(tidyr::spread(., member, forecast)),
-      temp_probs     = call_fcprob(tidyr::spread(., member, forecast), thresholds)
+      temp_crps      = harp_crps(tidyr::spread(., member, forecast)),
+      temp_rank_hist = harp_rank_hist(tidyr::spread(., member, forecast)),
+      temp_probs     = harp_probs(tidyr::spread(., member, forecast), thresholds)
     ) %>%
     dplyr::ungroup()
   cat(" ---> DONE\n")
 
-# Alternative method - awaiting purrr progress bars, but it is a little bit faster
+# Alternative method - awaiting purrr progress bars, but it is a little bit faster.
+# Will also be able to modify for parallel processing with furrr.
 # VERIFall <- FCST %>%
 #   dplyr::group_by(.data$leadtime, .data$mname) %>%
 #   tidyr::nest() %>%
@@ -120,7 +121,7 @@ verify_eps <- function(
 
 # Compute the UUI spread-skill
 
-  if (is.element("uui", scores)) {
+  if (calc_uui) {
     cat("   Computing UUI spread-skill \n")
     UUI <- uui(FCST, verbose = TRUE)
     scores <- scores %>% dplyr::left_join(UUI, by = c("leadtime", "mname"))
@@ -129,7 +130,7 @@ verify_eps <- function(
 
 # Compute the verification for thresholds - first gather the thresholds together
 
-  if (is.element("thresh", scores)) {
+  if (all(is.finite(thresholds))) {
     cat("   Computing scores for thresholds \n")
     verif_thresh <- verif_full %>%
       dplyr::select(.data$leadtime, .data$mname, .data$temp_probs) %>%
