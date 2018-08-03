@@ -2,6 +2,8 @@
 #'
 #' @param FCST A point forecast data frame.
 #' @param OBS A point observations data frame.
+#' @param parameter Which observed parameter to use in the verification. If set
+#'   to NULL it is the first observation column in the OBS data frame.
 #' @param join_type How to join the data frame. Acceptable values are: "inner",
 #'   "left", "right", "full", "semi", "anti". See \code{\link[dplyr]{join}} for
 #'   more details.
@@ -14,6 +16,7 @@
 merge_obs <- function(
   FCST,
   OBS,
+  parameter = NULL,
   join_type = c("inner", "left", "right", "full", "semi", "anti"),
   by        = c("SID", "validdate")
 ) {
@@ -27,7 +30,7 @@ merge_obs <- function(
   }
 
   valid_joins <- c("inner", "left", "right", "full", "semi", "anti")
-  if (length(intersect(joint_type, valid_joins)) < 1) {
+  if (length(intersect(join_type, valid_joins)) < 1) {
     stop(
       paste(
         "Invalid join_type: ", join_type[1], ".\n",
@@ -36,13 +39,24 @@ merge_obs <- function(
     )
   }
 
-  join_function <- get(paste0("dplyr::", join_type[1], "_join"))
+  if (is.null(parameter)) {
+    parameter <- colnames(OBS)[3]
+  }
 
-  FCST <- join_function(FCST, OBS, by = by)
+  obs_col <- rlang::sym(parameter)
+
+  FCST <- switch(join_type[1],
+    inner = dplyr::inner_join(FCST, OBS, by = by),
+    left  = dplyr::left_join(FCST, OBS, by = by),
+    right = dplyr::right_join(FCST, OBS, by = by),
+    full  = dplyr::full_join(FCST, OBS, by = by),
+    semi  = dplyr::semi_join(FCST, OBS, by = by),
+    anti  = dplyr::anti_join(FCST, OBS, by = by)
+  )
 
   if (has_df_format) {
     attr(FCST, "dataframe_format") <- dataframe_format
   }
 
-  FCST
+  dplyr::rename(FCST, obs = !!obs_col)
 }
