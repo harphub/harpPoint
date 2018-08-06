@@ -23,7 +23,7 @@ gather_members <- function(FCST, member_prefix = "mbr") {
   required_colnames <- member_prefix
   if (ncol(dplyr::select(FCST, dplyr::contains(member_prefix))) < 1) {
     stop(
-      paste0("Input data frame must include columns with names containing: ",member_prefix)
+      paste0("Input data frame must include columns with names containing: ", member_prefix)
     )
   }
 

@@ -18,7 +18,7 @@ spread_members <- function(FCST) {
   }
 
   required_colnames <- c("member", "forecast")
-  if (intersect(colnames(FCST), required_colnames) != requierd_colnames) {
+  if (intersect(colnames(FCST), required_colnames) != required_colnames) {
     stop("Input data frame must include column names: member, forecast.")
   }
 
