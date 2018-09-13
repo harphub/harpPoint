@@ -27,3 +27,5 @@ Imports:
     rlang,
     stats,
     harpIO
+URL: https://github.com/andrew-MET/harpPoint
+BugReports: https://github.com/andrew-MET/harpPoint/issues
