@@ -14,7 +14,8 @@ and \code{obs}. Note that \code{fcdate} is the date in Unix time format
 i.e. seconds since 1970-01-01 00:00:00 UTC.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute
-threshold based scores.}
+threshold based scores. If set to NULL, no threshold based scores will be
+computed.}
 
 \item{calc_uui}{Whether to compute the unbiased u-statistic spread-skill.
 TRUE or FALSE. Note that this is quite slow!}

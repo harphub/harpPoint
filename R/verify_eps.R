@@ -5,7 +5,8 @@
 #'   and \code{obs}. Note that \code{fcdate} is the date in Unix time format
 #'   i.e. seconds since 1970-01-01 00:00:00 UTC.
 #' @param thresholds A numeric vector of thresholds for which to compute
-#'   threshold based scores.
+#'   threshold based scores. If set to NULL, no threshold based scores will be
+#'   computed.
 #' @param calc_uui Whether to compute the unbiased u-statistic spread-skill.
 #'   TRUE or FALSE. Note that this is quite slow!
 #' @param obs_error_func A function to model the observation error.
@@ -77,9 +78,9 @@ verify_eps <- function(
   verif_full <- FCST %>%
     dplyr::group_by(.data$leadtime, .data$mname) %>%
     dplyr::do(
-      temp_crps      = harp_crps(tidyr::spread(., member, forecast)),
-      temp_rank_hist = harp_rank_hist(tidyr::spread(., member, forecast)),
-      temp_probs     = harp_probs(tidyr::spread(., member, forecast), thresholds)
+      temp_crps      = harp_crps(spread_members(.)),
+      temp_rank_hist = harp_rank_hist(spread_members(.)),
+      temp_probs     = harp_probs(spread_members(.), thresholds)
     ) %>%
     dplyr::ungroup()
   cat(" ---> DONE\n")
@@ -162,8 +163,8 @@ verify_eps <- function(
       dplyr::group_by(.data$leadtime, .data$mname, .data$threshold) %>%
       dplyr::do(
         verif  = verification::verify(.$binary_obs, .$pred, show = FALSE),
-        ecoval = call_value(.$binary_obs, .$pred),
-        roc    = call_roc(.$binary_obs, .$pred)
+        ecoval = harp_ecoval(.$binary_obs, .$pred),
+        roc    = harp_roc(.$binary_obs, .$pred)
       ) %>%
       dplyr::ungroup()
     cat(" ---> DONE\n")
