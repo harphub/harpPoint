@@ -169,17 +169,17 @@ plot_verification <- function(plotData,
 	      "Plotting with default colours."
 	    )
 	    coloursSupplied = FALSE
-	    break
+	  } else {
+	    colourTable <- dplyr::mutate_if(colourTable, is.factor, as.character)
+	    colourTable <- plotData %>%
+	      dplyr::inner_join(colourTable, by = colourBy) %>%
+	      dplyr::ungroup() %>%
+	      dplyr::transmute(!!colourBy := .data[[colourBy]], colour) %>%
+	      dplyr::group_by(!!colourBy := .data[[colourBy]]) %>%
+	      dplyr::summarise(colour = unique(colour)) %>%
+	      dplyr::ungroup()
+	    plotData[[colourBy]] <- factor(plotData[[colourBy]], levels = unique(colourTable[[colourBy]]))
 	  }
-	  colourTable <- dplyr::mutate_if(colourTable, is.factor, as.character)
-		colourTable <- plotData %>%
-			dplyr::inner_join(colourTable, by = colourBy) %>%
-			dplyr::ungroup() %>%
-			dplyr::transmute(!!colourBy := .data[[colourBy]], colour) %>%
-			dplyr::group_by(!!colourBy := .data[[colourBy]]) %>%
-			dplyr::summarise(colour = unique(colour)) %>%
-			dplyr::ungroup()
-		plotData[[colourBy]] <- factor(plotData[[colourBy]], levels = unique(colourTable[[colourBy]]))
 	}
 	#
 	# Plot defaults
