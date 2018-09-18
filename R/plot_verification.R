@@ -161,8 +161,17 @@ plot_verification <- function(plotData,
 		})
 	#
 	# Colour table
-	#
+  #
 	if (coloursSupplied) {
+	  if (!grepl(colourBy, names(colourTable))) {
+	    warning(
+	      "WARNING: colourBy = ", colourBy, " but is not in colourTable\n",
+	      "Plotting with default colours"
+	    )
+	    coloursSupplied = FALSE
+	    break
+	  }
+	  colourTable <- dplyr::mutate_if(colourTable, is.factor, as.character)
 		colourTable <- plotData %>%
 			dplyr::inner_join(colourTable) %>%
 			dplyr::ungroup() %>%
@@ -200,7 +209,7 @@ plot_verification <- function(plotData,
 	if (grepl("rankHist", Score)) {
 		#
 		gg <- gg + ggplot2::geom_bar(ggplot2::aes(fill = get(colourBy)), stat = "identity", position = ggplot2::position_dodge(), colour = "black")
-		if (coloursSupplied) gg <- gg + ggplot2::scale_fill_manual(values = as.character(colourTable$colour))
+		if (coloursSupplied) gg <- gg + ggplot2::scale_fill_manual(values = colourTable$colour)
 		#
 	} else {
 		#
@@ -251,7 +260,7 @@ plot_verification <- function(plotData,
 			gg <- gg + ggplot2::scale_linetype_manual(values = c("solid", "21", "11"))
 		}
 		#
-		if (coloursSupplied) gg <- gg + ggplot2::scale_colour_manual(values = as.character(colourTable$colour))
+		if (coloursSupplied) gg <- gg + ggplot2::scale_colour_manual(values = colourTable$colour)
 		#
 	}
 	#
