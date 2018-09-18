@@ -163,17 +163,17 @@ plot_verification <- function(plotData,
 	# Colour table
   #
 	if (coloursSupplied) {
-	  if (!grepl(colourBy, names(colourTable))) {
+	  if (!any(grepl(colourBy, names(colourTable)))) {
 	    warning(
-	      "WARNING: colourBy = ", colourBy, " but is not in colourTable\n",
-	      "Plotting with default colours"
+	      "colourBy = ", colourBy, ", but is not in colourTable\n",
+	      "Plotting with default colours."
 	    )
 	    coloursSupplied = FALSE
 	    break
 	  }
 	  colourTable <- dplyr::mutate_if(colourTable, is.factor, as.character)
 		colourTable <- plotData %>%
-			dplyr::inner_join(colourTable) %>%
+			dplyr::inner_join(colourTable, by = colourBy) %>%
 			dplyr::ungroup() %>%
 			dplyr::transmute(!!colourBy := .data[[colourBy]], colour) %>%
 			dplyr::group_by(!!colourBy := .data[[colourBy]]) %>%
