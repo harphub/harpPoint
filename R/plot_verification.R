@@ -251,7 +251,7 @@ plot_verification <- function(plotData,
 			gg <- gg + ggplot2::scale_linetype_manual(values = c("solid", "21", "11"))
 		}
 		#
-		if (coloursSupplied) gg <- gg + ggplot2::scale_colour_manual(values = colourTable$colour)
+		if (coloursSupplied) gg <- gg + ggplot2::scale_colour_manual(values = as.character(colourTable$colour))
 		#
 	}
 	#
