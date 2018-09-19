@@ -23,18 +23,18 @@ accumulate_forecast <- function(FCST, accumulation_time) {
 
   FCST <- FCST %>%
     dplyr::mutate(lead_acc = .data$leadtime - accumulation_time) %>%
-  	dplyr::inner_join(
-  		dplyr::select(
-  		  FCST,
-  		  .data$SID,
-  		  .data$fcdate,
-  		  lead_acc = .data$leadtime,
-  		  fcst_acc = .data$forecast,
-  		  .data$mname,
-  		  .data$member
-  		),
+    dplyr::inner_join(
+      dplyr::select(
+        FCST,
+        .data$SID,
+        .data$fcdate,
+        lead_acc = .data$leadtime,
+        fcst_acc = .data$forecast,
+        .data$mname,
+        .data$member
+      ),
       by = c("SID", "fcdate", "lead_acc", "mname", "member")
-  	) %>%
+    ) %>%
     dplyr::mutate(forecast = .data$forecast - .data$fcst_acc) %>%
     dplyr::select(-dplyr::contains("_acc"))
 
