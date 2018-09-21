@@ -4,13 +4,13 @@
 \alias{merge_obs}
 \title{Combine observations with point forecasts.}
 \usage{
-merge_obs(FCST, OBS, parameter = NULL, join_type = c("inner", "left",
+merge_obs(.fcst, .obs, parameter = NULL, join_type = c("inner", "left",
   "right", "full", "semi", "anti"), by = c("SID", "validdate"))
 }
 \arguments{
-\item{FCST}{A point forecast data frame.}
+\item{.fcst}{A point forecast data frame.}
 
-\item{OBS}{A point observations data frame.}
+\item{.obs}{A point observations data frame.}
 
 \item{parameter}{Which observed parameter to use in the verification. If set
 to NULL it is the first observation column in the OBS data frame.}

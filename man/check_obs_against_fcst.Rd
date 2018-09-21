@@ -4,10 +4,10 @@
 \alias{check_obs_against_fcst}
 \title{Observation error check against forecast}
 \usage{
-check_obs_against_fcst(FCST, parameter, num_sd_allowed = NULL)
+check_obs_against_fcst(.fcst, parameter, num_sd_allowed = NULL)
 }
 \arguments{
-\item{FCST}{A data frame of class \code{harp_point_forecast_obs}.}
+\item{.fcst}{A data frame of class \code{harp_point_forecast_obs}.}
 
 \item{parameter}{The forecast parameter.}
 

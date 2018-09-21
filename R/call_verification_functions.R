@@ -5,13 +5,13 @@
 
 #####################################################################################
 
-harp_rank_hist <- function (FCST) {
+harp_rank_hist <- function (.fcst) {
 
 # Separate out a vector of observations and matrix of member
 # forecasts and call the fast rankHistogram function from HARPrcpp
 
-  obs <- dplyr::pull(FCST, .data$obs)
-  eps <- dplyr::select(FCST, dplyr::contains("mbr")) %>%
+  obs <- dplyr::pull(.fcst, .data$obs)
+  eps <- dplyr::select(.fcst, dplyr::contains("mbr")) %>%
     as.matrix()
   rankHistogram(obs, eps)
 
@@ -19,13 +19,13 @@ harp_rank_hist <- function (FCST) {
 
 #####################################################################################
 
-harp_probs <- function (FCST, thresholds, fcstType = "EPS") {
+harp_probs <- function (.fcst, thresholds, fcstType = "EPS") {
 
 # Separate out a matrix of member forecasts and call the fast fcprob
 # function from HARPrcpp. The columns then need naming
 
   fcstColName     <- ifelse (fcstType == "EPS", "mbr", "forecast")
-  eps             <- dplyr::select(FCST, dplyr::contains(fcstColName))
+  eps             <- dplyr::select(.fcst, dplyr::contains(fcstColName))
   probs           <- fcprob(as.matrix(eps), thresholds) %>%
     tibble::as_tibble()
   colnames(probs) <- c(paste0("pred_", thresholds), "num_members", "ens_mean", "ens_var")
@@ -33,7 +33,7 @@ harp_probs <- function (FCST, thresholds, fcstType = "EPS") {
 # Do the same for the observations to get a binary 1 or 0. Then bind the
 # binary observations and convert to tibble
 
-  obs              <- dplyr::select(FCST, .data$obs)
+  obs              <- dplyr::select(.fcst, .data$obs)
   binObs           <- fcprob(as.matrix(obs), thresholds) %>%
     tibble::as_tibble()
   colnames(binObs) <- c(paste0("obs_", thresholds), "numMember", "ensMean", "ensVar")

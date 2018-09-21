@@ -4,10 +4,10 @@
 \alias{harp_crps}
 \title{Compute the CRPS for ensemble prediction systems.}
 \usage{
-harp_crps(FCST)
+harp_crps(.fcst)
 }
 \arguments{
-\item{FCST}{A FCST object with column names: mname, member, SID, fcdate,
+\item{.fcst}{A FCST object with column names: mname, member, SID, fcdate,
 leadtime, validdate, forecast, obs.}
 }
 \value{

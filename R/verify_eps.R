@@ -1,6 +1,6 @@
 #' Title
 #'
-#' @param FCST A long form data frame that includes column names \code{mname},
+#' @param .fcst A long form data frame that includes column names \code{mname},
 #'   \code{SID}, \code{fcdate}, \code{leadtime}, \code{member}, \code{forecast}
 #'   and \code{obs}. Note that \code{fcdate} is the date in Unix time format
 #'   i.e. seconds since 1970-01-01 00:00:00 UTC.
@@ -18,7 +18,7 @@
 #' @examples
 #'
 verify_eps <- function(
-  FCST,
+  .fcst,
   thresholds     = NA,
   calc_uui       = FALSE,
   obs_error_func = function(x) x + 0
@@ -27,11 +27,11 @@ verify_eps <- function(
 # Check the column names in FCST
 
   FCST_col_names <- c("mname", "member", "SID", "fcdate", "leadtime", "forecast", "obs")
-  if (!identical(intersect(FCST_col_names, colnames(FCST)), FCST_col_names)) {
+  if (!identical(intersect(FCST_col_names, colnames(.fcst)), FCST_col_names)) {
     stop(
       paste(
         "Input FCST data frame does not have the correct column names.",
-        "Supplied column names: ", paste(colnames(FCST), collapse = " "),
+        "Supplied column names: ", paste(colnames(.fcst), collapse = " "),
         "Should include: ", paste(FCST_col_names, collapse = " "),
         sep = "\n   "
       )
@@ -54,12 +54,12 @@ verify_eps <- function(
 
   cat("Verifying EPS : \n")
 
-  FCST <- dplyr::mutate(FCST, forecast = obs_error_func(.data$forecast))
+  .fcst <- dplyr::mutate(.fcst, forecast = obs_error_func(.data$forecast))
 
 # Compute the basic statistics (RMSE,Bias,ensemble mean,)
 
   cat("   Computing basic statistics")
-  scores <- FCST %>%
+  scores <- .fcst %>%
     dplyr::group_by(.data$mname, .data$SID, .data$fcdate, .data$leadtime) %>%
     dplyr::summarise(ens_mean = mean(forecast), ens_var = stats::var(forecast), obs = mean(obs)) %>%
     dplyr::ungroup() %>%
@@ -75,7 +75,7 @@ verify_eps <- function(
 # Compute the CRPS, rank histogram and probabilities for threshold preserving leadtime and mname
 
   cat("   Computing full ensemble scores and probabilities \n")
-  verif_full <- FCST %>%
+  verif_full <- .fcst %>%
     dplyr::group_by(.data$leadtime, .data$mname) %>%
     dplyr::do(
       temp_crps      = harp_crps(spread_members(.)),
@@ -120,7 +120,7 @@ verify_eps <- function(
 
   if (calc_uui) {
     cat("   Computing UUI spread-skill \n")
-    UUI <- uui(FCST, verbose = TRUE)
+    UUI <- uui(.fcst, verbose = TRUE)
     scores <- scores %>% dplyr::left_join(UUI, by = c("leadtime", "mname"))
     cat("   Computing UUI spread-skill ---> DONE\n")
   }

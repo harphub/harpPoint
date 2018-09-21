@@ -4,10 +4,10 @@
 \alias{accumulate_forecast}
 \title{Accumulate a forecast over a given time period.}
 \usage{
-accumulate_forecast(FCST, accumulation_time)
+accumulate_forecast(.fcst, accumulation_time)
 }
 \arguments{
-\item{FCST}{A data frame of class \code{harp_point_forecast}.}
+\item{.fcst}{A data frame of class \code{harp_point_forecast}.}
 
 \item{accumulation_time}{The time over which the accumulation is to be
 calculated. Must be in the same time units as the \code{leadtime} column.}

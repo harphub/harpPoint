@@ -6,7 +6,7 @@
 #' observation and the forecast is expected to be smaller than a number of
 #' multiples of the standard deviation. The number of multiples of the standard
 #' deviation can be supplied or a default value used depending on the parameter.
-#' @param FCST A data frame of class \code{harp_point_forecast_obs}.
+#' @param .fcst A data frame of class \code{harp_point_forecast_obs}.
 #' @param parameter The forecast parameter.
 #' @param num_sd_allowed The number of standard deviations of the forecast that
 #'   the difference between the forecast and the observation must be smaller
@@ -18,7 +18,7 @@
 #' @export
 #'
 #' @examples
-check_obs_against_fcst <- function(FCST, parameter, num_sd_allowed = NULL) {
+check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
 
   if (is.null(num_sd_allowed)) {
     num_sd_allowed <- switch(
@@ -40,8 +40,8 @@ check_obs_against_fcst <- function(FCST, parameter, num_sd_allowed = NULL) {
   if (num_sd_allowed > 0) {
 
     bad_obs <- dplyr::inner_join(
-      FCST,
-      FCST %>%
+      .fcst,
+      .fcst %>%
         dplyr::group_by(.data$SID, .data$leadtime) %>%
         dplyr::summarise(
           tolerance = sd(.data$forecast) * num_sd_allowed
@@ -55,9 +55,9 @@ check_obs_against_fcst <- function(FCST, parameter, num_sd_allowed = NULL) {
       ) %>%
       dplyr::filter(.data$closest > .data$tolerance)
 
-    good_obs <- dplyr::anti_join(FCST, bad_obs, by = c("SID", "validdate"))
+    good_obs <- dplyr::anti_join(.fcst, bad_obs, by = c("SID", "validdate"))
 
-    bad_obs  <- FCST %>%
+    bad_obs  <- .fcst %>%
       dplyr::inner_join(bad_obs, by = c("SID", "validdate", "fcdate")) %>%
       dplyr::select(-.data$closest)
 
@@ -65,7 +65,7 @@ check_obs_against_fcst <- function(FCST, parameter, num_sd_allowed = NULL) {
 
   } else {
 
-    good_obs <- FCST
+    good_obs <- .fcst
     attr(good_obs, "removed_cases") <- NULL
 
   }

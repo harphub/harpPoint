@@ -5,10 +5,10 @@
 \title{Convert EPS forecast data from wide format data frame to long format data
 frame.}
 \usage{
-gather_members(FCST, member_prefix = "mbr")
+gather_members(.fcst, member_prefix = "mbr")
 }
 \arguments{
-\item{FCST}{An EPS forecast data frame in wide format.}
+\item{.fcst}{An EPS forecast data frame in wide format.}
 
 \item{member_prefix}{Prefix for column names that contain forcasts for a
 single member. The default is "mbr". Note that the column name only has to

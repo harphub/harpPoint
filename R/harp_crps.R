@@ -1,6 +1,6 @@
 #' Compute the CRPS for ensemble prediction systems.
 #'
-#' @param FCST A FCST object with column names: mname, member, SID, fcdate,
+#' @param .fcst A FCST object with column names: mname, member, SID, fcdate,
 #'   leadtime, validdate, forecast, obs.
 #'
 #' @return A list with named elements: CRPS, CRPSpot, Reli, alpha, beat,
@@ -8,12 +8,12 @@
 #' @export
 #'
 #' @examples
-harp_crps <- function (FCST) {
+harp_crps <- function (.fcst) {
 #
 # function to compute the CRPS with tidy data
 #
-	obs <- FCST %>% dplyr::pull(obs)
-	eps <- FCST %>%
+	obs <- .fcst %>% dplyr::pull(obs)
+	eps <- .fcst %>%
 		dplyr::select(dplyr::contains("mbr")) %>%
 		dplyr::select_if(~sum(!is.na(.)) > 0)
 	nMember = dim(eps)[2]

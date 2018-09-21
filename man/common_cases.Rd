@@ -4,10 +4,10 @@
 \alias{common_cases}
 \title{Title}
 \usage{
-common_cases(FCST)
+common_cases(.fcst)
 }
 \arguments{
-\item{FCST}{A harp3 format data frame of forecasts}
+\item{.fcst}{A harp3 format data frame of forecasts}
 }
 \value{
 The input data frame with only the common stations and forecast dates

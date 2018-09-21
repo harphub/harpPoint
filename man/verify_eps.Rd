@@ -4,11 +4,11 @@
 \alias{verify_eps}
 \title{Title}
 \usage{
-verify_eps(FCST, thresholds = NA, calc_uui = FALSE,
+verify_eps(.fcst, thresholds = NA, calc_uui = FALSE,
   obs_error_func = function(x) x + 0)
 }
 \arguments{
-\item{FCST}{A long form data frame that includes column names \code{mname},
+\item{.fcst}{A long form data frame that includes column names \code{mname},
 \code{SID}, \code{fcdate}, \code{leadtime}, \code{member}, \code{forecast}
 and \code{obs}. Note that \code{fcdate} is the date in Unix time format
 i.e. seconds since 1970-01-01 00:00:00 UTC.}

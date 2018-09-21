@@ -1,6 +1,6 @@
 #' Verify a deterministic forecast
 #'
-#' @param FCST A harp deterministc forecast object with an obs column.
+#' @param .fcst A harp deterministc forecast object with an obs column.
 #' @param thresholds A numeric vector of thresholds for which to compute
 #'   threshold based scores. If set to NULL, no threshold based scores will be
 #'   computed.
@@ -10,7 +10,7 @@
 #' @export
 #'
 #' @examples
-verify_det <- function(FCST, thresholds = NULL) {
+verify_det <- function(.fcst, thresholds = NULL) {
 #
 ###### Add check for class of intput object to decide on group_vars - currently ignores member
 ###### so can't do multi member verification for ensembles.
@@ -19,7 +19,7 @@ verify_det <- function(FCST, thresholds = NULL) {
 # Compute basic statistics
 
   message("Verifying for continuous scores\n")
-  scores <- FCST %>%
+  scores <- .fcst %>%
     dplyr::group_by(mname, leadtime) %>%
     dplyr::summarise(
       Bias = mean(forecast - obs, na.rm = TRUE),
@@ -38,7 +38,7 @@ verify_det <- function(FCST, thresholds = NULL) {
 #   Compute the binary probabilities for the thresholds
 
     message("Computing binary probabilities \n")
-    verif_all <- FCST %>%
+    verif_all <- .fcst %>%
       #dplyr::group_by(member) %>%
       dplyr::do(
         SID       = .$SID,
@@ -63,12 +63,25 @@ verify_det <- function(FCST, thresholds = NULL) {
       tidyr::gather(dplyr::contains("obs_"), key="threshold", value="binary_obs") %>%
       dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
+    ### This is robust, but slow.
+    #scores_thresh <- scores_thresh %>%
+      #dplyr::inner_join(
+        #obs_thresh,
+        #by = c("SID", "fcdate", "leadtime", "validdate", "mname", "threshold")
+      #) %>%
+      #dplyr::select(-dplyr::contains("."))
+
+    ### This is fast - appears to give the same results, but not fully tested
     scores_thresh <- scores_thresh %>%
-      dplyr::inner_join(
-        obs_thresh,
-        by = c("SID", "fcdate", "leadtime", "validdate", "mname", "threshold")
-      ) %>%
-      dplyr::select(-dplyr::contains("."))
+      dplyr::select(
+        .data$SID,
+        .data$fcdate,
+        .data$leadtime,
+        .data$validdate,
+        .data$mname,
+        .data$threshold,
+        .data$pred) %>%
+      dplyr::bind_cols(dplyr::select(obs_thresh, .data$binary_obs))
 
 #   Compute the verification scores
 

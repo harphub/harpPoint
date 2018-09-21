@@ -4,10 +4,10 @@
 \alias{verify_det}
 \title{Verify a deterministic forecast}
 \usage{
-verify_det(FCST, thresholds = NULL)
+verify_det(.fcst, thresholds = NULL)
 }
 \arguments{
-\item{FCST}{A harp deterministc forecast object with an obs column.}
+\item{.fcst}{A harp deterministc forecast object with an obs column.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute
 threshold based scores. If set to NULL, no threshold based scores will be
