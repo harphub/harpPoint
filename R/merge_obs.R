@@ -13,6 +13,7 @@
 #' @export
 #'
 #' @examples
+#'
 merge_obs <- function(
   .fcst,
   .obs,
@@ -21,13 +22,18 @@ merge_obs <- function(
   by        = c("SID", "validdate")
 ) {
 
-  if (!is.element("dataframe_format", names(attributes(.fcst)))) {
-    warning("Input forecast data frame does not have a dataframe_format attribute")
-    has_df_format <- FALSE
-  } else {
-    has_df_format <- TRUE
-    dataframe_format <- attr(.fcst, "dataframe_format")
-  }
+    UseMethod("merge_obs")
+
+}
+
+#' @export
+merge_obs.default <- function(
+  .fcst,
+  .obs,
+  parameter = NULL,
+  join_type = c("inner", "left", "right", "full", "semi", "anti"),
+  by        = c("SID", "validdate")
+) {
 
   valid_joins <- c("inner", "left", "right", "full", "semi", "anti")
   if (length(intersect(join_type, valid_joins)) < 1) {
@@ -39,13 +45,7 @@ merge_obs <- function(
     )
   }
 
-  if (is.null(parameter)) {
-    parameter <- colnames(.obs)[3]
-  }
-
-  obs_col <- rlang::sym(parameter)
-
-  .fcst <- switch(join_type[1],
+  switch(join_type[1],
     inner = dplyr::inner_join(.fcst, .obs, by = by),
     left  = dplyr::left_join(.fcst, .obs, by = by),
     right = dplyr::right_join(.fcst, .obs, by = by),
@@ -54,9 +54,19 @@ merge_obs <- function(
     anti  = dplyr::anti_join(.fcst, .obs, by = by)
   )
 
-  if (has_df_format) {
-    attr(.fcst, "dataframe_format") <- dataframe_format
-  }
+}
 
-  dplyr::rename(.fcst, obs = !!obs_col)
+#' @export
+merge_obs.harp_fcst <- function(
+  .fcst,
+  .obs,
+  parameter = NULL,
+  join_type = c("inner", "left", "right", "full", "semi", "anti"),
+  by        = c("SID", "validdate")
+) {
+
+  out <- purrr::map(.fcst, merge_obs, .obs, parameter, join_type, by)
+  class(out) <- class(.fcst)
+  out
+
 }

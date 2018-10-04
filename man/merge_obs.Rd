@@ -27,4 +27,7 @@ The input forecast data fram with an "obs" column added.
 \description{
 Combine observations with point forecasts.
 }
+\examples{
+
+}
 
