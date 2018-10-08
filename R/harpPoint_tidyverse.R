@@ -40,6 +40,34 @@ arrange.harp_fcst <- function(.fcst, ...) {
   new_harp_fcst(purrr::map(.fcst, dplyr::arrange, ...))
 }
 
+#' Mutate columns from tables in a \code{harp_fcst} object.
+#'
+#' Works in the same way as \link[dplyr]{mutate}, except runs on all tables in
+#' the \code{harp_fcst} object. This means that only common columns between the
+#' objects can safely be arranged.
+#'
+#' @param .fcst A harp_fcst object
+#' @param ... Arguments as in \link[dplyr]{mutate}
+#'
+#' @export
+mutate.harp_fcst <- function(.fcst, ...) {
+  new_harp_fcst(purrr::map(.fcst, dplyr::mutate, ...))
+}
+
+#' Transmute columns from tables in a \code{harp_fcst} object.
+#'
+#' Works in the same way as \link[dplyr]{transmute}, except runs on all tables in
+#' the \code{harp_fcst} object. This means that only common columns between the
+#' objects can safely be arranged.
+#'
+#' @param .fcst A harp_fcst object
+#' @param ... Arguments as in \link[dplyr]{transmute}
+#'
+#' @export
+transmute.harp_fcst <- function(.fcst, ...) {
+  new_harp_fcst(purrr::map(.fcst, dplyr::transmute, ...))
+}
+
 #' Join all models into a single ensemble.
 #'
 #' The function is most useful for finding common cases between models.

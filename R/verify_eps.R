@@ -38,19 +38,17 @@ verify_eps <- function(
     )
   }
 
-# Set column names to NULL to avoid scoping for global variables - Using the
-# .data pronoun in summarise creates a massive slow down (up to 10 x slower).
-# Doing this means that we can get away without using it.
+# Set column names to syms to avoid scoping for global variables
 
-  mname    <- NULL
-  member   <- NULL
-  SID      <- NULL
-  fcdate   <- NULL
-  leadtime <- NULL
-  forecast <- NULL
-  obs      <- NULL
-  ens_mean <- NULL
-  ens_var  <- NULL
+  mname    <- rlang::sym("mname")
+  member   <- rlang::sym("member")
+  SID      <- rlang::sym("SID")
+  fcdate   <- rlang::sym("fcdate")
+  leadtime <- rlang::sym("leadtime")
+  forecast <- rlang::sym("forecast")
+  obs      <- rlang::sym("obs")
+  ens_mean <- rlang::sym("ens_mean")
+  ens_var  <- rlang::sym("ens_var")
 
   cat("Verifying EPS : \n")
 

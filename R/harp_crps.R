@@ -1,50 +1,42 @@
-#' Compute the CRPS for ensemble prediction systems.
-#'
-#' @param .fcst A FCST object with column names: mname, member, SID, fcdate,
-#'   leadtime, validdate, forecast, obs.
-#'
-#' @return A list with named elements: CRPS, CRPSpot, Reli, alpha, beat,
-#'   heaviside0, heavisideN.
-#' @export
-#'
-#' @examples
-harp_crps <- function (.fcst) {
+# Modified version of the crps function from the verification package to be used in harp.
+# The function is internal to the harpPoint package.
 #
-# function to compute the CRPS with tidy data
-#
-	obs <- .fcst %>% dplyr::pull(obs)
-	eps <- .fcst %>%
-		dplyr::select(dplyr::contains("mbr")) %>%
-		dplyr::select_if(~sum(!is.na(.)) > 0)
-	nMember = dim(eps)[2]
-	nObs <- length(obs)
-	alpha <- rep(0, nObs * (nMember + 1))
-	beta <- rep(0, nObs * (nMember + 1))
-	heaviside0 <- rep(0, nObs)
-	heavisideN <- rep(0, nObs)
-	dim(alpha) <- c(nObs, nMember + 1)
-	dim(beta) <- c(nObs, nMember + 1)
-	prev <- sort_members(as.matrix(eps))
-	index <- which(obs < prev[, 1])
-	beta[index, 1] <- prev[index, 1] - obs[index]
-	index <- which(obs > prev[, nMember])
-	alpha[index, nMember + 1] <- obs[index] - prev[index, nMember]
-	index <- which(obs <= prev[, 1])
-	heaviside0[index] <- 1
-	index <- which(obs <= prev[, nMember])
-	heavisideN[index] <- 1
-	for (i in 1:(nMember - 1)) {
-		index <- which(obs > prev[, i + 1])
-		alpha[index, i + 1] <- prev[index, i + 1] - prev[index,i]
-		index <- which(obs < prev[, i])
-		beta[index, i + 1] <- prev[index, i + 1] - prev[index,i]
-		index <- which((prev[, i + 1] > obs) & (obs > prev[,i]))
-		alpha[index, i + 1] <- obs[index] - prev[index, i]
-		beta[index, i + 1] <- prev[index, i + 1] - obs[index]
-	}
-	crps <- verification::crpsFromAlphaBeta(alpha, beta, heaviside0, heavisideN)
-	crps <- list(CRPS = crps$CRPS, CRPSpot = crps$CRPSpot, Reli = crps$Reli,
-							alpha = alpha, beta = beta, heaviside0 = heaviside0,
-							heavisideN = heavisideN)
-	crps
+harp_crps <- function (.fcst, .param) {
+
+  param <- rlang::sym(.param)
+  obs <- .fcst %>% dplyr::pull(!! param)
+  eps <- .fcst %>%
+    dplyr::select(dplyr::contains("mbr")) %>%
+    dplyr::select_if(~sum(!is.na(.)) > 0)
+  nMember = dim(eps)[2]
+  nObs <- length(obs)
+  alpha <- rep(0, nObs * (nMember + 1))
+  beta <- rep(0, nObs * (nMember + 1))
+  heaviside0 <- rep(0, nObs)
+  heavisideN <- rep(0, nObs)
+  dim(alpha) <- c(nObs, nMember + 1)
+  dim(beta) <- c(nObs, nMember + 1)
+  prev <- sort_members(as.matrix(eps))
+  index <- which(obs < prev[, 1])
+  beta[index, 1] <- prev[index, 1] - obs[index]
+  index <- which(obs > prev[, nMember])
+  alpha[index, nMember + 1] <- obs[index] - prev[index, nMember]
+  index <- which(obs <= prev[, 1])
+  heaviside0[index] <- 1
+  index <- which(obs <= prev[, nMember])
+  heavisideN[index] <- 1
+  for (i in 1:(nMember - 1)) {
+    index <- which(obs > prev[, i + 1])
+    alpha[index, i + 1] <- prev[index, i + 1] - prev[index,i]
+    index <- which(obs < prev[, i])
+    beta[index, i + 1] <- prev[index, i + 1] - prev[index,i]
+    index <- which((prev[, i + 1] > obs) & (obs > prev[,i]))
+    alpha[index, i + 1] <- obs[index] - prev[index, i]
+    beta[index, i + 1] <- prev[index, i + 1] - obs[index]
+  }
+  crps <- verification::crpsFromAlphaBeta(alpha, beta, heaviside0, heavisideN)
+  crps <- list(CRPS = crps$CRPS, CRPSpot = crps$CRPSpot, Reli = crps$Reli,
+    alpha = alpha, beta = beta, heaviside0 = heaviside0,
+    heavisideN = heavisideN)
+  crps
 }
