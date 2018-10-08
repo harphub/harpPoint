@@ -9,25 +9,14 @@
 #' @examples
 common_cases <- function(.fcst) {
 
-  if (!is.element("dataframe_format", names(attributes(.fcst)))) {
-    stop("Input forecast data frame does not have a dataframe_format attribute")
-  }
+  join_columns    <- c("SID", "fcdate", "leadtime")
+  select_columns  <- rlang::syms(join_columns)
+  sites_and_dates <- join_models(
+    dplyr::select(.fcst, !!! select_columns),
+    by = join_columns,
+    name = "common_cases"
+  )
 
-  spread_df <- function(df) {
-    dataframe_format <- attr(df, "dataframe_format")
-    if (dataframe_format == "long") {
-      spread_members(df)
-    } else {
-      df
-    }
-  }
-
-  sites_and_dates <- .fcst %>%
-    spread_df() %>%
-    split(.$mname) %>%
-    purrr::map(~ dplyr::filter(.x, leadtime == .x$leadtime[1])) %>%
-    purrr::map(~ dplyr::select(.x, SID, fcdate))
-
-  .fcst %>% dplyr::inner_join(Reduce(dplyr::inner_join, sites_and_dates))
+  join_to_fcst(.fcst, sites_and_dates$common_cases, by = join_columns)
 
 }
