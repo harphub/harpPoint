@@ -7,8 +7,8 @@
 
 harp_rank_hist <- function (.fcst, .param) {
 
-# Separate out a vector of observations and matrix of member
-# forecasts and call the fast rankHistogram function from HARPrcpp
+  # Separate out a vector of observations and matrix of member
+  # forecasts and call the fast rankHistogram function from HARPrcpp
 
   param <- rlang::sym(.param)
   obs   <- dplyr::pull(.fcst, !! param)
@@ -20,29 +20,37 @@ harp_rank_hist <- function (.fcst, .param) {
 
 #####################################################################################
 
-harp_probs <- function (.fcst, thresholds, fcstType = "EPS") {
+harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = "EPS") {
 
-# Separate out a matrix of member forecasts and call the fast fcprob
-# function from HARPrcpp. The columns then need naming
+  # Separate out a matrix of member forecasts and call the fast fcprob
+  # function from HARPrcpp. The columns then need naming
 
-  fcstColName     <- ifelse (fcstType == "EPS", "mbr", "forecast")
-  eps             <- dplyr::select(.fcst, dplyr::contains(fcstColName))
+  fcst_col_name   <- ifelse (fcst_type == "EPS", "mbr", "det")
+  eps             <- dplyr::select(.fcst, dplyr::contains(fcst_col_name))
   probs           <- fcprob(as.matrix(eps), thresholds) %>%
     tibble::as_tibble()
-  colnames(probs) <- c(paste0("pred_", thresholds), "num_members", "ens_mean", "ens_var")
+  colnames(probs) <- c(paste0("fcst_prob_", thresholds), "num_members", "ens_mean", "ens_var")
+  probs           <- dplyr::select(probs, dplyr::contains("_prob_"))
 
-# Do the same for the observations to get a binary 1 or 0. Then bind the
-# binary observations and convert to tibble
+  # Do the same for the observations to get a binary 1 or 0. Then bind the
+  # binary observations and convert to tibble
 
-  obs              <- dplyr::select(.fcst, .data$obs)
-  binObs           <- fcprob(as.matrix(obs), thresholds) %>%
-    tibble::as_tibble()
-  colnames(binObs) <- c(paste0("obs_", thresholds), "numMember", "ensMean", "ensVar")
+  if (obs_prob) {
 
-  probs %>%
-    dplyr::bind_cols(obs) %>%
-    dplyr::bind_cols(binObs) %>%
-    dplyr::mutate(mean_bias = .data$ens_mean - .data$obs)
+    param                <- rlang::sym(.param)
+    obs                  <- dplyr::select(.fcst, !! param)
+    binary_obs           <- fcprob(as.matrix(obs), thresholds) %>%
+      tibble::as_tibble()
+    colnames(binary_obs) <- c(paste0("obs_prob_", thresholds), "numMember", "ensMean", "ensVar")
+
+    probs <- probs %>%
+      dplyr::bind_cols(obs) %>%
+      dplyr::bind_cols(binary_obs) %>%
+      dplyr::select(dplyr::contains("_prob_"))
+
+  }
+
+  probs
 
 }
 
@@ -50,9 +58,9 @@ harp_probs <- function (.fcst, thresholds, fcstType = "EPS") {
 
 harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
-# We only want to return the outer envelope. Nest in a 'try' as if there
-# are not enough data the value function from the verification package fails.
-# (should make a modified function returning NAs - and it needs speeding up!)
+  # We only want to return the outer envelope. Nest in a 'try' as if there
+  # are not enough data the value function from the verification package fails.
+  # (should make a modified function returning NAs - and it needs speeding up!)
 
   err <- try(
     fullValue <- verification::value(obs, pred, cl = costloss, plot = FALSE),
@@ -73,8 +81,8 @@ harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
 harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
 
-# If there are not enough data, the roc.plot function from the verification package
-# fails, so wrap in a try.
+  # If there are not enough data, the roc.plot function from the verification package
+  # fails, so wrap in a try.
 
   err <- try(
     ROCall <- verification::roc.plot(obs, pred, thresholds = prob_thresholds, plot = NULL),
