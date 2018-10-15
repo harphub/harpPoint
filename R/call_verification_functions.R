@@ -5,13 +5,14 @@
 
 #####################################################################################
 
-harp_rank_hist <- function (.fcst) {
+harp_rank_hist <- function (.fcst, .param) {
 
 # Separate out a vector of observations and matrix of member
 # forecasts and call the fast rankHistogram function from HARPrcpp
 
-  obs <- dplyr::pull(.fcst, .data$obs)
-  eps <- dplyr::select(.fcst, dplyr::contains("mbr")) %>%
+  param <- rlang::sym(.param)
+  obs   <- dplyr::pull(.fcst, !! param)
+  eps   <- dplyr::select(.fcst, dplyr::contains("mbr")) %>%
     as.matrix()
   rankHistogram(obs, eps)
 

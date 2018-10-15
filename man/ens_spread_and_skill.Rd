@@ -8,7 +8,7 @@ ens_spread_and_skill(.fcst, parameter, groupings = "leadtime")
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations., or a single forecast table.}
+observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
 

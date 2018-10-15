@@ -5,7 +5,7 @@
 #' variables cam be chosen. The mean bias is also computed.
 #'
 #' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations., or a single forecast table.
+#'   observations, or a single forecast table.
 #' @param parameter The name of the column for the observed data.
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping

@@ -8,9 +8,21 @@ ens_crps(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations., or a single forecast table.}
+observations, or a single forecast table.}
 
-\item{keep_full_ouput}{}
+\item{parameter}{The name of the column for the observed data.}
+
+\item{groupings}{The groups for which to compute the ensemble mean and
+spread. See \link[dplyr]{group_by} for more information of how grouping
+works.}
+
+\item{keep_full_ouput}{Logical. Whether to keep the full output to computing
+CRPS for ungrouped data.}
+}
+\value{
+An object of the same format as the inputs but with data grouped for
+  the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
+  and \code{crps_rel}.
 }
 \description{
 The CRPS and its decomposition are computed as columns in a \code{harp_fcst}

@@ -5,12 +5,17 @@
 #' variables cam be chosen.
 #'
 #' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations., or a single forecast table.
-#' @param parameter
-#' @param groupings
-#' @param keep_full_ouput
+#'   observations, or a single forecast table.
+#' @param parameter The name of the column for the observed data.
+#' @param groupings The groups for which to compute the ensemble mean and
+#'   spread. See \link[dplyr]{group_by} for more information of how grouping
+#'   works.
+#' @param keep_full_ouput Logical. Whether to keep the full output to computing
+#' CRPS for ungrouped data.
 #'
-#' @return
+#' @return An object of the same format as the inputs but with data grouped for
+#'   the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
+#'   and \code{crps_rel}.
 #' @export
 #'
 #' @examples
@@ -44,6 +49,7 @@ ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_fu
     dplyr::bind_rows(.id = "mname")
 }
 
+# Internal function to extract scores from the list output and add as columns to a data frame.
 sweep_crps <- function(crps_df, crps_col, keep_full_output) {
   crps_col <- rlang::sym(crps_col)
   crps_df  <- crps_df %>%
