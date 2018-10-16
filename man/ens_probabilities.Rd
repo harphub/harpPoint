@@ -4,7 +4,7 @@
 \alias{ens_probabilities}
 \title{Rank histogram for an ensemble.}
 \usage{
-ens_probabilities(.fcst, parameter, thresholds, groupings = "leadtime")
+ens_probabilities(.fcst, parameter, thresholds, obs_probabilities = TRUE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
