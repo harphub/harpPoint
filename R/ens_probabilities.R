@@ -28,7 +28,7 @@ ens_probabilities <- function(.fcst, parameter, thresholds, obs_probabilities = 
 ens_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
 
   col_names  <- colnames(.fcst)
-  if (length(grep(parameter, col_names)) < 1) {
+  if (length(grep(rlang::quo_name(parameter), col_names)) < 1) {
     stop(paste("No column found for", parameter), call. = FALSE)
   }
 

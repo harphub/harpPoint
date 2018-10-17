@@ -1,10 +1,10 @@
-#' Brier score and its decomposition for an ensemble.
+#' Reliability for an ensemble.
 #'
 #' @param .fcst A \code{harp_fcst} object with tables that have a column for
 #'   observations, or a single forecast table.
 #' @param parameter The name of the column for the observed data.
 #' @param thresholds A numeric vector of thresholds for which to compute the
-#'   Brier Score.
+#'   reliability.
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
@@ -16,12 +16,12 @@
 #' @export
 #'
 #' @examples
-ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
-  UseMethod("ens_brier")
+ens_reliability <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+  UseMethod("ens_reliability")
 }
 
 #' @export
-ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_reliability.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 
   groupings  <- rlang::syms(groupings)
   obs_col    <- rlang::sym(parameter)
@@ -56,27 +56,26 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
       !! thresh_col,
       brier_output = purrr::map(
         .data$grouped_fcst,
-        ~ verification::brier(.x$obs_prob, .x$fcst_prob)
+        ~ verification::brier(.x$obs_prob, .x$fcst_prob, show = FALSE)
       )
     ) %>%
-    sweep_brier()
+    sweep_reliability()
 }
 
 #' @export
-ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
-  purrr::map(.fcst, ens_brier, parameter, thresholds, groupings) %>%
+ens_reliability.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+  purrr::map(.fcst, ens_reliability, parameter, thresholds, groupings) %>%
     dplyr::bind_rows(.id = "mname")
 }
 
-sweep_brier <- function(brier_df) {
+sweep_reliability <- function(brier_df) {
   brier_col <- rlang::quo(brier_output)
   brier_df %>%
     dplyr::mutate(
-      brier_score             = purrr::map_dbl(!! brier_col, "bs"),
-      brier_skill_score       = purrr::map_dbl(!! brier_col, "ss"),
-      brier_score_reliability = purrr::map_dbl(!! brier_col, "bs.reliability"),
-      brier_score_resolution  = purrr::map_dbl(!! brier_col, "bs.resol"),
-      brier_score_uncertainty = purrr::map_dbl(!! brier_col, "bs.uncert")
+      forecast_probability = purrr::map(!! brier_col, "prob.y"),
+      observed_frequency   = purrr::map(!! brier_col, "obar.i")
     ) %>%
-    dplyr::select(-!! brier_col)
+    dplyr::select(-!! brier_col) %>%
+    tidyr::unnest() %>%
+    tidyr::nest(.data$forecast_probability, .data$observed_frequency, .key = "reliability")
 }
