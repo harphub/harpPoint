@@ -10,7 +10,7 @@ harp_rank_hist <- function (.fcst, .param) {
   # Separate out a vector of observations and matrix of member
   # forecasts and call the fast rankHistogram function from HARPrcpp
 
-  param <- rlang::sym(.param)
+  param <- rlang::enquo(.param)
   obs   <- dplyr::pull(.fcst, !! param)
   eps   <- dplyr::select(.fcst, dplyr::contains("mbr")) %>%
     as.matrix()
@@ -37,7 +37,7 @@ harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = 
 
   if (obs_prob) {
 
-    param                <- rlang::sym(.param)
+    param                <- rlang::enquo(.param)
     obs                  <- dplyr::select(.fcst, !! param)
     binary_obs           <- fcprob(as.matrix(obs), thresholds) %>%
       tibble::as_tibble()

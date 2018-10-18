@@ -23,31 +23,34 @@ ens_spread_and_skill <- function(.fcst, parameter, groupings = "leadtime") {
 
 #' @export
 ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime") {
+
   col_names  <- colnames(.fcst)
+  parameter  <- rlang::enquo(parameter)
+  chr_param  <- rlang::quo_name(parameter)
   groupings  <- rlang::syms(groupings)
-  if (length(grep(parameter, col_names)) < 1) {
-    stop(paste("No column found for", parameter), call. = FALSE)
+  if (length(grep(chr_param, col_names)) < 1) {
+    stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ss_mean", var_name = "ss_var")
 
   ens_mean <- rlang::sym("ss_mean")
   ens_var  <- rlang::sym("ss_var")
-  param    <- rlang::sym(parameter)
 
   .fcst %>%
     dplyr::group_by(!!! groupings) %>%
     dplyr::summarise(
       num_cases = dplyr::n(),
-      mean_bias = mean(!! ens_mean - !! param),
-      rmse      = sqrt(mean((!! ens_mean - !! param) ^ 2)),
+      mean_bias = mean(!! ens_mean - !! parameter),
+      rmse      = sqrt(mean((!! ens_mean - !! parameter) ^ 2)),
       spread    = sqrt(mean(!! ens_var))
     )
 }
 
 #' @export
 ens_spread_and_skill.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
-  purrr::map(.fcst, ens_spread_and_skill, parameter, groupings) %>%
+  parameter <- rlang::enquo(parameter)
+  purrr::map(.fcst, ens_spread_and_skill, !! parameter, groupings) %>%
     dplyr::bind_rows(.id = "mname")
 }
 

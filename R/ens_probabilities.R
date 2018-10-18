@@ -27,21 +27,24 @@ ens_probabilities <- function(.fcst, parameter, thresholds, obs_probabilities = 
 #' @export
 ens_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
 
+  parameter  <- rlang::enquo(parameter)
+  chr_param  <- rlang::quo_name(parameter)
   col_names  <- colnames(.fcst)
-  if (length(grep(rlang::quo_name(parameter), col_names)) < 1) {
-    stop(paste("No column found for", parameter), call. = FALSE)
+  if (length(grep(chr_param, col_names)) < 1) {
+    stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
   dplyr::bind_cols(
     .fcst,
-    harp_probs(.fcst, parameter, thresholds, obs_prob = obs_probabilities)
+    harp_probs(.fcst, !! parameter, thresholds, obs_prob = obs_probabilities)
   )
 
 }
 
 #' @export
 ens_probabilities.harp_fcst <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
-  purrr::map(.fcst, ens_probabilities, parameter, thresholds, obs_probabilities) %>%
+  parameter <- rlang::enquo(parameter)
+  purrr::map(.fcst, ens_probabilities, !! parameter, thresholds, obs_probabilities) %>%
     new_harp_fcst()
 }
 

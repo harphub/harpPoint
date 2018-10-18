@@ -27,10 +27,12 @@ ens_crps <- function(.fcst, parameter, groupings = "leadtime", keep_full_output 
 ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
 
   col_names   <- colnames(.fcst)
+  parameter   <- rlang::enquo(parameter)
+  chr_param   <- rlang::quo_name(parameter)
   groupings   <- rlang::syms(groupings)
   crps_output <- sym("crps_output")
-  if (length(grep(parameter, col_names)) < 1) {
-    stop(paste("No column found for", parameter), call. = FALSE)
+  if (length(grep(chr_param, col_names)) < 1) {
+    stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
   .fcst %>%
@@ -38,14 +40,15 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
-      !! crps_output := purrr::map(grouped_fcst, harp_crps, parameter)
+      !! crps_output := purrr::map(grouped_fcst, harp_crps, !! parameter)
     ) %>%
     sweep_crps(crps_output, keep_full_output)
 }
 
 #' @export
 ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
-  purrr::map(.fcst, ens_crps, parameter, groupings, keep_full_output) %>%
+  parameter <- rlang::enquo(parameter)
+  purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output) %>%
     dplyr::bind_rows(.id = "mname")
 }
 

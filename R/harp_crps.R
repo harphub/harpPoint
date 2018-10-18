@@ -3,7 +3,7 @@
 #
 harp_crps <- function (.fcst, .param) {
 
-  param <- rlang::sym(.param)
+  param <- rlang::enquo(.param)
   obs <- .fcst %>% dplyr::pull(!! param)
   eps <- .fcst %>%
     dplyr::select(dplyr::contains("mbr")) %>%

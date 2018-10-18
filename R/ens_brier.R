@@ -24,13 +24,13 @@ ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 
   groupings  <- rlang::syms(groupings)
-  obs_col    <- rlang::sym(parameter)
+  parameter  <- rlang::enquo(parameter)
   meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
   thresh_col <- rlang::sym("threshold")
   join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
 
 
-  .fcst   <- ens_probabilities(.fcst, rlang::quo_name(obs_col), thresholds)
+  .fcst   <- ens_probabilities(.fcst, !! parameter, thresholds)
 
   fcst_thresh <- .fcst %>%
     dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
@@ -64,7 +64,8 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
 #' @export
 ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
-  purrr::map(.fcst, ens_brier, parameter, thresholds, groupings) %>%
+  parameter <- rlang::enquo(parameter)
+  purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings) %>%
     dplyr::bind_rows(.id = "mname")
 }
 

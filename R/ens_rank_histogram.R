@@ -26,9 +26,11 @@ ens_rank_histogram <- function(.fcst, parameter, groupings = "leadtime") {
 ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime") {
 
   col_names  <- colnames(.fcst)
+  parameter  <- rlang::enquo(parameter)
+  chr_param  <- rlang::quo_name(parameter)
   groupings  <- rlang::syms(groupings)
-  if (length(grep(parameter, col_names)) < 1) {
-    stop(paste("No column found for", parameter), call. = FALSE)
+  if (length(grep(chr_param, col_names)) < 1) {
+    stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
   .fcst %>%
@@ -36,7 +38,7 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime")
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
-      rank_count = purrr::map(grouped_fcst, harp_rank_hist, parameter)
+      rank_count = purrr::map(grouped_fcst, harp_rank_hist, !! parameter)
     ) %>%
     sweep_rank_histogram(groupings)
 
@@ -44,7 +46,8 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime")
 
 #' @export
 ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
-  purrr::map(.fcst, ens_rank_histogram, parameter, groupings) %>%
+  parameter = rlang::enquo(parameter)
+  purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings) %>%
     dplyr::bind_rows(.id = "mname")
 }
 
