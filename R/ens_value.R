@@ -53,7 +53,7 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
     dplyr::transmute(
       !!! groupings,
       !! thresh_col,
-      value_output = purrr::map(
+      economic_value = purrr::map(
         .data$grouped_fcst,
         ~ harp_ecoval(.x$obs_prob, .x$fcst_prob)
       )

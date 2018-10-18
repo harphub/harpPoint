@@ -52,13 +52,12 @@ ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime
 }
 
 # Internal function to return nicely formatted column for ens_rank_histogram.
-sweep_rank_histogram <- function(rank_hist_df, groupings) {
+sweep_rank_histogram <- function(rank_hist_df) {
   nest_cols <- rlang::syms(c("rank", "rank_count"))
   rank_hist_df %>%
     dplyr::mutate(
       rank = purrr::map(rank_count, ~ seq(1, length(.x)))
     ) %>%
     tidyr::unnest() %>%
-    dplyr::group_by(!!! groupings) %>%
     tidyr::nest(!!! nest_cols, .key = "rank_histogram")
 }

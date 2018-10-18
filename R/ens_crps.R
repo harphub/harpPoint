@@ -30,7 +30,7 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
   parameter   <- rlang::enquo(parameter)
   chr_param   <- rlang::quo_name(parameter)
   groupings   <- rlang::syms(groupings)
-  crps_output <- sym("crps_output")
+  crps_output <- rlang::sym("crps_output")
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
@@ -57,9 +57,9 @@ sweep_crps <- function(crps_df, crps_col, keep_full_output) {
   crps_col <- rlang::sym(crps_col)
   crps_df  <- crps_df %>%
     dplyr::mutate(
-      crps       = purrr::map_dbl(!! crps_col, "CRPS"),
-      cprs_pot   = purrr::map_dbl(!! crps_col, "CRPSpot"),
-      crps_rel   = purrr::map_dbl(!! crps_col, "Reli")
+      crps             = purrr::map_dbl(!! crps_col, "CRPS"),
+      cprs_potential   = purrr::map_dbl(!! crps_col, "CRPSpot"),
+      crps_reliability = purrr::map_dbl(!! crps_col, "Reli")
     )
   if (!keep_full_output) {
     crps_df <- dplyr::select(crps_df, - !! crps_col)
