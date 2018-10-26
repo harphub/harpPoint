@@ -48,7 +48,8 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime")
 ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
   parameter = rlang::enquo(parameter)
   purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings) %>%
-    dplyr::bind_rows(.id = "mname")
+    dplyr::bind_rows(.id = "mname") %>%
+    add_attributes(.fcst, !! parameter)
 }
 
 # Internal function to return nicely formatted column for ens_rank_histogram.

@@ -67,7 +67,8 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
 ens_roc.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
   parameter <- rlang::enquo(parameter)
   purrr::map(.fcst, ens_roc, !! parameter, thresholds, groupings) %>%
-    dplyr::bind_rows(.id = "mname")
+    dplyr::bind_rows(.id = "mname") %>%
+    add_attributes(.fcst, !! parameter)
 }
 
 sweep_roc <- function(roc_df) {

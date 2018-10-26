@@ -66,7 +66,8 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
   parameter <- rlang::enquo(parameter)
   purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings) %>%
-    dplyr::bind_rows(.id = "mname")
+    dplyr::bind_rows(.id = "mname") %>%
+    add_attributes(.fcst, !! parameter)
 }
 
 sweep_brier <- function(brier_df) {

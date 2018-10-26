@@ -41,6 +41,7 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
       num_cases    = purrr::map_int(grouped_fcst, nrow),
       mean_bias    = purrr::map_dbl(grouped_fcst, ~ mean(.x$ens_mean - .x[[chr_param]])),
       rmse         = purrr::map_dbl(grouped_fcst, ~ sqrt(mean((.x$ens_mean - .x[[chr_param]]) ^ 2))),
+      stde         = purrr::map_dbl(grouped_fcst, ~ sd(.x$ens_mean - .x[[chr_param]])),
       spread       = purrr::map_dbl(grouped_fcst, ~ sqrt(mean(.x$ens_var))),
       rank_count   = purrr::map(grouped_fcst, harp_rank_hist, !! parameter),
       !! crps_out := purrr::map(grouped_fcst, harp_crps, !! parameter)
@@ -129,7 +130,8 @@ ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings
       purrr::map(list_result, "ens_threshold_scores"),
       .id = "mname"
     )
-  )
+  ) %>% add_attributes(.fcst, !! parameter)
+
 }
 
 # Internal function to clean up the output from the brier function.
@@ -144,8 +146,9 @@ sweep_brier_output <- function(ens_threshold_df) {
       brier_score_reliability = purrr::map_dbl(!! brier_output_col, "bs.reliability"),
       brier_score_resolution  = purrr::map_dbl(!! brier_output_col, "bs.resol"),
       brier_score_uncertainty = purrr::map_dbl(!! brier_output_col, "bs.uncert"),
-      forecast_probability    = purrr::map(!! brier_output_col, "prob.y"),
-      observed_frequency      = purrr::map(!! brier_output_col, "obar.i")
+      forecast_probability    = purrr::map(!! brier_output_col, "y.i"),
+      observed_frequency      = purrr::map(!! brier_output_col, "obar.i"),
+      proportion_occurred     = purrr::map(!! brier_output_col, "prob.y")
     ) %>%
     dplyr::select(-!! brier_output_col) %>%
     tidyr::unnest(.data$forecast_probability, .data$observed_frequency) %>%
@@ -156,4 +159,19 @@ sweep_brier_output <- function(ens_threshold_df) {
     brier_df,
     by = c("leadtime", "threshold")
   )
+}
+
+# Internal function to add forecast attributes to a verification output
+add_attributes <- function(.verif, .fcst, parameter) {
+  parameter <- rlang::enquo(parameter)
+
+  dates     <- unlist(purrr::map(.fcst, "fcdate"))
+  SIDs      <- unlist(purrr::map(.fcst, "SID"))
+
+  attr(.verif, "parameter")    <- rlang::quo_name(parameter)
+  attr(.verif, "start_date")   <- harpIO::unixtime_to_str_datetime(min(dates), YMDh)
+  attr(.verif, "end_date")     <- harpIO::unixtime_to_str_datetime(max(dates), YMDh)
+  attr(.verif, "num_stations") <- length(unique(SIDs))
+
+  .verif
 }

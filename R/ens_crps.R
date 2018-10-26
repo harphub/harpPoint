@@ -49,7 +49,8 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
 ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
   parameter <- rlang::enquo(parameter)
   purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output) %>%
-    dplyr::bind_rows(.id = "mname")
+    dplyr::bind_rows(.id = "mname") %>%
+    add_attributes(.fcst, !! parameter)
 }
 
 # Internal function to extract scores from the list output and add as columns to a data frame.

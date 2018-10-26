@@ -66,15 +66,17 @@ ens_reliability.default <- function(.fcst, parameter, thresholds, groupings = "l
 ens_reliability.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
   parameter <- rlang::enquo(parameter)
   purrr::map(.fcst, ens_reliability, !! parameter, thresholds, groupings) %>%
-    dplyr::bind_rows(.id = "mname")
+    dplyr::bind_rows(.id = "mname") %>%
+    add_attributes(.fcst, !! parameter)
 }
 
 sweep_reliability <- function(brier_df) {
   brier_col <- rlang::quo(brier_output)
   brier_df %>%
     dplyr::mutate(
-      forecast_probability = purrr::map(!! brier_col, "prob.y"),
-      observed_frequency   = purrr::map(!! brier_col, "obar.i")
+      forecast_probability = purrr::map(!! brier_col, "y.i"),
+      observed_frequency   = purrr::map(!! brier_col, "obar.i"),
+      proportion_occurred  = purrr::map(!! brier_col, "prob.y")
     ) %>%
     dplyr::select(-!! brier_col) %>%
     tidyr::unnest() %>%
