@@ -43,11 +43,12 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
       message("This looks like an ensemble - will compute deterministic scores for each member.")
 
-      attr(.fcst, "dataframe_format") <- "long"
+      attr(.fcst, "dataframe_format") <- "wide"
 
-      .fcst     <- gather_members(.fcst)
+      .fcst     <- gather_members(.fcst) %>%
+        dplyr::rename(forecast_det = .data$forecast)
       groupings <- rlang::syms(c(groupings, "member"))
-      fcst_col  <- "forecast"
+      fcst_col  <- "forecast_det"
 
     }
 
@@ -73,6 +74,10 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
     join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
     meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
+    if (is.element("member", names(.fcst))) {
+      join_cols <- c(join_cols, "member")
+      meta_cols <- rlang::quos(c(SID, fcdate, leadtime, validdate, member))
+    }
     thresh_col <- rlang::sym("threshold")
 
     .fcst <- det_probabilities(.fcst, !! parameter, thresholds)
@@ -138,7 +143,14 @@ sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
     .cont_tab %>%
       tibble::as_tibble() %>%
       dplyr::rename(observed = .data$Var1, forecasted = .data$Var2, count = .data$n) %>%
-      dplyr::mutate(type = c("correct_rejection", "false_alarm", "miss", "hit"))
+      dplyr::mutate(
+        type = dplyr::case_when(
+          .data$observed == 0 & .data$forecasted == 0 ~ "correct_rejection",
+          .data$observed == 1 & .data$forecasted == 0 ~ "miss",
+          .data$observed == 0 & .data$forecasted == 1 ~ "false_alarm",
+          .data$observed == 1 & .data$forecasted == 1 ~ "hit"
+        )
+      )
   }
 
   det_threshold_df %>%
