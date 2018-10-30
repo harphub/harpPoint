@@ -80,5 +80,10 @@ sweep_reliability <- function(brier_df) {
     ) %>%
     dplyr::select(-!! brier_col) %>%
     tidyr::unnest() %>%
-    tidyr::nest(.data$forecast_probability, .data$observed_frequency, .key = "reliability")
+    tidyr::nest(
+      .data$forecast_probability,
+      .data$observed_frequency,
+      .data$proportion_occurred,
+      .key = "reliability"
+    )
 }

@@ -151,8 +151,16 @@ sweep_brier_output <- function(ens_threshold_df) {
       proportion_occurred     = purrr::map(!! brier_output_col, "prob.y")
     ) %>%
     dplyr::select(-!! brier_output_col) %>%
-    tidyr::unnest(.data$forecast_probability, .data$observed_frequency) %>%
-    tidyr::nest(.data$forecast_probability, .data$observed_frequency, .key = "reliability")
+    tidyr::unnest(
+      .data$forecast_probability,
+      .data$observed_frequency,
+      .data$proportion_occurred) %>%
+    tidyr::nest(
+      .data$forecast_probability,
+      .data$observed_frequency,
+      .data$proportion_occurred,
+      .key = "reliability"
+    )
 
   dplyr::inner_join(
     dplyr::select(ens_threshold_df, -!! brier_output_col),
