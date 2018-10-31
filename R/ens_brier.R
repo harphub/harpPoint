@@ -57,6 +57,22 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
       brier_output = purrr::map(
         .data$grouped_fcst,
         ~ verification::brier(.x$obs_prob, .x$fcst_prob)
+      ),
+      climatology = purrr::map_dbl(
+        .data$grouped_fcst,
+        ~ sum(.x$obs_prob) / nrow(.x)
+      ),
+      total_num_cases = purrr::map_int(
+        .data$grouped_fcst,
+        ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
+      ),
+      observed_num_cases = purrr::map_int(
+        .data$grouped_fcst,
+        ~ sum(as.integer(.x$obs_prob))
+      ),
+      forecast_num_cases = purrr::map_int(
+        .data$grouped_fcst,
+        ~ sum(as.integer(ceiling(.x$fcst_prob)))
       )
     ) %>%
     sweep_brier()

@@ -57,6 +57,10 @@ ens_reliability.default <- function(.fcst, parameter, thresholds, groupings = "l
       brier_output = purrr::map(
         .data$grouped_fcst,
         ~ verification::brier(.x$obs_prob, .x$fcst_prob, show = FALSE)
+      ),
+      climatology = purrr::map_dbl(
+        .data$grouped_fcst,
+        ~ sum(.x$obs_prob) / nrow(.x)
       )
     ) %>%
     sweep_reliability()

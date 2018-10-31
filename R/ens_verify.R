@@ -94,6 +94,18 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
         climatology = purrr::map_dbl(
           .data$grouped_fcst,
           ~ sum(.x$obs_prob) / nrow(.x)
+        ),
+        total_num_cases = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
+        ),
+        observed_num_cases = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(.x$obs_prob))
+        ),
+        forecast_num_cases = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(ceiling(.x$fcst_prob)))
         )
       ) %>%
       sweep_brier_output() %>%
@@ -169,7 +181,14 @@ sweep_brier_output <- function(ens_threshold_df) {
   dplyr::inner_join(
     dplyr::select(ens_threshold_df, -!! brier_output_col),
     brier_df,
-    by = c("leadtime", "threshold", "climatology")
+    by = c(
+      "leadtime",
+      "threshold",
+      "climatology",
+      "total_num_cases",
+      "observed_num_cases",
+      "forecast_num_cases"
+    )
   )
 }
 
