@@ -90,6 +90,10 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
         roc_output = purrr::map(
           .data$grouped_fcst,
           ~ harp_roc(.x$obs_prob, .x$fcst_prob)
+        ),
+        climatology = purrr::map_dbl(
+          .data$grouped_fcst,
+          ~ sum(.x$obs_prob) / nrow(.x)
         )
       ) %>%
       sweep_brier_output() %>%
@@ -165,7 +169,7 @@ sweep_brier_output <- function(ens_threshold_df) {
   dplyr::inner_join(
     dplyr::select(ens_threshold_df, -!! brier_output_col),
     brier_df,
-    by = c("leadtime", "threshold")
+    by = c("leadtime", "threshold", "climatology")
   )
 }
 

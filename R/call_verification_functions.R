@@ -68,9 +68,9 @@ harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
   )
 
   if (!inherits(err, "try-error")) {
-    ecoval <- tibble::tibble(cl = fullValue$cl, value = apply(fullValue$V, 1, max))
+    ecoval <- tibble::tibble(cost_loss_ratio = fullValue$cl, value = apply(fullValue$V, 1, max))
   } else {
-    ecoval <- tibble::tibble(cl = costloss, value = NA)
+    ecoval <- tibble::tibble(cost_loss_ratio = costloss, value = NA)
   }
 
   ecoval
@@ -92,18 +92,18 @@ harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
   if (!inherits(err, "try-error")) {
 
     ROC <- tibble::tibble(
-      prob = ROCall$plot.data[,1,1],
-      HR   = ROCall$plot.data[,2,1],
-      FAR  = ROCall$plot.data[,3,1]
+      probability_bin  = c(ROCall$plot.data[,1,1], 1.05),
+      hit_rate         = c(ROCall$plot.data[,2,1], 0),
+      false_alarm_rate = c(ROCall$plot.data[,3,1], 0)
     )
     ROCarea <- ROCall$roc.vol$Area
 
   } else {
 
     ROC     <- tibble::tibble(
-      prob = prob_thresholds,
-      HR   = NA,
-      FAR  = NA
+      probability_bin   = prob_thresholds,
+      hit_rate          = NA,
+      false_alarm_rate  = NA
     )
     ROCarea <- NA
 
