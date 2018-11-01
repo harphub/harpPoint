@@ -8,18 +8,22 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param jitter_fcst A function to perturb the forecast values by. This is used
+#'   to account for observation error in the rank histogram. For other
+#'   statistics it is likely to make little difference since it is expected that
+#'   the observations will have a mean error of zero.
 #'
 #' @return A list containting two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
 #' @export
 #'
 #' @examples
-ens_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL) {
   UseMethod("ens_verify")
 }
 
 #' @export
-ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL) {
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -29,6 +33,10 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
+  }
+
+  if (is.function(jitter_fcst)) {
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
@@ -134,9 +142,9 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 }
 
 #' @export
-ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL) {
   parameter   <- rlang::enquo(parameter)
-  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings)
+  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings, jitter_fcst)
   list(
     ens_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "ens_summary_scores"),

@@ -4,7 +4,8 @@
 \alias{ens_verify}
 \title{Compute all verification scores for an ensemble.}
 \usage{
-ens_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime")
+ens_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime",
+  jitter_fcst = NULL)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -18,6 +19,11 @@ scores.}
 
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{jitter_fcst}{A function to perturb the forecast values by. This is used
+to account for observation error in the rank histogram. For other
+statistics it is likely to make little difference since it is expected that
+the observations will have a mean error of zero.}
 }
 \value{
 A list containting two data frames: \code{ens_summary_scores} and
