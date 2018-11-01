@@ -4,7 +4,7 @@
 \alias{ens_brier}
 \title{Brier score and its decomposition for an ensemble.}
 \usage{
-ens_brier(.fcst, parameter, thresholds, groupings = "leadtime")
+ens_brier(.fcst, parameter, thresholds, groupings = "leadtime", climatology)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -18,6 +18,12 @@ Brier Score.}
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
+
+\item{climatology}{The climatology to use for the Brier Skill Score. Can be
+"sample" for the sample climatology (the default), a named list with
+elements eps_model and member to use a member of an eps model in the
+harp_fcst object for the climatology, or a data frame with columns for
+threshold and climatology and also optionally leadtime.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and

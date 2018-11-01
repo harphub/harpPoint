@@ -8,18 +8,27 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param jitter_fcst A function to perturb the forecast values by. This is used
+#'   to account for observation error in the rank histogram. For other
+#'   statistics it is likely to make little difference since it is expected that
+#'   the observations will have a mean error of zero.
+#' @param climatology The climatology to use for the Brier Skill Score. Can be
+#'   "sample" for the sample climatology (the default), a named list with
+#'   elements eps_model and member to use a member of an eps model in the
+#'   harp_fcst object for the climatology, or a data frame with columns for
+#'   threshold and climatology and also optionally leadtime.
 #'
 #' @return A list containting two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
 #' @export
 #'
 #' @examples
-ens_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
   UseMethod("ens_verify")
 }
 
 #' @export
-ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -29,6 +38,10 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
+  }
+
+  if (is.function(jitter_fcst)) {
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
@@ -67,11 +80,22 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
       tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
       dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
-    .fcst <- dplyr::inner_join(
-      fcst_thresh,
-      obs_thresh,
-      by = join_cols
-    )
+    .fcst <- dplyr::inner_join(fcst_thresh, obs_thresh, by = join_cols)
+
+    if (inherits(climatology, "data.frame")) {
+      if (all(c("leadtime", "threshold") %in% names(climatology))) {
+        join_cols <- c("leadtime", "threshold")
+      } else {
+        join_cols <- "threshold"
+      }
+      .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols)
+    }
+
+    brier_function <- function(df) {
+      if (is.element("climatology", names(df))) {
+        verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
+      }
+    }
 
     ens_threshold_scores <- .fcst %>%
       dplyr::group_by(!!! groupings, !! thresh_col) %>%
@@ -81,7 +105,7 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
         !! thresh_col,
         brier_output = purrr::map(
           .data$grouped_fcst,
-          ~ verification::brier(.x$obs_prob, .x$fcst_prob)
+          brier_function
         ),
         economic_value = purrr::map(
           .data$grouped_fcst,
@@ -134,9 +158,10 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 }
 
 #' @export
-ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
   parameter   <- rlang::enquo(parameter)
-  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings)
+  if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
+  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings, jitter_fcst, climatology)
   list(
     ens_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "ens_summary_scores"),
@@ -192,6 +217,74 @@ sweep_brier_output <- function(ens_threshold_df) {
   )
 }
 
+# Internal function to get climatology for Brier Skill Score
+get_climatology <- function(.fcst, parameter, thresholds, climatology) {
+
+  if (inherits(climatology, "data.frame")) {
+
+    if (!all(c("threshold", "climatology") %in% names(climatology))) {
+      stop("climatology must at least contain columns named threshold and climatology", call. = FALSE)
+    }
+    if (is.element("leadtime", names(climatology))) {
+      if (!all(.fcst$leadtime %in% climatology$leadtime)) {
+        stop("Not all leadtimes for the data exist in climatology", call. = FALSE)
+      }
+    }
+    return(climatology)
+
+  } else if (is.list(climatology)) {
+
+    if (!all(c("eps_model", "member") %in% names(climatology))) {
+      stop("When supplying climatology as a list it must have names 'eps_model' and 'member'", call. = FALSE)
+    }
+    if (!is.character(climatology$eps_model) | length(climatology$eps_model) > 1) {
+      stop("When supplying climatology as a list 'eps_model' must be a single string", call. = FALSE)
+    }
+    if (!is.numeric(climatology$member) | length(climatology$member) > 1) {
+      stop("When supplying climatology as a list 'member' must be a single number", call. = FALSE)
+    }
+    if (!is.element(climatology$eps_model, names(.fcst))) {
+      stop("eps_model ", climatology$eps_model, " given in climatology not found in .fcst", call. = FALSE)
+    }
+    member_name <- paste0(climatology$eps_model, "_mbr", formatC(climatology$member, width = 3, flag = "0"))
+    if (!is.element(member_name, names(.fcst[[climatology$eps_model]]))) {
+      stop("Member ", climatology$member, " given in climatology not found for ", climatology$eps_model, call. = FALSE)
+    }
+
+    member_col   <- rlang::sym(member_name)
+    list_element <- which(names(.fcst) == climatology$eps_model)
+
+  } else if (climatology == "sample") {
+
+    member_col   <- rlang::enquo(parameter)
+    list_element <- 1
+
+  } else {
+
+    stop(
+      paste(
+        "climatology must be 'sample', a data frame with columns 'threshold' and 'climatology'\n",
+        "  or a list with named elements 'eps_model' and 'member'."
+      ),
+      call. = FALSE
+    )
+
+  }
+
+  meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
+  thresh_col <- rlang::sym("threshold")
+  group_cols <- rlang::syms(c("threshold", "leadtime"))
+  .fcst[[list_element]] %>%
+    ens_probabilities(!! member_col, c(280, 290)) %>%
+    dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
+    tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
+    dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col)) %>%
+    dplyr::group_by(!!! group_cols) %>%
+    dplyr::summarise(climatology = mean(.data$obs_prob))
+
+}
+
+
 # Internal function to add forecast attributes to a verification output
 add_attributes <- function(.verif, .fcst, parameter) {
   parameter <- rlang::enquo(parameter)
@@ -206,3 +299,5 @@ add_attributes <- function(.verif, .fcst, parameter) {
 
   .verif
 }
+
+

@@ -8,6 +8,11 @@
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
+#' @param climatology The climatology to use for the Brier Skill Score. Can be
+#'   "sample" for the sample climatology (the default), a named list with
+#'   elements eps_model and member to use a member of an eps model in the
+#'   harp_fcst object for the climatology, or a data frame with columns for
+#'   threshold and climatology and also optionally leadtime.
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   columns for \code{brier_score}, \code{brier_skill_score} and the
@@ -16,12 +21,12 @@
 #' @export
 #'
 #' @examples
-ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology) {
   UseMethod("ens_brier")
 }
 
 #' @export
-ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology) {
 
   groupings  <- rlang::syms(groupings)
   parameter  <- rlang::enquo(parameter)
@@ -42,11 +47,22 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
     tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
     dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
-  .fcst <- dplyr::inner_join(
-    fcst_thresh,
-    obs_thresh,
-    by = join_cols
-  )
+  .fcst <- dplyr::inner_join(fcst_thresh, obs_thresh, by = join_cols)
+
+  if (inherits(climatology, "data.frame")) {
+    if (all(c("leadtime", "threshold") %in% names(climatology))) {
+      join_cols <- c("leadtime", "threshold")
+    } else {
+      join_cols <- "threshold"
+    }
+    .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols)
+  }
+
+  brier_function <- function(df) {
+    if (is.element("climatology", names(df))) {
+      verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
+    }
+  }
 
   .fcst %>%
     dplyr::group_by(!!! groupings, !! thresh_col) %>%
@@ -56,7 +72,7 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
       !! thresh_col,
       brier_output = purrr::map(
         .data$grouped_fcst,
-        ~ verification::brier(.x$obs_prob, .x$fcst_prob)
+        brier_function
       ),
       climatology = purrr::map_dbl(
         .data$grouped_fcst,
@@ -79,9 +95,10 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 }
 
 #' @export
-ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
   parameter <- rlang::enquo(parameter)
-  purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings) %>%
+  climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
+  purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings, climatology) %>%
     dplyr::bind_rows(.id = "mname") %>%
     add_attributes(.fcst, !! parameter)
 }

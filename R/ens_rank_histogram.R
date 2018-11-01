@@ -10,6 +10,10 @@
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
+#' @param jitter_fcst A function to perturb the forecast values by. This is used
+#'   to account for observation error in the rank histogram. For other
+#'   statistics it is likely to make little difference since it is expected that
+#'   the observations will have a mean error of zero.
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rank} and
@@ -18,12 +22,12 @@
 #' @export
 #'
 #' @examples
-ens_rank_histogram <- function(.fcst, parameter, groupings = "leadtime") {
+ens_rank_histogram <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
   UseMethod("ens_rank_histogram")
 }
 
 #' @export
-ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime") {
+ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
 
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
@@ -33,6 +37,10 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime")
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
+  if (is.function(jitter_fcst)) {
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
+  }
+
   .fcst %>%
     dplyr::group_by(!!! groupings) %>%
     tidyr::nest(.key = "grouped_fcst") %>%
@@ -40,14 +48,14 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime")
       !!! groupings,
       rank_count = purrr::map(grouped_fcst, harp_rank_hist, !! parameter)
     ) %>%
-    sweep_rank_histogram(groupings)
+    sweep_rank_histogram()
 
 }
 
 #' @export
-ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
+ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
   parameter = rlang::enquo(parameter)
-  purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings) %>%
+  purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings, jitter_fcst) %>%
     dplyr::bind_rows(.id = "mname") %>%
     add_attributes(.fcst, !! parameter)
 }
