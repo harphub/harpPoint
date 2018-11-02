@@ -55,12 +55,15 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
     } else {
       join_cols <- "threshold"
     }
-    .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols)
+    .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols) %>%
+      dplyr::rename(bss_ref_climatology = .data$climatology)
   }
 
   brier_function <- function(df) {
     if (is.element("climatology", names(df))) {
       verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
+    } else {
+      verification::brier(df$obs_prob, df$fcst_prob)
     }
   }
 
@@ -74,9 +77,13 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
         .data$grouped_fcst,
         brier_function
       ),
-      climatology = purrr::map_dbl(
+      sample_climatology = purrr::map_dbl(
         .data$grouped_fcst,
         ~ sum(.x$obs_prob) / nrow(.x)
+      ),
+      bss_ref_climatology = purrr::map_dbl(
+        .data$grouped_fcst,
+        ~ unique(.x$bss_ref_climatology)
       ),
       total_num_cases = purrr::map_int(
         .data$grouped_fcst,
@@ -96,7 +103,7 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
 #' @export
 ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
-  parameter <- rlang::enquo(parameter)
+  parameter   <- rlang::enquo(parameter)
   climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
   purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings, climatology) %>%
     dplyr::bind_rows(.id = "mname") %>%

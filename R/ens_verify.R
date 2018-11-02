@@ -88,12 +88,15 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
       } else {
         join_cols <- "threshold"
       }
-      .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols)
+      .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols) %>%
+        dplyr::rename(bss_ref_climatology = .data$climatology)
     }
 
     brier_function <- function(df) {
       if (is.element("climatology", names(df))) {
         verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
+      } else {
+        verification::brier(df$obs_prob, df$fcst_prob)
       }
     }
 
@@ -115,9 +118,13 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
           .data$grouped_fcst,
           ~ harp_roc(.x$obs_prob, .x$fcst_prob)
         ),
-        climatology = purrr::map_dbl(
+        sample_climatology = purrr::map_dbl(
           .data$grouped_fcst,
           ~ sum(.x$obs_prob) / nrow(.x)
+        ),
+        bss_ref_climatology = purrr::map_dbl(
+          .data$grouped_fcst,
+          ~ unique(.x$bss_ref_climatology)
         ),
         total_num_cases = purrr::map_int(
           .data$grouped_fcst,
@@ -209,7 +216,8 @@ sweep_brier_output <- function(ens_threshold_df) {
     by = c(
       "leadtime",
       "threshold",
-      "climatology",
+      "sample_climatology",
+      "bss_ref_climatology",
       "total_num_cases",
       "observed_num_cases",
       "forecast_num_cases"
@@ -275,7 +283,7 @@ get_climatology <- function(.fcst, parameter, thresholds, climatology) {
   thresh_col <- rlang::sym("threshold")
   group_cols <- rlang::syms(c("threshold", "leadtime"))
   .fcst[[list_element]] %>%
-    ens_probabilities(!! member_col, c(280, 290)) %>%
+    ens_probabilities(!! member_col, thresholds) %>%
     dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
     tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
     dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col)) %>%
