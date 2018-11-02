@@ -21,12 +21,12 @@
 #' @export
 #'
 #' @examples
-ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology) {
+ens_brier <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
   UseMethod("ens_brier")
 }
 
 #' @export
-ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology) {
+ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
 
   groupings  <- rlang::syms(groupings)
   parameter  <- rlang::enquo(parameter)
