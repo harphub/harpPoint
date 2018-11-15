@@ -5,7 +5,7 @@
 \title{Compute all verification scores for an ensemble.}
 \usage{
 ens_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime",
-  jitter_fcst = NULL, climatology = "sample")
+  jitter_fcst = NULL, climatology = "sample", show_progress = TRUE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -30,6 +30,9 @@ the observations will have a mean error of zero.}
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally leadtime.}
+
+\item{show_progress}{Logical - whether to show a progress bar. Defaults to
+TRUE.}
 }
 \value{
 A list containting two data frames: \code{ens_summary_scores} and

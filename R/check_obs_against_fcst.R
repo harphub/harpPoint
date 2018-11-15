@@ -44,7 +44,7 @@ check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
       .fcst %>%
         dplyr::group_by(.data$SID, .data$leadtime) %>%
         dplyr::summarise(
-          tolerance = sd(.data$forecast) * num_sd_allowed
+          tolerance = stats::sd(.data$forecast) * num_sd_allowed
         ),
       by = c("SID", "leadtime")
     ) %>%

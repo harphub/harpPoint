@@ -40,7 +40,7 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
-      !! crps_output := purrr::map(grouped_fcst, harp_crps, !! parameter)
+      !! crps_output := purrr::map(.data$grouped_fcst, harp_crps, !! parameter)
     ) %>%
     sweep_crps(crps_output, keep_full_output)
 }
@@ -59,7 +59,7 @@ sweep_crps <- function(crps_df, crps_col, keep_full_output) {
   crps_df  <- crps_df %>%
     dplyr::mutate(
       crps             = purrr::map_dbl(!! crps_col, "CRPS"),
-      cprs_potential   = purrr::map_dbl(!! crps_col, "CRPSpot"),
+      crps_potential   = purrr::map_dbl(!! crps_col, "CRPSpot"),
       crps_reliability = purrr::map_dbl(!! crps_col, "Reli")
     )
   if (!keep_full_output) {

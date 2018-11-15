@@ -17,18 +17,36 @@
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
 #'   threshold and climatology and also optionally leadtime.
+#' @param show_progress Logical - whether to show a progress bar. Defaults to
+#'   TRUE.
 #'
 #' @return A list containting two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
 #' @export
 #'
 #' @examples
-ens_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
+ens_verify <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "leadtime",
+  jitter_fcst   = NULL,
+  climatology   = "sample",
+  show_progress = TRUE
+) {
   UseMethod("ens_verify")
 }
 
 #' @export
-ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
+ens_verify.default <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "leadtime",
+  jitter_fcst   = NULL,
+  climatology   = "sample",
+  show_progress = TRUE
+) {
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -46,18 +64,31 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
 
-  ens_summary_scores <- .fcst %>%
+  crps_function <- function(df, parameter, show_progress) {
+    parameter <- rlang::enquo(parameter)
+    res       <- harp_crps(df, !! parameter)
+    if (show_progress) {
+      crps_progress$tick()
+    }
+    res
+  }
+
+  grouped_fcst <- .fcst %>%
     dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
+    tidyr::nest(.key = "grouped_fcst")
+
+  crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+
+  ens_summary_scores <- grouped_fcst %>%
     dplyr::transmute(
       !!! groupings,
       num_cases    = purrr::map_int(grouped_fcst, nrow),
       mean_bias    = purrr::map_dbl(grouped_fcst, ~ mean(.x$ens_mean - .x[[chr_param]])),
       rmse         = purrr::map_dbl(grouped_fcst, ~ sqrt(mean((.x$ens_mean - .x[[chr_param]]) ^ 2))),
-      stde         = purrr::map_dbl(grouped_fcst, ~ sd(.x$ens_mean - .x[[chr_param]])),
+      stde         = purrr::map_dbl(grouped_fcst, ~ stats::sd(.x$ens_mean - .x[[chr_param]])),
       spread       = purrr::map_dbl(grouped_fcst, ~ sqrt(mean(.x$ens_var))),
       rank_count   = purrr::map(grouped_fcst, harp_rank_hist, !! parameter),
-      !! crps_out := purrr::map(grouped_fcst, harp_crps, !! parameter)
+      !! crps_out := purrr::map(grouped_fcst, crps_function, !! parameter, show_progress)
     ) %>%
     sweep_crps(crps_out, FALSE) %>%
     sweep_rank_histogram()
@@ -65,7 +96,7 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
   if (is.numeric(thresholds)) {
 
     join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
-    meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
+    meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
     thresh_col <- rlang::sym("threshold")
 
     .fcst <- ens_probabilities(.fcst, !! parameter, thresholds)
@@ -92,31 +123,62 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
         dplyr::rename(bss_ref_climatology = .data$climatology)
     }
 
-    brier_function <- function(df) {
+    brier_function <- function(df, show_progress) {
       if (is.element("climatology", names(df))) {
-        verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
+        res <- verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$climatology))
       } else {
-        verification::brier(df$obs_prob, df$fcst_prob)
+        res <- verification::brier(df$obs_prob, df$fcst_prob)
       }
+      if (show_progress) {
+        brier_progress$tick()
+      }
+      res
     }
 
-    ens_threshold_scores <- .fcst %>%
+    value_function <- function(df, show_progress) {
+      res <- harp_ecoval(df$obs_prob, df$fcst_prob)
+      if (show_progress) {
+        value_progress$tick()
+      }
+      res
+    }
+
+    roc_function <- function(df, show_progress) {
+      res <- harp_roc(df$obs_prob, df$fcst_prob)
+      if (show_progress) {
+        roc_progress$tick()
+      }
+      res
+    }
+
+    grouped_fcst <- .fcst %>%
       dplyr::group_by(!!! groupings, !! thresh_col) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
+      tidyr::nest(.key = "grouped_fcst")
+
+    if (show_progress) {
+      brier_progress <- progress::progress_bar$new(format = "  Brier [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+      value_progress <- progress::progress_bar$new(format = "  Value [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+      roc_progress   <- progress::progress_bar$new(format = "  ROC   [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+    }
+
+    ens_threshold_scores <- grouped_fcst %>%
       dplyr::transmute(
         !!! groupings,
         !! thresh_col,
         brier_output = purrr::map(
           .data$grouped_fcst,
-          brier_function
+          brier_function,
+          show_progress
         ),
         economic_value = purrr::map(
           .data$grouped_fcst,
-          ~ harp_ecoval(.x$obs_prob, .x$fcst_prob)
+          value_function,
+          show_progress
         ),
         roc_output = purrr::map(
           .data$grouped_fcst,
-          ~ harp_roc(.x$obs_prob, .x$fcst_prob)
+          roc_function,
+          show_progress
         ),
         sample_climatology = purrr::map_dbl(
           .data$grouped_fcst,
@@ -126,15 +188,15 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
           .data$grouped_fcst,
           ~ unique(.x$bss_ref_climatology)
         ),
-        total_num_cases = purrr::map_int(
+        num_cases_for_threshold_total = purrr::map_int(
           .data$grouped_fcst,
           ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
         ),
-        observed_num_cases = purrr::map_int(
+        num_cases_for_threshold_observed = purrr::map_int(
           .data$grouped_fcst,
           ~ sum(as.integer(.x$obs_prob))
         ),
-        forecast_num_cases = purrr::map_int(
+        num_cases_for_threshold_forecast = purrr::map_int(
           .data$grouped_fcst,
           ~ sum(as.integer(ceiling(.x$fcst_prob)))
         )
@@ -165,10 +227,18 @@ ens_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 }
 
 #' @export
-ens_verify.harp_fcst <- function (.fcst, parameter, thresholds = NULL, groupings = "leadtime", jitter_fcst = NULL, climatology = "sample") {
+ens_verify.harp_fcst <- function (
+  .fcst,
+  parameter,
+  thresholds = NULL,
+  groupings = "leadtime",
+  jitter_fcst = NULL,
+  climatology = "sample",
+  show_progress = TRUE
+) {
   parameter   <- rlang::enquo(parameter)
   if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
-  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings, jitter_fcst, climatology)
+  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings, jitter_fcst, climatology, show_progress)
   list(
     ens_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "ens_summary_scores"),
@@ -218,9 +288,9 @@ sweep_brier_output <- function(ens_threshold_df) {
       "threshold",
       "sample_climatology",
       "bss_ref_climatology",
-      "total_num_cases",
-      "observed_num_cases",
-      "forecast_num_cases"
+      "num_cases_for_threshold_total",
+      "num_cases_for_threshold_observed",
+      "num_cases_for_threshold_forecast"
     )
   )
 }
@@ -301,8 +371,8 @@ add_attributes <- function(.verif, .fcst, parameter) {
   SIDs      <- unlist(purrr::map(.fcst, "SID"))
 
   attr(.verif, "parameter")    <- rlang::quo_name(parameter)
-  attr(.verif, "start_date")   <- harpIO::unixtime_to_str_datetime(min(dates), YMDh)
-  attr(.verif, "end_date")     <- harpIO::unixtime_to_str_datetime(max(dates), YMDh)
+  attr(.verif, "start_date")   <- harpIO::unixtime_to_str_datetime(min(dates), harpIO::YMDh)
+  attr(.verif, "end_date")     <- harpIO::unixtime_to_str_datetime(max(dates), harpIO::YMDh)
   attr(.verif, "num_stations") <- length(unique(SIDs))
 
   .verif

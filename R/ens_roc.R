@@ -25,7 +25,7 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
 
   groupings  <- rlang::syms(groupings)
   parameter  <- rlang::enquo(parameter)
-  meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
+  meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
   thresh_col <- rlang::sym("threshold")
   join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
 

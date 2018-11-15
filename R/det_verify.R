@@ -73,10 +73,10 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
   if (is.numeric(thresholds)) {
 
     join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
-    meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
+    meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
     if (is.element("member", names(.fcst))) {
       join_cols <- c(join_cols, "member")
-      meta_cols <- rlang::quos(c(SID, fcdate, leadtime, validdate, member))
+      meta_cols <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate", "member"))
     }
     thresh_col <- rlang::sym("threshold")
 
@@ -157,8 +157,9 @@ sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
     dplyr::transmute(
       !!! groupings,
       !! thresh_col,
-      oberved_cases                      = purrr::map_dbl(.data$verif, ~ sum(.x$obs)),
-      forecasted_cases                   = purrr::map_dbl(.data$verif, ~ sum(.x$pred)),
+      num_cases_for_threshold_total      = purrr::map_dbl(.data$verif, ~ sum(.x$obs | .x$pred)),
+      num_cases_for_threshold_observed   = purrr::map_dbl(.data$verif, ~ sum(.x$obs)),
+      num_cases_for_threshold_forecast   = purrr::map_dbl(.data$verif, ~ sum(.x$pred)),
       cont_tab                           = purrr::map(.data$verif, ~ sweep_cont_tab(.x$tab)),
       threat_score                       = purrr::map_dbl(.data$verif, "TS"),
       hit_rate                           = purrr::map_dbl(.data$verif, "POD"),

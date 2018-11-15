@@ -13,7 +13,7 @@ harp_verify <- function (obs, pred = NULL, p = NULL, baseline = NULL, frcst.type
         pred <- pred[id]
     }
     if (frcst.type == "binary" && obs.type == "binary" && is.null(pred)) {
-        A <- table.stats(obs, fudge = fudge)
+        A <- verification::table.stats(obs, fudge = fudge)
         class(A) <- c("verify", "bin.bin")
     }
     else if (frcst.type == "binary" & obs.type == "binary") {
@@ -28,17 +28,17 @@ harp_verify <- function (obs, pred = NULL, p = NULL, baseline = NULL, frcst.type
         if (show) {
             cat("If baseline is not included, baseline values  will be calculated from the  sample obs. \n")
         }
-        A <- brier(obs, pred, baseline, thresholds, bins = bins)
+        A <- verification::brier(obs, pred, baseline, thresholds, bins = bins)
         class(A) <- c("verify", "prob.bin")
     }
     else if (frcst.type == "quantile" & obs.type == "cont") {
         if (is.null(p))
             warning("verify: Missing p. \n")
-        A <- quantileScore(obs = obs, pred = pred, p = p, breaks = thresholds)
+        A <- verification::quantileScore(obs = obs, pred = pred, p = p, breaks = thresholds)
         class(A) <- c("verify", "quantile")
     }
     else if (frcst.type == "norm.dist" & obs.type == "cont") {
-        A <- crps(obs, pred)
+        A <- verification::crps(obs, pred)
         class(A) <- class(A) <- c("verify", "norm.dist.cont")
     }
     else if (frcst.type == "cont" & obs.type == "cont") {
@@ -71,7 +71,7 @@ harp_verify <- function (obs, pred = NULL, p = NULL, baseline = NULL, frcst.type
             DAT <- table(pred.a, obs.a)
             diag(DAT) <- diag(DAT) - 1
         }
-        A <- multi.cont(DAT)
+        A <- verification::multi.cont(DAT)
         class(A) <- c("verify", "cat.cat")
     }
     else cat("This combination of predictions \n and observations is not \n currently supported. \n")

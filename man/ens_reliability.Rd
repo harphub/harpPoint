@@ -4,7 +4,8 @@
 \alias{ens_reliability}
 \title{Reliability for an ensemble.}
 \usage{
-ens_reliability(.fcst, parameter, thresholds, groupings = "leadtime")
+ens_reliability(.fcst, parameter, thresholds, groupings = "leadtime",
+  climatology = "sample")
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -18,12 +19,17 @@ reliability.}
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
+
+\item{climatology}{The climatology to use for the Brier Skill Score. Can be
+"sample" for the sample climatology (the default), a named list with
+elements eps_model and member to use a member of an eps model in the
+harp_fcst object for the climatology, or a data frame with columns for
+threshold and climatology and also optionally leadtime.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and
-  columns for \code{brier_score}, \code{brier_skill_score} and the
-  deomposition of the brier score - \code{brier_score_reliability},
-  \code{brier_score_resolution} and \code{brier_score_uncertainty}.
+  a nested column for reliability. The column can be unnested with
+  \link[tidyr]{unnest}.
 }
 \description{
 Reliability for an ensemble.

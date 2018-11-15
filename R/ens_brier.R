@@ -30,7 +30,7 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
   groupings  <- rlang::syms(groupings)
   parameter  <- rlang::enquo(parameter)
-  meta_cols  <- rlang::quos(c(SID, fcdate, leadtime, validdate))
+  meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
   thresh_col <- rlang::sym("threshold")
   join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
 

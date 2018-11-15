@@ -19,10 +19,18 @@
 #' @examples
 merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
 
-  is_multimodel  <- unlist(purrr::map(.fcst, inherits, "harp_fcst"))
-  num_multimodel <- length(which(is_multimodel))
+  is_multimodel    <- unlist(purrr::map(.fcst, inherits, "harp_fcst"))
+  num_multimodel   <- length(which(is_multimodel))
+  multimodel_names <- names(.fcst[which(is_multimodel)])
 
   if (num_multimodel > 0) {
+
+    rename_submodel <- function(submodel, hostmodel) {
+      names(submodel) <- paste0(names(submodel), "(", hostmodel, ")")
+      submodel
+    }
+
+    renamed <- purrr::map2(.fcst[is_multimodel], multimodel_names, rename_submodel)
 
     merge_submodels <- function(x) {
       purrr::reduce(
@@ -33,10 +41,10 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
         tibble::as_tibble()
     }
 
-    multimodel <- purrr::map(.fcst[is_multimodel], merge_submodels)
+    multimodel <- purrr::map(renamed, merge_submodels)
 
     if (keep_sub_models) {
-      multimodel <- c(multimodel, purrr::flatten(.fcst[is_multimodel]))
+      multimodel <- c(multimodel, purrr::flatten(renamed))
     }
 
     if (length(.fcst[!is_multimodel]) > 0) {

@@ -7,7 +7,7 @@ get_validdate <- function(.fcst, max_min) {
 get_validdate.default <- function(.fcst, max_min) {
   .fcst[["validdate"]] %>%
     max_min() %>%
-    unixtime_to_str_datetime(YMDhm)
+    harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
 }
 
 #' @export

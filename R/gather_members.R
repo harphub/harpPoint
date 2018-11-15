@@ -35,7 +35,7 @@ gather_members <- function(.fcst, member_prefix = "mbr") {
   )
 
   .fcst <- .fcst %>% dplyr::mutate(
-    member = stringr::str_extract(member, "mbr[[:digit:]]+")
+    member = stringr::str_extract(.data$member, "mbr[[:digit:]]+")
   )
 
   attr(.fcst, "dataframe_format") <- "long"

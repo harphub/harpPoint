@@ -46,7 +46,7 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
-      rank_count = purrr::map(grouped_fcst, harp_rank_hist, !! parameter)
+      rank_count = purrr::map(.data$grouped_fcst, harp_rank_hist, !! parameter)
     ) %>%
     sweep_rank_histogram()
 
