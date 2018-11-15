@@ -50,9 +50,13 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
 #' @export
 ens_spread_and_skill.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
   parameter <- rlang::enquo(parameter)
-  purrr::map(.fcst, ens_spread_and_skill, !! parameter, groupings) %>%
-    dplyr::bind_rows(.id = "mname") %>%
+  list(
+    ens_summary_scores = purrr::map(.fcst, ens_spread_and_skill, !! parameter, groupings) %>%
+    dplyr::bind_rows(.id = "mname"),
+    ens_threshold_scores = NULL
+  ) %>%
     add_attributes(.fcst, !! parameter)
+
 }
 
 

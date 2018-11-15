@@ -85,15 +85,15 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
         .data$grouped_fcst,
         ~ unique(.x$bss_ref_climatology)
       ),
-      total_num_cases = purrr::map_int(
+      num_cases_for_threshold_total = purrr::map_int(
         .data$grouped_fcst,
         ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
       ),
-      observed_num_cases = purrr::map_int(
+      num_cases_for_threshold_observed = purrr::map_int(
         .data$grouped_fcst,
         ~ sum(as.integer(.x$obs_prob))
       ),
-      forecast_num_cases = purrr::map_int(
+      num_cases_for_threshold_forecast = purrr::map_int(
         .data$grouped_fcst,
         ~ sum(as.integer(ceiling(.x$fcst_prob)))
       )
@@ -105,8 +105,11 @@ ens_brier.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 ens_brier.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
   parameter   <- rlang::enquo(parameter)
   climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
-  purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings, climatology) %>%
-    dplyr::bind_rows(.id = "mname") %>%
+  list(
+    ens_summary_scores = NULL,
+    ens_threshold_scores = purrr::map(.fcst, ens_brier, !! parameter, thresholds, groupings, climatology) %>%
+    dplyr::bind_rows(.id = "mname")
+  ) %>%
     add_attributes(.fcst, !! parameter)
 }
 

@@ -64,8 +64,11 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 #' @export
 ens_value.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
   parameter <- rlang::enquo(parameter)
-  purrr::map(.fcst, ens_value, !! parameter, thresholds, groupings) %>%
-    dplyr::bind_rows(.id = "mname") %>%
+  list(
+    ens_summary_scores = NULL,
+    ens_threshold_scores = purrr::map(.fcst, ens_value, !! parameter, thresholds, groupings) %>%
+    dplyr::bind_rows(.id = "mname")
+  ) %>%
     add_attributes(.fcst, !! parameter)
 }
 

@@ -40,6 +40,7 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
+      num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
       !! crps_output := purrr::map(.data$grouped_fcst, harp_crps, !! parameter)
     ) %>%
     sweep_crps(crps_output, keep_full_output)
@@ -48,8 +49,11 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
 #' @export
 ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
   parameter <- rlang::enquo(parameter)
-  purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output) %>%
-    dplyr::bind_rows(.id = "mname") %>%
+  list(
+    ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output) %>%
+    dplyr::bind_rows(.id = "mname"),
+    ens_threshold_scores = NULL
+  ) %>%
     add_attributes(.fcst, !! parameter)
 }
 

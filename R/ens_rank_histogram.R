@@ -55,8 +55,11 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
 #' @export
 ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
   parameter = rlang::enquo(parameter)
-  purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings, jitter_fcst) %>%
-    dplyr::bind_rows(.id = "mname") %>%
+  list(
+    ens_summary_scores = purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings, jitter_fcst) %>%
+      dplyr::bind_rows(.id = "mname"),
+    ens_threshold_scores = NULL
+  ) %>%
     add_attributes(.fcst, !! parameter)
 }
 
