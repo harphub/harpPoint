@@ -1,4 +1,11 @@
-#' Title
+#' Read forecast and observations and verify.
+#'
+#' This is a wrapper for the verification process. Forecasts and observations
+#' are read in, filtered down to common cases, errors checked, and a full
+#' verification is done for all scores. To minimise memory usage, the
+#' verification can be done for one lead time at time. It would also be possible
+#' to parallelise the process using for example \link[parallel]{mclapply}, or
+#' \link[furrr]{future_map}.
 #'
 #' @param start_date Start date to for the verification. Should be numeric or
 #'   character. YYYYMMDD(HH)(mm).
@@ -37,10 +44,10 @@
 #'   statistics it is likely to make little difference since it is expected that
 #'   the observations will have a mean error of zero.
 #' @param gross_error_check Logical of whether to perform a gross error check.
-#' @param min_allowed The minimum value of observation to allow in the gross error
-#'   check. If set to NULL the default value for the parameter is used.
-#' @param max_allowed The maximum value of observation to allow in the gross error
-#'   check. If set to NULL the default value for the parameter is used.
+#' @param min_allowed The minimum value of observation to allow in the gross
+#'   error check. If set to NULL the default value for the parameter is used.
+#' @param max_allowed The maximum value of observation to allow in the gross
+#'   error check. If set to NULL the default value for the parameter is used.
 #' @param show_progress Logical - whether to show a progress bar. Defaults to
 #'   FALSE.
 #' @param verif_path If set, verification files will be saved to this path.

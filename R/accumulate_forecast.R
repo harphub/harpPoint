@@ -14,9 +14,12 @@
 #'
 #' @return A data frame of class \code{harp_point_forecast} with the
 #'   \code{forecast} column containing the accumulated forecast.
-#' @export
 #'
 #' @examples
+
+### NOT EXPORTED - ACCUMULATION IS DONE IN read_point_forecast. HOWEVER; THE FUNCTION
+### MAY BE USEFUL IN THE FUTURE.
+
 accumulate_forecast <- function(.fcst, accumulation_time) {
 
   message("Accumulating forecast for", accum, "hour accumulations")

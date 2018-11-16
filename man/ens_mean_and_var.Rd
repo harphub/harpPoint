@@ -8,7 +8,7 @@ ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object, or a data frame containing columns
-with "mbr" as part of the column names.}
+with "_mbr" as part of the column names.}
 }
 \value{
 A \code{harp_fcst} object with columns ens_mean and ens_var added to

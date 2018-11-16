@@ -1,8 +1,4 @@
-#' Rank histogram for an ensemble.
-#'
-#' The rank histogram is computed as columns in a \code{harp_fcst} object.
-#' Typically the scores are aggregated over lead time, but other grouping
-#' variables cam be chosen.
+#' Compute probabilities of threshold exceedence for ensemble forecasts
 #'
 #' @param .fcst A \code{harp_fcst} object with tables that have a column for
 #'   observations, or a single forecast table.

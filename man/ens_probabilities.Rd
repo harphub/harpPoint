@@ -2,7 +2,7 @@
 % Please edit documentation in R/ens_probabilities.R
 \name{ens_probabilities}
 \alias{ens_probabilities}
-\title{Rank histogram for an ensemble.}
+\title{Compute probabilities of threshold exceedence for ensemble forecasts}
 \usage{
 ens_probabilities(.fcst, parameter, thresholds, obs_probabilities = TRUE)
 }
@@ -26,8 +26,6 @@ An object of the same format as the inputs but with data grouped for
   \code{rank_histogram}.
 }
 \description{
-The rank histogram is computed as columns in a \code{harp_fcst} object.
-Typically the scores are aggregated over lead time, but other grouping
-variables cam be chosen.
+Compute probabilities of threshold exceedence for ensemble forecasts
 }
 

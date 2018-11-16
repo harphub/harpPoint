@@ -18,6 +18,9 @@
 #' @export
 #'
 #' @examples
+
+### NEEDS UPDATING TO ACCOMMODATE harp_fcst CLASS
+
 check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
 
   if (is.null(num_sd_allowed)) {

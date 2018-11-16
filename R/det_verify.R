@@ -1,11 +1,15 @@
-#' Title
+#' Compute verification scores for deterministic forecasts.
 #'
-#' @param .fcst
-#' @param parameter
-#' @param thresholds
-#' @param groupings
-#'
-#' @return
+#' @param .fcst A \code{harp_fcst} object with tables that have a column for
+#'   observations, or a single forecast table.
+#' @param parameter The name of the column for the observed data.
+#' @param thresholds A numeric vector of thresholds for which to compute the
+#'   threshold based scores. Set to NULL (the default) to only compute summary
+#'   scores.
+#' @param groupings The groups for which to compute the scores. See
+#'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @return A list containting two data frames: \code{det_summary_scores} and
+#'   \code{det_threshold_scores}.
 #' @export
 #'
 #' @examples

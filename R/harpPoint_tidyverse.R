@@ -4,10 +4,8 @@
 #'
 #' @param .fcst a harp_fcst object.
 #' @param ... Arguments as in \link[dplyr]{filter}
-#' @return
 #' @import dplyr
 #' @export
-#' @examples
 filter.harp_fcst <- function(.fcst, ...) {
   new_harp_fcst(purrr::map(.fcst, dplyr::filter, ...))
 }

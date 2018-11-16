@@ -2,7 +2,7 @@
 % Please edit documentation in R/ens_spread_and_skill.R
 \name{ens_spread_and_skill}
 \alias{ens_spread_and_skill}
-\title{Compute the ensemble mean and spread of an ensemble forecast}
+\title{Compute the skill (RMSE) and spread of an ensemble forecast}
 \usage{
 ens_spread_and_skill(.fcst, parameter, groupings = "leadtime")
 }

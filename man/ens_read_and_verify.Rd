@@ -2,7 +2,7 @@
 % Please edit documentation in R/ens_read_and_verify.R
 \name{ens_read_and_verify}
 \alias{ens_read_and_verify}
-\title{Title}
+\title{Read forecast and observations and verify.}
 \usage{
 ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   obs_path, lead_time = seq(0, 48, 3), num_iterations = length(lead_time),
@@ -67,11 +67,11 @@ the observations will have a mean error of zero.}
 
 \item{gross_error_check}{Logical of whether to perform a gross error check.}
 
-\item{min_allowed}{The minimum value of observation to allow in the gross error
-check. If set to NULL the default value for the parameter is used.}
+\item{min_allowed}{The minimum value of observation to allow in the gross
+error check. If set to NULL the default value for the parameter is used.}
 
-\item{max_allowed}{The maximum value of observation to allow in the gross error
-check. If set to NULL the default value for the parameter is used.}
+\item{max_allowed}{The maximum value of observation to allow in the gross
+error check. If set to NULL the default value for the parameter is used.}
 
 \item{show_progress}{Logical - whether to show a progress bar. Defaults to
 FALSE.}
@@ -83,6 +83,11 @@ A list containting two data frames: \code{ens_summary_scores} and
   \code{ens_threshold_scores}.
 }
 \description{
-Title
+This is a wrapper for the verification process. Forecasts and observations
+are read in, filtered down to common cases, errors checked, and a full
+verification is done for all scores. To minimise memory usage, the
+verification can be done for one lead time at time. It would also be possible
+to parallelise the process using for example \link[parallel]{mclapply}, or
+\link[furrr]{future_map}.
 }
 

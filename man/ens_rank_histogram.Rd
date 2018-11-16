@@ -31,6 +31,6 @@ An object of the same format as the inputs but with data grouped for
 \description{
 The rank histogram is computed as columns in a \code{harp_fcst} object.
 Typically the scores are aggregated over lead time, but other grouping
-variables cam be chosen.
+variables can be chosen.
 }
 

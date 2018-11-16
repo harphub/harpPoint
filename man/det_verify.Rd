@@ -2,14 +2,28 @@
 % Please edit documentation in R/det_verify.R
 \name{det_verify}
 \alias{det_verify}
-\title{Title}
+\title{Compute verification scores for deterministic forecasts.}
 \usage{
 det_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime")
 }
 \arguments{
-\item{groupings}{}
+\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
+observations, or a single forecast table.}
+
+\item{parameter}{The name of the column for the observed data.}
+
+\item{thresholds}{A numeric vector of thresholds for which to compute the
+threshold based scores. Set to NULL (the default) to only compute summary
+scores.}
+
+\item{groupings}{The groups for which to compute the scores. See
+\link[dplyr]{group_by} for more information of how grouping works.}
+}
+\value{
+A list containting two data frames: \code{det_summary_scores} and
+  \code{det_threshold_scores}.
 }
 \description{
-Title
+Compute verification scores for deterministic forecasts.
 }
 

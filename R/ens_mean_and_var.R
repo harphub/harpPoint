@@ -4,7 +4,7 @@
 #' a \code{harp_fcst} object.
 #'
 #' @param .fcst A \code{harp_fcst} object, or a data frame containing columns
-#'   with "mbr" as part of the column names.
+#'   with "_mbr" as part of the column names.
 #'
 #' @return A \code{harp_fcst} object with columns ens_mean and ens_var added to
 #'   the forecast tables.
@@ -21,11 +21,11 @@ ens_mean_and_var.default <- function(.fcst, mean_name = "ens_mean", var_name = "
   mean_name <- rlang::sym(mean_name)
   var_name  <- rlang::sym(var_name)
 
-  if (length(grep("mbr", col_names)) < 1) {
-    stop(".fcst column names must contain 'mbr' to indicate an ensemble", call. = FALSE)
+  if (length(grep("_mbr", col_names)) < 1) {
+    stop(".fcst column names must contain '_mbr' to indicate an ensemble", call. = FALSE)
   }
 
-  member_data <- dplyr::select(.fcst, dplyr::contains("mbr"))
+  member_data <- dplyr::select(.fcst, dplyr::contains("_mbr"))
 
   dplyr::mutate(
     .fcst,

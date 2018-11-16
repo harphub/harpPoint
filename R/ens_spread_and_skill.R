@@ -1,4 +1,4 @@
-#' Compute the ensemble mean and spread of an ensemble forecast
+#' Compute the skill (RMSE) and spread of an ensemble forecast
 #'
 #' The ensemble mean and spread are computed as columns in a \code{harp_fcst}
 #' object. Typically the scores are aggregated over lead time by other grouping
