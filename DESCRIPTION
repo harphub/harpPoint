@@ -27,7 +27,7 @@ Imports:
     rlang,
     stats,
     harpIO,
-    ggplot2,
+    modelr,
     stringr,
     progress,
     matrixStats
