@@ -4,7 +4,8 @@
 \alias{det_verify}
 \title{Compute verification scores for deterministic forecasts.}
 \usage{
-det_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime")
+det_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime",
+  show_progress = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -18,6 +19,9 @@ scores.}
 
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+FALSE.}
 }
 \value{
 A list containting two data frames: \code{det_summary_scores} and

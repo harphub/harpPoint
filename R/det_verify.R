@@ -7,18 +7,20 @@
 #'   threshold based scores. Set to NULL (the default) to only compute summary
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
-#'   \link[dplyr]{group_by} for more information of how grouping works.
+#' \link[dplyr]{group_by} for more information of how grouping works.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#'   FALSE.
 #' @return A list containting two data frames: \code{det_summary_scores} and
 #'   \code{det_threshold_scores}.
 #' @export
 #'
 #' @examples
-det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
   UseMethod("det_verify")
 }
 
 #' @export
-det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -102,15 +104,29 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
       by = join_cols
     )
 
-    det_threshold_scores <- .fcst %>%
+    verif_func <- function(.df, show_progress) {
+      res <- harp_verify(.df$obs_prob, .df$fcst_prob, frcst.type = "binary", obs.type = "binary")
+      if (show_progress) {
+        pb$tick()
+      }
+      res
+    }
+
+    grouped_fcst <- .fcst %>%
       dplyr::group_by(!!! groupings, !! thresh_col) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
+      tidyr::nest(.key = "grouped_fcst")
+
+    if (show_progress) {
+      pb <- progress::progress_bar$new(format = "  Verifying [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+    }
+    det_threshold_scores <- grouped_fcst %>%
       dplyr::transmute(
         !!! groupings,
         !! thresh_col,
         verif = purrr::map(
           .data$grouped_fcst,
-          ~ harp_verify(.x$obs_prob, .x$fcst_prob, frcst.type = "binary", obs.type = "binary")
+          verif_func,
+          show_progress
         )
       ) %>%
       sweep_det_thresh(groupings, thresh_col)
@@ -126,9 +142,9 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 }
 
 #' @export
-det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime") {
+det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
   parameter <- rlang::enquo(parameter)
-  list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings)
+  list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings, show_progress)
   list(
     det_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "det_summary_scores"),
