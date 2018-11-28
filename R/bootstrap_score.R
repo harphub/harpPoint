@@ -22,7 +22,7 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
   parameter <- rlang::enquo(parameter)
 
   bootstrap_func <- function(df, n) {
-      modelr::bootstrap(df, n)
+    modelr::bootstrap(df, n)
   }
 
   replicants <- purrr::map(.fcst, bootstrap_func, n)
@@ -45,6 +45,8 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
   pb <- progress::progress_bar$new(format = "  Bootstrapping [:bar] :percent eta: :eta", total = num_calls_to_score_func)
   replicants <- purrr::map(replicants, map_replicants, score_function, !! parameter, groupings = groupings, ...)
 
+  # Compute the confidence limits
+
   if (confidence_interval > 1) confidence_interval <- confidence_interval / 100
   upper_bound <- confidence_interval + (1 - confidence_interval) / 2
   lower_bound <- (1 - confidence_interval) / 2
@@ -61,6 +63,41 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
   confidence_upper <- purrr::map(replicants, quantile_func, groupings, upper_bound, "upper")
   confidence_lower <- purrr::map(replicants, quantile_func, groupings, lower_bound, "lower")
 
-  purrr::map2(confidence_lower, confidence_upper, dplyr::inner_join, by = groupings) %>%
+  confidence_limits <- purrr::map2(confidence_lower, confidence_upper, dplyr::inner_join, by = groupings) %>%
     dplyr::bind_rows(.id = "mname")
+
+  # Compute the confidence of differences between forecast models
+
+  bound_replicants <- purrr::map(replicants, dplyr::bind_rows, .id = "replicant") %>%
+    purrr::map(tidyr::gather, -.data$replicant, -.data$leadtime, key = "score", value = "value")
+
+  for (m in 1:length(bound_replicants)) {
+    for (n in 1:length(bound_replicants)) {
+      if (n != m) {
+        col_name <- paste0("diff_", names(bound_replicants)[n])
+        col_name_sym <- rlang::sym(col_name)
+        bound_replicants[[m]] <- bound_replicants[[m]] %>%
+          dplyr::mutate(
+            !! col_name := value - bound_replicants[[n]]$value
+          )
+      }
+    }
+  }
+
+  proportion_func <- function(x) {
+    prop <- length(which(x > 0)) / length(x)
+    ifelse(prop >= 0.5, prop, prop - 1)
+  }
+
+  summarise_func <- function(df) {
+    df %>%
+      dplyr::group_by(.data$leadtime, .data$score) %>%
+      dplyr::summarise_at(dplyr::vars(dplyr::starts_with("diff_")), dplyr::funs(proportion_func)) %>%
+      dplyr::ungroup()
+  }
+
+  confidence_of_differences <- purrr::map(bound_replicants, summarise_func)
+
+  list(confidence_limits = confidence_limits, confidence_of_differences = confidence_of_differences)
+
 }
