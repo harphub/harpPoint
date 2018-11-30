@@ -10,15 +10,12 @@
 #' @export
 #'
 #' @examples
-gather_members <- function(.fcst, member_prefix = "mbr") {
+gather_members <- function(.fcst, member_prefix = "_mbr") {
+  UseMethod("gather_members")
+}
 
-  if (!is.element("dataframe_format", names(attributes(.fcst)))) {
-    stop("The dataframe_format attribute must be present and equal to 'wide'")
-  }
-
-  if (attr(.fcst, "dataframe_format") != "wide") {
-    stop("Input data frame must be long format")
-  }
+#' @export
+gather_members.default <- function(.fcst, member_prefix = "_mbr") {
 
   required_colnames <- member_prefix
   if (ncol(dplyr::select(.fcst, dplyr::contains(member_prefix))) < 1) {
@@ -35,10 +32,15 @@ gather_members <- function(.fcst, member_prefix = "mbr") {
   )
 
   .fcst <- .fcst %>% dplyr::mutate(
-    member = stringr::str_extract(.data$member, "mbr[[:digit:]]+")
+    member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:digit:]]+"))
   )
-
-  attr(.fcst, "dataframe_format") <- "long"
 
   .fcst
 }
+
+#' @export
+gather_members.harp_fcst <- function(.fcst, member_prefix = "_mbr") {
+  purrr::map(.fcst, gather_members, member_prefix) %>%
+    new_harp_fcst()
+}
+
