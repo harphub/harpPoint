@@ -5,7 +5,7 @@
 \title{Convert EPS forecast data from long format data frame to wide format data
 frame.}
 \usage{
-spread_members(.fcst)
+spread_members(.fcst, ...)
 }
 \arguments{
 \item{.fcst}{An EPS forecast data frame in long format.}

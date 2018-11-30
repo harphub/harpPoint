@@ -7,23 +7,24 @@
 #' @export
 #'
 #' @examples
-spread_members <- function(.fcst) {
+spread_members <- function(.fcst, ...) {
+  UseMethod("spread_members")
+}
 
-  if (!is.element("dataframe_format", names(attributes(.fcst)))) {
-    stop("The dataframe_format attribute must be present and equal to 'long'")
-  }
-
-  if (attr(.fcst, "dataframe_format") != "long") {
-    stop("Input data frame must be long format")
-  }
-
+#' @export
+spread_members.default <- function(.fcst, model_name) {
   required_colnames <- c("member", "forecast")
-  if (intersect(colnames(.fcst), required_colnames) != required_colnames) {
+  if (all(intersect(colnames(.fcst), required_colnames) != required_colnames)) {
     stop("Input data frame must include column names: member, forecast.")
   }
 
+  .fcst <- dplyr::mutate(.fcst, member = paste(model_name, .data$member, sep = "_"))
   .fcst <- tidyr::spread(.fcst, key = "member", value = "forecast")
-  attr(.fcst, "dataframe_format") <- "wide"
 
   .fcst
+}
+
+#' @export
+spread_members.harp_fcst <- function(.fcst, ...) {
+  new_harp_fcst(purrr::map2(.fcst, names(.fcst), spread_members))
 }
