@@ -41,8 +41,7 @@ arrange.harp_fcst <- function(.fcst, ...) {
 #' Mutate columns from tables in a \code{harp_fcst} object.
 #'
 #' Works in the same way as \link[dplyr]{mutate}, except runs on all tables in
-#' the \code{harp_fcst} object. This means that only common columns between the
-#' objects can safely be arranged.
+#' the \code{harp_fcst} object.
 #'
 #' @param .fcst A harp_fcst object
 #' @param ... Arguments as in \link[dplyr]{mutate}
@@ -50,6 +49,27 @@ arrange.harp_fcst <- function(.fcst, ...) {
 #' @export
 mutate.harp_fcst <- function(.fcst, ...) {
   new_harp_fcst(purrr::map(.fcst, dplyr::mutate, ...))
+}
+
+#' Mutate selected columns from tables in a \code{harp_fcst} object.
+#'
+#' Works in the same way as \link[dplyr]{mutate_at}, except runs on all tables
+#' in the \code{harp_fcst} object.
+#'
+#' @param .fcst A harp_fcst object
+#' @param ... Arguments as in \link[dplyr]{mutate}
+#'
+#' @export
+mutate_at.harp_fcst <- function(.fcst, .mutate_vars, .mutate_funs, ...) {
+  new_harp_fcst(
+    purrr::map(
+      .fcst,
+      dplyr::mutate_at,
+      dplyr::vars(.mutate_vars),
+      dplyr::funs(.mutate_funs),
+      ...
+    )
+  )
 }
 
 #' Transmute columns from tables in a \code{harp_fcst} object.

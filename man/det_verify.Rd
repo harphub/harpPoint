@@ -30,4 +30,3 @@ A list containting two data frames: \code{det_summary_scores} and
 \description{
 Compute verification scores for deterministic forecasts.
 }
-

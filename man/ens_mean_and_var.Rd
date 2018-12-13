@@ -18,4 +18,3 @@ A \code{harp_fcst} object with columns ens_mean and ens_var added to
 The ensemble mean and variance are computed and added as columns to tables in
 a \code{harp_fcst} object.
 }
-

@@ -14,4 +14,3 @@ fcprob(fc, thresholds)
 \description{
 Compute the forecast probabilities for given thresholds
 }
-

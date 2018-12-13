@@ -17,4 +17,3 @@ The first valid time in YYYYMMDDhhmm format for the input object.
 The function is intended to be used to find the first date for which to fetch
 observations against which to verify.
 }
-

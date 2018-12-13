@@ -33,4 +33,3 @@ The rank histogram is computed as columns in a \code{harp_fcst} object.
 Typically the scores are aggregated over lead time, but other grouping
 variables can be chosen.
 }
-

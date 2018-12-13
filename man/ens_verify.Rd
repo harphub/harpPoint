@@ -41,4 +41,3 @@ A list containting two data frames: \code{ens_summary_scores} and
 \description{
 Compute all verification scores for an ensemble.
 }
-

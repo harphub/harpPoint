@@ -16,4 +16,3 @@ Works in the same way as \link[dplyr]{select}, except runs on all tables in
 the \code{harp_fcst} object. This means that only common columns between the
 objects can safely be selected.
 }
-

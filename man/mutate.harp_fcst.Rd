@@ -13,7 +13,5 @@
 }
 \description{
 Works in the same way as \link[dplyr]{mutate}, except runs on all tables in
-the \code{harp_fcst} object. This means that only common columns between the
-objects can safely be arranged.
+the \code{harp_fcst} object.
 }
-

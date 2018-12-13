@@ -5,8 +5,9 @@
 \title{Read forecast and observations and verify.}
 \usage{
 ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
-  obs_path, lead_time = seq(0, 48, 3), num_iterations = length(lead_time),
-  thresholds = NULL, members = NULL, obsfile_template = "obstable",
+  obs_path, lead_time = seq(0, 48, 3),
+  num_iterations = length(lead_time), thresholds = NULL,
+  members = NULL, obsfile_template = "obstable",
   groupings = "leadtime", by = "1d", climatology = "sample",
   stations = NULL, jitter_fcst = NULL, gross_error_check = TRUE,
   min_allowed = NULL, max_allowed = NULL, show_progress = FALSE,
@@ -90,4 +91,3 @@ verification can be done for one lead time at time. It would also be possible
 to parallelise the process using for example \link[parallel]{mclapply}, or
 \link[furrr]{future_map}.
 }
-

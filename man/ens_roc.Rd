@@ -28,4 +28,3 @@ A data frame with data grouped for the \code{groupings} column(s) and
 \description{
 Relative Operating Characteristics for an ensemble.
 }
-

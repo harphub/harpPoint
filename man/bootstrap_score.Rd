@@ -4,8 +4,8 @@
 \alias{bootstrap_score}
 \title{Bootstrap a score}
 \usage{
-bootstrap_score(.fcst, score_function, parameter, n, groupings = "leadtime",
-  confidence_interval = 0.95, ...)
+bootstrap_score(.fcst, score_function, parameter, n,
+  groupings = "leadtime", confidence_interval = 0.95, ...)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object.}
@@ -27,4 +27,3 @@ Compute the confidence intervals of verification scores using a bootstrap
 method. If there is more than one forecast the confidence for the differences
 between forecasts is also computed.
 }
-

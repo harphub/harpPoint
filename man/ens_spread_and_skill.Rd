@@ -26,4 +26,3 @@ The ensemble mean and spread are computed as columns in a \code{harp_fcst}
 object. Typically the scores are aggregated over lead time by other grouping
 variables cam be chosen. The mean bias is also computed.
 }
-

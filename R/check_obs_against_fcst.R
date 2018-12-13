@@ -19,13 +19,18 @@
 #'
 #' @examples
 
-### NEEDS UPDATING TO ACCOMMODATE harp_fcst CLASS
-
 check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
 
-  if (is.null(num_sd_allowed)) {
+  parameter_quo  <- rlang::enquo(parameter)
+  parameter_expr <- rlang::quo_get_expr(parameter_quo)
+  if (is.character(parameter_expr)) {
+    parameter_quo <- rlang::sym(parameter_expr)
+  }
+  parameter_name <- rlang::quo_name(parameter_quo)
+
+    if (is.null(num_sd_allowed)) {
     num_sd_allowed <- switch(
-      parameter,
+      parameter_name,
       "T2m"       = 6,
       "RH2m"      = 6,
       "Pmsl"      = 6,
@@ -42,37 +47,81 @@ check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
 
   if (num_sd_allowed > 0) {
 
-    bad_obs <- dplyr::inner_join(
-      .fcst,
-      .fcst %>%
-        dplyr::group_by(.data$SID, .data$leadtime) %>%
-        dplyr::summarise(
-          tolerance = stats::sd(.data$forecast) * num_sd_allowed
-        ),
+    tolerance <- .fcst %>%
+      join_models(
+        by = c(
+          "SID",
+          "leadtime",
+          "fcst_cycle",
+          "fcdate",
+          "validdate",
+          parameter_name
+        )
+      )
+
+    tolerance_df <- ens_spread_and_skill(
+      tolerance,
+      !! parameter_quo,
+      groupings = c("SID", "leadtime")
+    )$ens_summary_scores %>%
+      dplyr::ungroup() %>%
+      dplyr::transmute(
+        .data$SID,
+        .data$leadtime,
+        tolerance_allowed = .data$spread * num_sd_allowed
+      )
+
+    tolerance <- join_to_fcst(
+      tolerance,
+      tolerance_df,
       by = c("SID", "leadtime")
-    ) %>%
-      dplyr::group_by(.data$SID, .data$fcdate, .data$validdate) %>%
-      dplyr::summarise(
-        closest   = min(abs(.data$forecast - .data$obs)),
-        tolerance = unique(.data$tolerance)
-      ) %>%
-      dplyr::filter(.data$closest > .data$tolerance)
+    )
 
-    good_obs <- dplyr::anti_join(.fcst, bad_obs, by = c("SID", "validdate"))
+    tolerance <- tolerance[[1]] %>%
+      dplyr::mutate_at(
+        dplyr::vars(contains("_mbr")),
+        dplyr::funs(abs(. - !! parameter_quo))
+      )
 
-    bad_obs  <- .fcst %>%
-      dplyr::inner_join(bad_obs, by = c("SID", "validdate", "fcdate")) %>%
-      dplyr::select(-.data$closest)
+    tolerance <- tolerance %>%
+      dplyr::mutate(
+        min_diff = matrixStats::rowMins(
+          as.matrix(
+            dplyr::select(tolerance, dplyr::contains("_mbr"))
+          )
+        )
+      )
 
-    attr(good_obs, "removed_cases") <- bad_obs
+    good_obs <- tolerance %>%
+      dplyr::filter(.data$min_diff <= .data$tolerance_allowed) %>%
+      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
+      dplyr::group_by(.data$SID, .data$validdate) %>%
+      dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
+      dplyr::ungroup()
+
+    bad_obs  <- tolerance %>%
+      dplyr::filter(.data$min_diff > .data$tolerance_allowed) %>%
+      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
+      dplyr::group_by(.data$SID, .data$validdate) %>%
+      dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
+      dplyr::ungroup()
+
+    .fcst <- .fcst %>%
+      join_to_fcst(
+        dplyr::select(
+          good_obs, .data$SID, .data$validdate
+        ),
+        by = c("SID", "validdate")
+      )
+
+    attr(.fcst, "removed_cases") <- bad_obs
 
   } else {
 
-    good_obs <- .fcst
-    attr(good_obs, "removed_cases") <- NULL
+    attr(.fcst, "removed_cases") <- NULL
 
   }
 
-  good_obs
+  .fcst
 
 }

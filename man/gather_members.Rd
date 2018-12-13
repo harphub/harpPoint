@@ -21,4 +21,3 @@ An EPS data frame in long format.
 Convert EPS forecast data from wide format data frame to long format data
 frame.
 }
-

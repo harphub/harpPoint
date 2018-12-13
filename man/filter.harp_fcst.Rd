@@ -14,4 +14,3 @@
 \description{
 Works on each table in the \code{harp_fcst} object in the same way as \link[dplyr]{filter}
 }
-

@@ -4,7 +4,8 @@
 \alias{ens_crps}
 \title{Continuous Rank Probability Score (CRPS) for an ensemble.}
 \usage{
-ens_crps(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE)
+ens_crps(.fcst, parameter, groupings = "leadtime",
+  keep_full_output = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -29,4 +30,3 @@ The CRPS and its decomposition are computed as columns in a \code{harp_fcst}
 object. Typically the scores are aggregated over lead time, but other grouping
 variables cam be chosen.
 }
-

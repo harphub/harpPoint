@@ -25,4 +25,3 @@ a single ensemble. Note that there is no renaming of the members so the sub
 model names are retained. If there are no multi model ensembles, the input is
 silently returned unaltered.
 }
-

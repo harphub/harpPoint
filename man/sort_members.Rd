@@ -14,4 +14,3 @@ sort_members(x, byrow = TRUE)
 \description{
 Sort a 2d array.
 }
-

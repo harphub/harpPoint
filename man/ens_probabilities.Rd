@@ -28,4 +28,3 @@ An object of the same format as the inputs but with data grouped for
 \description{
 Compute probabilities of threshold exceedence for ensemble forecasts
 }
-

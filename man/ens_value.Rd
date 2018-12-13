@@ -27,4 +27,3 @@ A data frame with data grouped for the \code{groupings} column(s) and
 \description{
 Economic value for an ensemble.
 }
-

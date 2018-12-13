@@ -14,4 +14,3 @@ rankHistogram(obs, fc)
 \description{
 Compute the rank histogram for an EPS
 }
-

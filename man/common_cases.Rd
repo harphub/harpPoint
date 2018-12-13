@@ -16,4 +16,3 @@ The input data frame with only the common stations and forecast dates
 \description{
 Title
 }
-

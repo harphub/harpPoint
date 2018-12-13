@@ -28,4 +28,3 @@ observation and the forecast is expected to be smaller than a number of
 multiples of the standard deviation. The number of multiples of the standard
 deviation can be supplied or a default value used depending on the parameter.
 }
-

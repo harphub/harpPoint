@@ -35,4 +35,3 @@ A data frame with data grouped for the \code{groupings} column(s) and
 \description{
 Brier score and its decomposition for an ensemble.
 }
-
