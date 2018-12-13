@@ -97,6 +97,27 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
   }
 
   confidence_of_differences <- purrr::map(bound_replicants, summarise_func)
+  confidence_of_differences <- confidence_of_differences %>%
+    dplyr::bind_rows(.id = "master_fcst") %>%
+    tidyr::gather(
+      dplyr::starts_with("diff_"),
+      key   = "compared_with",
+      value = "pc_diff"
+    ) %>%
+    dplyr::mutate(
+      compared_with = gsub("diff_", "", .data$compared_with),
+      symbol        = dplyr::case_when(
+        pc_diff >= 0.95  ~ "+",
+        pc_diff <= -0.95 ~ "-",
+        TRUE             ~ "."
+      )
+    )
+
+  confidence_of_differences <- confidence_of_differences %>%
+    dplyr::filter(!is.na(.data$pc_diff)) %>%
+    dplyr::mutate(
+      y = as.numeric(factor(paste(.data$master_fcst, .data$compared_with)))
+    )
 
   list(confidence_limits = confidence_limits, confidence_of_differences = confidence_of_differences)
 
