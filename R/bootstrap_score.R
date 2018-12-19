@@ -107,9 +107,9 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
     dplyr::mutate(
       compared_with = gsub("diff_", "", .data$compared_with),
       symbol        = dplyr::case_when(
-        pc_diff >= 0.95  ~ "+",
-        pc_diff <= -0.95 ~ "-",
-        TRUE             ~ "."
+        pc_diff >= confidence_interval        ~ "+",
+        pc_diff <= (-1) * confidence_interval ~ "-",
+        TRUE                                  ~ "."
       )
     )
 
