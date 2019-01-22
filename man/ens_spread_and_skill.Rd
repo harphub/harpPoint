@@ -4,7 +4,8 @@
 \alias{ens_spread_and_skill}
 \title{Compute the skill (RMSE) and spread of an ensemble forecast}
 \usage{
-ens_spread_and_skill(.fcst, parameter, groupings = "leadtime")
+ens_spread_and_skill(.fcst, parameter, groupings = "leadtime",
+  jitter_fcst = NULL)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -15,6 +16,11 @@ observations, or a single forecast table.}
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
+
+\item{jitter_fcst}{A function to perturb the forecast values by. This is used
+to account for observation error in the spread. For other statistics it is
+likely to make little difference since it is expected that the observations
+will have a mean error of zero.}
 }
 \value{
 An object of the same format as the inputs but with data grouped for

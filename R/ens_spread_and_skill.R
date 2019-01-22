@@ -10,6 +10,10 @@
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
+#' @param jitter_fcst A function to perturb the forecast values by. This is used
+#'   to account for observation error in the spread. For other statistics it is
+#'   likely to make little difference since it is expected that the observations
+#'   will have a mean error of zero.
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
@@ -17,12 +21,12 @@
 #' @export
 #'
 #' @examples
-ens_spread_and_skill <- function(.fcst, parameter, groupings = "leadtime") {
+ens_spread_and_skill <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
   UseMethod("ens_spread_and_skill")
 }
 
 #' @export
-ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime") {
+ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
 
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
@@ -30,6 +34,10 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
   groupings  <- rlang::syms(groupings)
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
+  }
+
+  if (is.function(jitter_fcst)) {
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ss_mean", var_name = "ss_var")
@@ -48,10 +56,10 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
 }
 
 #' @export
-ens_spread_and_skill.harp_fcst <- function(.fcst, parameter, groupings = "leadtime") {
+ens_spread_and_skill.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
   parameter <- rlang::enquo(parameter)
   list(
-    ens_summary_scores = purrr::map(.fcst, ens_spread_and_skill, !! parameter, groupings) %>%
+    ens_summary_scores = purrr::map(.fcst, ens_spread_and_skill, !! parameter, groupings, jitter_fcst) %>%
     dplyr::bind_rows(.id = "mname"),
     ens_threshold_scores = NULL
   ) %>%
