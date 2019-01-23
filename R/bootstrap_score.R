@@ -21,6 +21,11 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
 
   parameter <- rlang::enquo(parameter)
 
+  dots <- rlang::dots_list(...)
+  if(is.element("thresholds", names(dots))) {
+      groupings <- c(groupings, "threshold")
+  }
+
   bootstrap_func <- function(df, n) {
     modelr::bootstrap(df, n)
   }
@@ -55,7 +60,7 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
     groupings_sym <- rlang::syms(groupings)
     res <- dplyr::bind_rows(df) %>%
       dplyr::group_by(!!! groupings_sym) %>%
-      dplyr::summarise_all(.funs = quantile, qtile)
+      dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile)
     data_cols <- rlang::syms(names(res)[!names(res) %in% groupings])
     dplyr::rename_at(res, dplyr::vars(!!!data_cols), ~ paste0(., "_", suffix))
   }
@@ -68,8 +73,14 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
 
   # Compute the confidence of differences between forecast models
 
+  gather_function <- function(df, donotgather) {
+    gather_cols <- rlang::syms(setdiff(names(df), donotgather))
+    tidyr::gather(df, !!!gather_cols, key = "score", value = "value")
+  }
+
   bound_replicants <- purrr::map(replicants, dplyr::bind_rows, .id = "replicant") %>%
-    purrr::map(tidyr::gather, -.data$replicant, -.data$leadtime, key = "score", value = "value")
+    purrr::map(dplyr::select_if, ~ !is.list(.)) %>%
+    purrr::map(gather_function, c(groupings, "replicant"))
 
   for (m in 1:length(bound_replicants)) {
     for (n in 1:length(bound_replicants)) {
