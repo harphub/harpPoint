@@ -48,6 +48,9 @@
 #'   error check. If set to NULL the default value for the parameter is used.
 #' @param max_allowed The maximum value of observation to allow in the gross
 #'   error check. If set to NULL the default value for the parameter is used.
+#' @param num_sd_allowed The number of standard deviations of the forecast that
+#'   the obseravtions should be within. Set to NULL for automotic value
+#'   depeninding on parameter.
 #' @param show_progress Logical - whether to show a progress bar. Defaults to
 #'   FALSE.
 #' @param verif_path If set, verification files will be saved to this path.
@@ -77,9 +80,25 @@ ens_read_and_verify <- function(
   gross_error_check   = TRUE,
   min_allowed         = NULL,
   max_allowed         = NULL,
+  num_sd_allowed      = NULL,
   show_progress       = FALSE,
   verif_path          = NULL
 ) {
+
+  first_obs <- start_date
+  last_obs  <- (str_datetime_to_unixtime(end_date) + 3600 * max(lead_time)) %>%
+    unixtime_to_str_datetime(YMDhm)
+
+  obs_data <- read_point_obs(
+    start_date        = first_obs,
+    end_date          = last_obs,
+    parameter         = parameter,
+    obs_path          = obs_path,
+    obsfile_template  = obsfile_template,
+    gross_error_check = gross_error_check,
+    min_allowed       = min_allowed,
+    max_allowed       = max_allowed
+  )
 
   verif_data   <- list()
 
@@ -109,20 +128,11 @@ ens_read_and_verify <- function(
       members    = members
     ) %>%
       merge_multimodel() %>%
+      dplyr::filter(.data$leadtime %in% lead_list[[i]]) %>%
       common_cases()
 
-    obs_data <- read_point_obs(
-      start_date        = first_validdate(fcst_data),
-      end_date          = last_validdate(fcst_data),
-      parameter         = parameter,
-      obs_path          = obs_path,
-      obsfile_template  = obsfile_template,
-      gross_error_check = gross_error_check,
-      min_allowed       = min_allowed,
-      max_allowed       = max_allowed
-    )
-
-    fcst_data <- join_to_fcst(fcst_data, obs_data)
+    fcst_data <- join_to_fcst(fcst_data, obs_data) %>%
+      check_obs_against_fcst(!! parameter_sym, num_sd_allowed = num_sd_allowed)
 
     verif_data[[i]] <- ens_verify(
       fcst_data,
@@ -136,10 +146,12 @@ ens_read_and_verify <- function(
 
   }
 
+#  verif_attr < attributes(verif_data)
   verif_data <- list(
     ens_summary_scores   = purrr::map(verif_data, "ens_summary_scores") %>% dplyr::bind_rows(),
     ens_threshold_scores = purrr::map(verif_data, "ens_threshold_scores") %>% dplyr::bind_rows()
   )
+#  attributes(verif_data) <- verif_attr
 
   if (!is.null(verif_path)) {
     harpIO::save_point_verif(verif_data, verif_path = verif_path)

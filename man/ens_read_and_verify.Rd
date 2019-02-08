@@ -10,8 +10,8 @@ ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   members = NULL, obsfile_template = "obstable",
   groupings = "leadtime", by = "1d", climatology = "sample",
   stations = NULL, jitter_fcst = NULL, gross_error_check = TRUE,
-  min_allowed = NULL, max_allowed = NULL, show_progress = FALSE,
-  verif_path = NULL)
+  min_allowed = NULL, max_allowed = NULL, num_sd_allowed = NULL,
+  show_progress = FALSE, verif_path = NULL)
 }
 \arguments{
 \item{start_date}{Start date to for the verification. Should be numeric or
@@ -73,6 +73,10 @@ error check. If set to NULL the default value for the parameter is used.}
 
 \item{max_allowed}{The maximum value of observation to allow in the gross
 error check. If set to NULL the default value for the parameter is used.}
+
+\item{num_sd_allowed}{The number of standard deviations of the forecast that
+the obseravtions should be within. Set to NULL for automotic value
+depeninding on parameter.}
 
 \item{show_progress}{Logical - whether to show a progress bar. Defaults to
 FALSE.}

@@ -36,7 +36,7 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
       purrr::reduce(
         x,
         dplyr::inner_join,
-        by = c("SID", "fcdate", "leadtime", "validdate")
+        by = c("SID", "fcdate", "leadtime", "validdate", "fcst_cycle")
       ) %>%
         tibble::as_tibble()
     }
