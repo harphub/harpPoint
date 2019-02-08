@@ -22,10 +22,9 @@ ens_value <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 #' @export
 ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 
-  groupings  <- rlang::syms(groupings)
+  groupings  <- rlang::syms(union("threshold", groupings))
   parameter  <- rlang::enquo(parameter)
   meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
-  thresh_col <- rlang::sym("threshold")
   join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
 
 
@@ -34,12 +33,12 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
   fcst_thresh <- .fcst %>%
     dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
     tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
-    dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+    dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
   obs_thresh <- .fcst %>%
     dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
     tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
-    dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+    dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
   .fcst <- dplyr::inner_join(
     fcst_thresh,
@@ -48,11 +47,10 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
   )
 
   .fcst %>%
-    dplyr::group_by(!!! groupings, !! thresh_col) %>%
+    dplyr::group_by(!!! groupings) %>%
     tidyr::nest(.key = "grouped_fcst") %>%
     dplyr::transmute(
       !!! groupings,
-      !! thresh_col,
       economic_value = purrr::map(
         .data$grouped_fcst,
         ~ harp_ecoval(.x$obs_prob, .x$fcst_prob)

@@ -48,11 +48,17 @@ ens_verify.default <- function(
   show_progress = TRUE
 ) {
 
-  col_names <- colnames(.fcst)
-  parameter <- rlang::enquo(parameter)
-  chr_param <- rlang::quo_name(parameter)
-  groupings <- rlang::syms(groupings)
-  crps_out  <- rlang::sym("crps_output")
+  summary_score_groups <- groupings
+  if (length(groupings) == 1 && groupings == "threshold") {
+    .fcst                <- dplyr::mutate(.fcst, leadtime = NA_real_)
+    summary_score_groups <- "leadtime"
+  }
+
+  col_names  <- colnames(.fcst)
+  parameter  <- rlang::enquo(parameter)
+  chr_param  <- rlang::quo_name(parameter)
+  group_sym  <- rlang::syms(summary_score_groups)
+  crps_out   <- rlang::sym("crps_output")
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
@@ -74,14 +80,15 @@ ens_verify.default <- function(
   }
 
   grouped_fcst <- .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst")
+    dplyr::group_by(!!! group_sym)
+
+  grouped_fcst <- tidyr::nest(grouped_fcst, .key = "grouped_fcst")
 
   crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
 
   ens_summary_scores <- grouped_fcst %>%
     dplyr::transmute(
-      !!! groupings,
+      !!! group_sym,
       num_cases    = purrr::map_int(grouped_fcst, nrow),
       mean_bias    = purrr::map_dbl(grouped_fcst, ~ mean(.x$ens_mean - .x[[chr_param]])),
       rmse         = purrr::map_dbl(grouped_fcst, ~ sqrt(mean((.x$ens_mean - .x[[chr_param]]) ^ 2))),
@@ -95,21 +102,21 @@ ens_verify.default <- function(
 
   if (is.numeric(thresholds)) {
 
+    groupings  <- rlang::syms(union("threshold", groupings))
     join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
     meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
-    thresh_col <- rlang::sym("threshold")
 
     .fcst <- ens_probabilities(.fcst, !! parameter, thresholds)
 
     fcst_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
       tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
-      dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+      dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
     obs_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
       tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
-      dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+      dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
     .fcst <- dplyr::inner_join(fcst_thresh, obs_thresh, by = join_cols)
 
@@ -152,7 +159,7 @@ ens_verify.default <- function(
     }
 
     grouped_fcst <- .fcst %>%
-      dplyr::group_by(!!! groupings, !! thresh_col) %>%
+      dplyr::group_by(!!! groupings) %>%
       tidyr::nest(.key = "grouped_fcst")
 
     if (show_progress) {
@@ -164,7 +171,6 @@ ens_verify.default <- function(
     ens_threshold_scores <- grouped_fcst %>%
       dplyr::transmute(
         !!! groupings,
-        !! thresh_col,
         brier_output = purrr::map(
           .data$grouped_fcst,
           brier_function,
@@ -186,7 +192,7 @@ ens_verify.default <- function(
         ),
         bss_ref_climatology = purrr::map_dbl(
           .data$grouped_fcst,
-          ~ unique(.x$bss_ref_climatology)
+          ~ mean(.x$bss_ref_climatology)
         ),
         num_cases_for_threshold_total = purrr::map_int(
           .data$grouped_fcst,
