@@ -50,8 +50,8 @@ ens_verify.default <- function(
 
   summary_score_groups <- groupings
   if (length(groupings) == 1 && groupings == "threshold") {
-    .fcst                <- dplyr::mutate(.fcst, leadtime = NA_real_)
-    summary_score_groups <- "leadtime"
+    .fcst                <- dplyr::mutate(.fcst, group_col = NA_real_)
+    summary_score_groups <- "group_col"
   }
 
   col_names  <- colnames(.fcst)
@@ -289,14 +289,17 @@ sweep_brier_output <- function(ens_threshold_df) {
   dplyr::inner_join(
     dplyr::select(ens_threshold_df, -!! brier_output_col),
     brier_df,
-    by = c(
-      "leadtime",
-      "threshold",
-      "sample_climatology",
-      "bss_ref_climatology",
-      "num_cases_for_threshold_total",
-      "num_cases_for_threshold_observed",
-      "num_cases_for_threshold_forecast"
+    by = intersect(
+      c(
+        "leadtime",
+        "threshold",
+        "sample_climatology",
+        "bss_ref_climatology",
+        "num_cases_for_threshold_total",
+        "num_cases_for_threshold_observed",
+        "num_cases_for_threshold_forecast"
+      ),
+      colnames(brier_df)
     )
   )
 }
