@@ -48,10 +48,11 @@ ens_verify.default <- function(
   show_progress = TRUE
 ) {
 
-  summary_score_groups <- groupings
   if (length(groupings) == 1 && groupings == "threshold") {
     .fcst                <- dplyr::mutate(.fcst, group_col = NA_real_)
     summary_score_groups <- "group_col"
+  } else {
+    summary_score_groups <- groupings[groupings != "threshold"]
   }
 
   col_names  <- colnames(.fcst)
@@ -102,7 +103,8 @@ ens_verify.default <- function(
 
   if (is.numeric(thresholds)) {
 
-    groupings  <- rlang::syms(union("threshold", groupings))
+    groupings  <- union("threshold", groupings)
+    group_sym  <- rlang::syms(groupings)
     join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
     meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
 
@@ -159,7 +161,7 @@ ens_verify.default <- function(
     }
 
     grouped_fcst <- .fcst %>%
-      dplyr::group_by(!!! groupings) %>%
+      dplyr::group_by(!!! group_sym) %>%
       tidyr::nest(.key = "grouped_fcst")
 
     if (show_progress) {
@@ -170,7 +172,7 @@ ens_verify.default <- function(
 
     ens_threshold_scores <- grouped_fcst %>%
       dplyr::transmute(
-        !!! groupings,
+        !!! group_sym,
         brier_output = purrr::map(
           .data$grouped_fcst,
           brier_function,
@@ -207,7 +209,7 @@ ens_verify.default <- function(
           ~ sum(as.integer(ceiling(.x$fcst_prob)))
         )
       ) %>%
-      sweep_brier_output() %>%
+      sweep_brier_output(groupings) %>%
       sweep_roc()
 
   } else {
@@ -259,9 +261,9 @@ ens_verify.harp_fcst <- function (
 }
 
 # Internal function to clean up the output from the brier function.
-sweep_brier_output <- function(ens_threshold_df) {
+sweep_brier_output <- function(ens_threshold_df, group_cols) {
 
-  brier_output_col <- rlang::quo(brier_output)
+  brier_output_col <- rlang::sym("brier_output")
 
   brier_df <- ens_threshold_df %>%
     dplyr::mutate(
@@ -291,8 +293,7 @@ sweep_brier_output <- function(ens_threshold_df) {
     brier_df,
     by = intersect(
       c(
-        "leadtime",
-        "threshold",
+        group_cols,
         "sample_climatology",
         "bss_ref_climatology",
         "num_cases_for_threshold_total",
