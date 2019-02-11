@@ -22,6 +22,10 @@
 #'   If a small number of iterations is set, it may be useful to set
 #'   \code{show_progress = TRUE}. The higher the number of iterations, the
 #'   smaller the amount of data that is held in memory at any one time.
+#' @param verify_members Whether to verify the individual members of the
+#'   ensemble. Even if thresholds are supplied, only summary scores are
+#'   computed. If you wish to compute categorical scores, the separate
+#'   \link[harpPoint]{det_verify} function must be used.
 #' @param thresholds The thresholds to compute categorical scores for.
 #' @param members The members to include in the iteration. This will select the
 #'   same member numbers from each \code{fcst_model}. In the future it will
@@ -69,6 +73,7 @@ ens_read_and_verify <- function(
   obs_path,
   lead_time           = seq(0, 48, 3),
   num_iterations      = length(lead_time),
+  verify_members      = FALSE,
   thresholds          = NULL,
   members             = NULL,
   obsfile_template    = "obstable",
@@ -100,7 +105,8 @@ ens_read_and_verify <- function(
     max_allowed       = max_allowed
   )
 
-  verif_data   <- list()
+  verif_data     <- list()
+  verif_data_det <- list()
 
   parameter_sym <- rlang::sym(parameter)
 
@@ -144,19 +150,37 @@ ens_read_and_verify <- function(
       show_progress = show_progress
     )
 
+    if (verify_members) {
+      verif_data_det[[i]] <- det_verify(
+        fcst_data,
+        !! parameter_sym,
+        groupings     = groupings,
+        show_progress = show_progress
+      )
+    }
+
   }
 
-#  verif_attr < attributes(verif_data)
+  num_stations <- max(purrr::map_int(verif_data, attr, "num_stations"))
+
   verif_data <- list(
     ens_summary_scores   = purrr::map(verif_data, "ens_summary_scores") %>% dplyr::bind_rows(),
     ens_threshold_scores = purrr::map(verif_data, "ens_threshold_scores") %>% dplyr::bind_rows()
   )
-#  attributes(verif_data) <- verif_attr
+
+  attr(verif_data, "parameter")    <- parameter
+  attr(verif_data, "start_date")   <- start_date
+  attr(verif_data, "end_date")     <- end_date
+  attr(verif_data, "num_stations") <- num_stations
 
   if (!is.null(verif_path)) {
     harpIO::save_point_verif(verif_data, verif_path = verif_path)
   }
 
-  verif_data
+  if (length(verif_data_det) > 0) {
+    list(member_scores = verif_data_det, ensemble_scores = verif_data)
+  } else {
+    verif_data
+  }
 
 }
