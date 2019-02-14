@@ -91,10 +91,10 @@ ens_read_and_verify <- function(
 ) {
 
   first_obs <- start_date
-  last_obs  <- (str_datetime_to_unixtime(end_date) + 3600 * max(lead_time)) %>%
-    unixtime_to_str_datetime(YMDhm)
+  last_obs  <- (harpIO::str_datetime_to_unixtime(end_date) + 3600 * max(lead_time)) %>%
+    harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
 
-  obs_data <- read_point_obs(
+  obs_data <- harpIO::read_point_obs(
     start_date        = first_obs,
     end_date          = last_obs,
     parameter         = parameter,
