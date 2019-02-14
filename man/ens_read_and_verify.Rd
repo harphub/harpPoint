@@ -6,8 +6,8 @@
 \usage{
 ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   obs_path, lead_time = seq(0, 48, 3),
-  num_iterations = length(lead_time), thresholds = NULL,
-  members = NULL, obsfile_template = "obstable",
+  num_iterations = length(lead_time), verify_members = TRUE,
+  thresholds = NULL, members = NULL, obsfile_template = "obstable",
   groupings = "leadtime", by = "1d", climatology = "sample",
   stations = NULL, jitter_fcst = NULL, gross_error_check = TRUE,
   min_allowed = NULL, max_allowed = NULL, num_sd_allowed = NULL,
@@ -36,6 +36,11 @@ The default is to do the same number of iterations as there are lead times.
 If a small number of iterations is set, it may be useful to set
 \code{show_progress = TRUE}. The higher the number of iterations, the
 smaller the amount of data that is held in memory at any one time.}
+
+\item{verify_members}{Whether to verify the individual members of the
+ensemble. Even if thresholds are supplied, only summary scores are
+computed. If you wish to compute categorical scores, the separate
+\link[harpPoint]{det_verify} function must be used.}
 
 \item{thresholds}{The thresholds to compute categorical scores for.}
 

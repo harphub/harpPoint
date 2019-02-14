@@ -73,7 +73,7 @@ ens_read_and_verify <- function(
   obs_path,
   lead_time           = seq(0, 48, 3),
   num_iterations      = length(lead_time),
-  verify_members      = FALSE,
+  verify_members      = TRUE,
   thresholds          = NULL,
   members             = NULL,
   obsfile_template    = "obstable",
@@ -143,29 +143,22 @@ ens_read_and_verify <- function(
     verif_data[[i]] <- ens_verify(
       fcst_data,
       !! parameter_sym,
-      thresholds    = thresholds,
-      groupings     = groupings,
-      jitter_fcst   = jitter_fcst,
-      climatology   = climatology,
-      show_progress = show_progress
+      verify_members = verify_members,
+      thresholds     = thresholds,
+      groupings      = groupings,
+      jitter_fcst    = jitter_fcst,
+      climatology    = climatology,
+      show_progress  = show_progress
     )
-
-    if (verify_members) {
-      verif_data_det[[i]] <- det_verify(
-        fcst_data,
-        !! parameter_sym,
-        groupings     = groupings,
-        show_progress = show_progress
-      )
-    }
 
   }
 
   num_stations <- max(purrr::map_int(verif_data, attr, "num_stations"))
 
   verif_data <- list(
-    ens_summary_scores   = purrr::map(verif_data, "ens_summary_scores") %>% dplyr::bind_rows(),
-    ens_threshold_scores = purrr::map(verif_data, "ens_threshold_scores") %>% dplyr::bind_rows()
+    ens_summary_scores   = purrr::map_dfr(verif_data, "ens_summary_scores"),
+    ens_threshold_scores = purrr::map_dfr(verif_data, "ens_threshold_scores"),
+    det_summary_scores   = purrr::map_dfr(verif_data, "det_summary_scores")
   )
 
   attr(verif_data, "parameter")    <- parameter

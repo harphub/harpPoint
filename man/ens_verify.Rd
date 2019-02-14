@@ -4,14 +4,20 @@
 \alias{ens_verify}
 \title{Compute all verification scores for an ensemble.}
 \usage{
-ens_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime",
-  jitter_fcst = NULL, climatology = "sample", show_progress = TRUE)
+ens_verify(.fcst, parameter, verify_members = TRUE, thresholds = NULL,
+  groupings = "leadtime", jitter_fcst = NULL, climatology = "sample",
+  show_progress = TRUE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
 observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
+
+\item{verify_members}{Whether to verify the individual members of the
+ensemble. Even if thresholds are supplied, only summary scores are
+computed. If you wish to compute categorical scores, the separate
+\link[harpPoint]{det_verify} function must be used.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
 threshold based scores. Set to NULL (the default) to only compute summary

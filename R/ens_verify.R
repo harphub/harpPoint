@@ -3,6 +3,10 @@
 #' @param .fcst A \code{harp_fcst} object with tables that have a column for
 #'   observations, or a single forecast table.
 #' @param parameter The name of the column for the observed data.
+#' @param verify_members Whether to verify the individual members of the
+#'   ensemble. Even if thresholds are supplied, only summary scores are
+#'   computed. If you wish to compute categorical scores, the separate
+#'   \link[harpPoint]{det_verify} function must be used.
 #' @param thresholds A numeric vector of thresholds for which to compute the
 #'   threshold based scores. Set to NULL (the default) to only compute summary
 #'   scores.
@@ -28,11 +32,12 @@
 ens_verify <- function(
   .fcst,
   parameter,
-  thresholds    = NULL,
-  groupings     = "leadtime",
-  jitter_fcst   = NULL,
-  climatology   = "sample",
-  show_progress = TRUE
+  verify_members = TRUE,
+  thresholds     = NULL,
+  groupings      = "leadtime",
+  jitter_fcst    = NULL,
+  climatology    = "sample",
+  show_progress  = TRUE
 ) {
   UseMethod("ens_verify")
 }
@@ -41,11 +46,12 @@ ens_verify <- function(
 ens_verify.default <- function(
   .fcst,
   parameter,
-  thresholds    = NULL,
-  groupings     = "leadtime",
-  jitter_fcst   = NULL,
-  climatology   = "sample",
-  show_progress = TRUE
+  verify_members = TRUE,
+  thresholds     = NULL,
+  groupings      = "leadtime",
+  jitter_fcst    = NULL,
+  climatology    = "sample",
+  show_progress  = TRUE
 ) {
 
   if (length(groupings) == 1 && groupings == "threshold") {
@@ -67,6 +73,13 @@ ens_verify.default <- function(
 
   if (is.function(jitter_fcst)) {
     .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
+  }
+
+  if (verify_members) {
+    det_summary_scores <- det_verify(.fcst, !! parameter, groupings = summary_score_groups, show_progress = show_progress) %>%
+      purrr::pluck("det_summary_scores")
+  } else {
+    det_summary_scores <- NULL
   }
 
   .fcst <- ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
@@ -230,7 +243,11 @@ ens_verify.default <- function(
 
   }
 
-  list(ens_summary_scores = ens_summary_scores, ens_threshold_scores = ens_threshold_scores)
+  list(
+    ens_summary_scores   = ens_summary_scores,
+    ens_threshold_scores = ens_threshold_scores,
+    det_summary_scores   = det_summary_scores
+  )
 
 }
 
@@ -238,15 +255,16 @@ ens_verify.default <- function(
 ens_verify.harp_fcst <- function (
   .fcst,
   parameter,
-  thresholds = NULL,
-  groupings = "leadtime",
-  jitter_fcst = NULL,
-  climatology = "sample",
-  show_progress = TRUE
+  verify_members = TRUE,
+  thresholds     = NULL,
+  groupings      = "leadtime",
+  jitter_fcst    = NULL,
+  climatology    = "sample",
+  show_progress  = TRUE
 ) {
   parameter   <- rlang::enquo(parameter)
   if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
-  list_result <- purrr::map(.fcst, ens_verify, !! parameter, thresholds, groupings, jitter_fcst, climatology, show_progress)
+  list_result <- purrr::map(.fcst, ens_verify, !! parameter, verify_members, thresholds, groupings, jitter_fcst, climatology, show_progress)
   list(
     ens_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "ens_summary_scores"),
@@ -255,7 +273,12 @@ ens_verify.harp_fcst <- function (
     ens_threshold_scores = dplyr::bind_rows(
       purrr::map(list_result, "ens_threshold_scores"),
       .id = "mname"
+    ),
+    det_summary_scores = dplyr::bind_rows(
+      purrr::map(list_result, "det_summary_scores"),
+      .id = "mname"
     )
+
   ) %>% add_attributes(.fcst, !! parameter)
 
 }
