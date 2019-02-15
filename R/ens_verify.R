@@ -136,7 +136,7 @@ ens_verify.default <- function(
 
   }
 
-  if (is.numeric(thresholds && num_members > 1)) {
+  if (is.numeric(thresholds) && num_members > 1) {
 
     groupings  <- union("threshold", groupings)
     group_sym  <- rlang::syms(groupings)
