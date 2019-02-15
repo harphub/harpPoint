@@ -100,21 +100,43 @@ ens_verify.default <- function(
 
   crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
 
-  ens_summary_scores <- grouped_fcst %>%
-    dplyr::transmute(
-      !!! group_sym,
-      num_cases    = purrr::map_int(grouped_fcst, nrow),
-      mean_bias    = purrr::map_dbl(grouped_fcst, ~ mean(.x$ens_mean - .x[[chr_param]])),
-      rmse         = purrr::map_dbl(grouped_fcst, ~ sqrt(mean((.x$ens_mean - .x[[chr_param]]) ^ 2))),
-      stde         = purrr::map_dbl(grouped_fcst, ~ stats::sd(.x$ens_mean - .x[[chr_param]])),
-      spread       = purrr::map_dbl(grouped_fcst, ~ sqrt(mean(.x$ens_var))),
-      rank_count   = purrr::map(grouped_fcst, harp_rank_hist, !! parameter),
-      !! crps_out := purrr::map(grouped_fcst, crps_function, !! parameter, show_progress)
-    ) %>%
-    sweep_crps(crps_out, FALSE) %>%
-    sweep_rank_histogram()
+  num_members <- length(grep("_mbr", colnames(.fcst)))
 
-  if (is.numeric(thresholds)) {
+  if (num_members <= 1) {
+
+    warning("Not enough members to do ensemble verification", immediate. = TRUE, call. = FALSE)
+    ens_summary_scores <- tibble::tibble(
+      leadtime         = integer(),
+      num_cases        = integer(),
+      mean_bias        = numeric(),
+      rmse             = numeric(),
+      stde             = numeric(),
+      spread           = numeric(),
+      crps             = numeric(),
+      crps_potential   = numeric(),
+      crps_reliability = numeric(),
+      rank_histogram   = list()
+    )
+
+  } else {
+
+    ens_summary_scores <- grouped_fcst %>%
+      dplyr::transmute(
+        !!! group_sym,
+        num_cases    = purrr::map_int(grouped_fcst, nrow),
+        mean_bias    = purrr::map_dbl(grouped_fcst, ~ mean(.x$ens_mean - .x[[chr_param]])),
+        rmse         = purrr::map_dbl(grouped_fcst, ~ sqrt(mean((.x$ens_mean - .x[[chr_param]]) ^ 2))),
+        stde         = purrr::map_dbl(grouped_fcst, ~ stats::sd(.x$ens_mean - .x[[chr_param]])),
+        spread       = purrr::map_dbl(grouped_fcst, ~ sqrt(mean(.x$ens_var))),
+        rank_count   = purrr::map(grouped_fcst, harp_rank_hist, !! parameter),
+        !! crps_out := purrr::map(grouped_fcst, crps_function, !! parameter, show_progress)
+      ) %>%
+      sweep_crps(crps_out, FALSE) %>%
+      sweep_rank_histogram()
+
+  }
+
+  if (is.numeric(thresholds && num_members > 1)) {
 
     groupings  <- union("threshold", groupings)
     group_sym  <- rlang::syms(groupings)

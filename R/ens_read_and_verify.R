@@ -140,6 +140,8 @@ ens_read_and_verify <- function(
     fcst_data <- join_to_fcst(fcst_data, obs_data) %>%
       check_obs_against_fcst(!! parameter_sym, num_sd_allowed = num_sd_allowed)
 
+    if (any(purrr::map_int(fcst_data, nrow) == 0)) next
+
     verif_data[[i]] <- ens_verify(
       fcst_data,
       !! parameter_sym,
@@ -151,6 +153,10 @@ ens_read_and_verify <- function(
       show_progress  = show_progress
     )
 
+  }
+
+  if (length(verif_data) < 1) {
+    stop("No data to verify", call. = FALSE)
   }
 
   num_stations <- max(purrr::map_int(verif_data, attr, "num_stations"))
