@@ -82,8 +82,6 @@ ens_verify.default <- function(
     det_summary_scores <- NULL
   }
 
-  .fcst <- ens_mean_and_var(.fcst, mean_name = "ens_mean", var_name = "ens_var")
-
   crps_function <- function(df, parameter, show_progress) {
     parameter <- rlang::enquo(parameter)
     res       <- harp_crps(df, !! parameter)
@@ -93,10 +91,19 @@ ens_verify.default <- function(
     res
   }
 
+  select_non_missing_members <- function(df) {
+    dplyr::select_if(df, ~ !all(is.na(.)))
+  }
+
   grouped_fcst <- .fcst %>%
     dplyr::group_by(!!! group_sym)
 
-  grouped_fcst <- tidyr::nest(grouped_fcst, .key = "grouped_fcst")
+  grouped_fcst <- tidyr::nest(grouped_fcst, .key = "grouped_fcst") %>%
+    dplyr::mutate(
+      grouped_fcst = purrr::map(.data$grouped_fcst, select_non_missing_members),
+      grouped_fcst = purrr::map(.data$grouped_fcst, ens_mean_and_var, mean_name = "ens_mean", var_name = "ens_var"),
+      grouped_fcst = purrr::map(.data$grouped_fcst, tidyr::drop_na)
+    )
 
   crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
 
