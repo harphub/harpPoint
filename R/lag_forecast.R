@@ -35,7 +35,9 @@ lag_forecast <- function(.fcst, fcst_model, parent_cycles) {
     )
 
   .fcst[[fcst_model]] <- purrr::map_dfr(split(fcst_df, fcst_df$parent_cycle), lag_cycle)
-  new_harp_fcst(.fcst)
+
+  purrr::map(.fcst, tidyr::drop_na) %>%
+    new_harp_fcst()
 
 }
 
