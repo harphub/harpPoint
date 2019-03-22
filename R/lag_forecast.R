@@ -2,7 +2,8 @@
 #'
 #' Lagging is done by supplying the parent forecast cycles. This function will
 #' then work out which cycles belong to the parent and return the lagged
-#' forecast with members from the child cycles added to the parent cycle.
+#' forecast with members from the child cycles appended to those of the parent
+#' cycle.
 #'
 #' @param .fcst A harp_fcst object.
 #' @param fcst_model The name of the forecast model in the harp_fcst object to

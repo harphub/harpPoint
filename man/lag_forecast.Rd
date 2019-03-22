@@ -4,7 +4,7 @@
 \alias{lag_forecast}
 \title{Lags a forecast}
 \usage{
-lag_forecast(.fcst, fcst_model, parent_cycles)
+lag_forecast(.fcst, fcst_model, parent_cycles, direction = 1)
 }
 \arguments{
 \item{.fcst}{A harp_fcst object.}
@@ -13,8 +13,11 @@ lag_forecast(.fcst, fcst_model, parent_cycles)
 be lagged. Must be quoted.}
 
 \item{parent_cycles}{A numeric vector of forecast cycles that form the
-parents for the lagging. Members between parent cycles will be added to the
-parent cycle that is the closest that comes after the child cycle.}
+parents for the lagging. Members between parent cycles are the child
+cycles.}
+
+\item{dierction}{The direction to do the lagging in. 1 (the default) lags
+backwards in time from the parent cycles and -1 lags forwards in time.}
 }
 \value{
 A harp_fcst object with \code{fcst_model} now containing the lagged
@@ -23,5 +26,6 @@ A harp_fcst object with \code{fcst_model} now containing the lagged
 \description{
 Lagging is done by supplying the parent forecast cycles. This function will
 then work out which cycles belong to the parent and return the lagged
-forecast with members from the child cycles added to the parent cycle.
+forecast with members from the child cycles appended to those of the parent
+cycle.
 }
