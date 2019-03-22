@@ -56,7 +56,21 @@ harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = 
 
 #####################################################################################
 
-harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
+harp_ecoval <- function(obs, pred,
+                        costloss = seq(0.05, 0.95, by = 0.05),
+                        thresholds = seq(0.05, 0.95, by = 0.05)) {
+
+  # We only want to return the outer envelope.
+
+  fullValue <- ecoval(obs, pred, costloss = costloss, thresholds = thresholds)
+
+  tibble::tibble(cost_loss_ratio = fullValue$cl, value = fullValue$value_env)
+
+}
+
+
+# OBSOLETE
+harp_ecoval0 <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
   # We only want to return the outer envelope. Nest in a 'try' as if there
   # are not enough data the value function from the verification package fails.
@@ -80,6 +94,24 @@ harp_ecoval <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 #####################################################################################
 
 harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
+
+  # If there are not enough data, the roc.plot function from the verification package
+  # fails, so wrap in a try.
+
+  ROCall <- roc(obs, pred, thresholds = prob_thresholds)
+
+  ROC <- tibble::tibble(
+    probability_bin  = c(-0.05, ROCall$thresholds, 1.05),
+    hit_rate         = c(1, ROCall$H, 0),
+    false_alarm_rate = c(1, ROCall$F, 0)
+  )
+
+  list(roc_data = ROC, roc_area = ROCall$area)
+
+}
+
+# OBSOLETE:
+harp_roc0 <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
 
   # If there are not enough data, the roc.plot function from the verification package
   # fails, so wrap in a try.
