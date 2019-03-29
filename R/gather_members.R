@@ -32,7 +32,7 @@ gather_members.default <- function(.fcst, member_prefix = "_mbr") {
   )
 
   .fcst <- .fcst %>% dplyr::mutate(
-    member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:digit:]]+"))
+    member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
   )
 
   .fcst
