@@ -5,6 +5,20 @@
 
 using namespace Rcpp;
 
+// ecoval
+List ecoval(NumericVector obs, NumericVector pred, NumericVector costloss, NumericVector thresholds);
+RcppExport SEXP _harpPoint_ecoval(SEXP obsSEXP, SEXP predSEXP, SEXP costlossSEXP, SEXP thresholdsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type obs(obsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pred(predSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type costloss(costlossSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
+    rcpp_result_gen = Rcpp::wrap(ecoval(obs, pred, costloss, thresholds));
+    return rcpp_result_gen;
+END_RCPP
+}
 // sort_members
 NumericMatrix sort_members(NumericMatrix x, bool byrow);
 RcppExport SEXP _harpPoint_sort_members(SEXP xSEXP, SEXP byrowSEXP) {
@@ -41,11 +55,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// roc
+List roc(NumericVector obs, NumericVector pred, NumericVector thresholds);
+RcppExport SEXP _harpPoint_roc(SEXP obsSEXP, SEXP predSEXP, SEXP thresholdsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type obs(obsSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type pred(predSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
+    rcpp_result_gen = Rcpp::wrap(roc(obs, pred, thresholds));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_harpPoint_ecoval", (DL_FUNC) &_harpPoint_ecoval, 4},
     {"_harpPoint_sort_members", (DL_FUNC) &_harpPoint_sort_members, 2},
     {"_harpPoint_rankHistogram", (DL_FUNC) &_harpPoint_rankHistogram, 2},
     {"_harpPoint_fcprob", (DL_FUNC) &_harpPoint_fcprob, 2},
+    {"_harpPoint_roc", (DL_FUNC) &_harpPoint_roc, 3},
     {NULL, NULL, 0}
 };
 
