@@ -31,6 +31,18 @@ lag_forecast <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
     stop("fcst_model '",fcst_model,"' not found in .fcst.", call. = FALSE)
   }
 
+  if (!all(parent_cycles %in% as.numeric(unique(fcst_df$fcst_cycle)))) {
+    stop(
+      paste(
+        "Not all parent_cycles found in data",
+        paste("parent_cycles: ", paste(sort(parent_cycles), collapse = ", ")),
+        paste("Cycles in data:", paste(sort(as.numeric(unique(fcst_df$fcst_cycle))), collapse = ", ")),
+        sep = "\n"
+      ),
+      call. = FALSE
+    )
+  }
+
   fcst_df <- fcst_df %>%
     dplyr::group_by(.data$fcst_cycle) %>%
     tidyr::nest() %>%

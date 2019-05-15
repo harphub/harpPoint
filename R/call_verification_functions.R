@@ -56,9 +56,12 @@ harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = 
 
 #####################################################################################
 
-harp_ecoval <- function(obs, pred,
-                        costloss = seq(0.05, 0.95, by = 0.05),
-                        thresholds = seq(0.05, 0.95, by = 0.05)) {
+harp_ecoval <- function(
+  obs,
+  pred,
+  costloss   = seq(0.05, 0.95, by = 0.05),
+  thresholds = seq(0.05, 0.95, by = 0.05)
+) {
 
   # We only want to return the outer envelope.
 
