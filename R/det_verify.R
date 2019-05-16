@@ -30,7 +30,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
-  fcst_col  <- col_names[grep("_det", col_names)]
+  fcst_col  <- col_names[grep("_det$", col_names)]
 
   if (length(fcst_col) > 1) {
 
@@ -38,7 +38,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   } else if (length(fcst_col) < 1) {
 
-    fcst_col <- col_names[grep("_mbr", col_names)]
+    fcst_col <- col_names[grep("_mbr\\d{3}$", col_names)]
     if (length(fcst_col) < 1) {
       stop(
         "Cannot find any forecast data. Forecast column names must contain '_det' or '_mbr'",

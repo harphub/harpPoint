@@ -5,7 +5,7 @@
 \title{Continuous Rank Probability Score (CRPS) for an ensemble.}
 \usage{
 ens_crps(.fcst, parameter, groupings = "leadtime",
-  keep_full_output = FALSE)
+  keep_full_output = FALSE, show_progress = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

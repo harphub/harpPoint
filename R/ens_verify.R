@@ -72,7 +72,7 @@ ens_verify.default <- function(
   }
 
   if (is.function(jitter_fcst)) {
-    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::matches("_mbr\\d{3}$")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
   if (verify_members) {
@@ -107,7 +107,7 @@ ens_verify.default <- function(
 
   crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
 
-  num_members <- length(grep("_mbr", colnames(.fcst)))
+  num_members <- length(grep("_mbr\\d{3}$", colnames(.fcst)))
 
   if (num_members <= 1) {
 

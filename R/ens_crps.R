@@ -19,12 +19,12 @@
 #' @export
 #'
 #' @examples
-ens_crps <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
+ens_crps <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
   UseMethod("ens_crps")
 }
 
 #' @export
-ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
+ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
 
   col_names   <- colnames(.fcst)
   parameter   <- rlang::enquo(parameter)
@@ -35,22 +35,35 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
-  .fcst %>%
+  crps_function <- function(df, parameter, show_progress) {
+    parameter <- rlang::enquo(parameter)
+    res       <- harp_crps(df, !! parameter)
+    if (show_progress) {
+      crps_progress$tick()
+    }
+    res
+  }
+
+  grouped_fcst <- .fcst %>%
     dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
+    tidyr::nest(.key = "grouped_fcst")
+
+  crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+
+  grouped_fcst %>%
     dplyr::transmute(
       !!! groupings,
       num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
-      !! crps_output := purrr::map(.data$grouped_fcst, harp_crps, !! parameter)
+      !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress)
     ) %>%
     sweep_crps(crps_output, keep_full_output)
 }
 
 #' @export
-ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE) {
+ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
   parameter <- rlang::enquo(parameter)
   list(
-    ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output) %>%
+    ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output, show_progress) %>%
     dplyr::bind_rows(.id = "mname"),
     ens_threshold_scores = NULL
   ) %>%
