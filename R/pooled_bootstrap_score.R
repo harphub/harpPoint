@@ -84,17 +84,24 @@ pooled_bootstrap_score <- function(
 
   model_names <- unique(unlist(purrr::map(replicates, ~ unique(.x$mname))))
 
+  pb <- progress::progress_bar$new(
+    format = "  Arranging data [:bar] :percent eta: :eta",
+    total  = length(replicates) * length(model_names)
+  )
+
   replicates_to_model_list <- function(df, filter_val, filter_col) {
 
     keep_cols  <- setdiff(names(df), filter_col)
     filter_col <- rlang::sym(filter_col)
 
-    df %>%
+    df <- df %>%
       dplyr::ungroup() %>%
       dplyr::filter(
         !!filter_col == filter_val
       ) %>%
       dplyr::select_at(keep_cols)
+    pb$tick()
+    df
   }
 
   replicates <- purrr::map(model_names, ~ purrr::map(replicates, replicates_to_model_list, .x, "mname")) %>%
@@ -110,7 +117,7 @@ pooled_bootstrap_score <- function(
     groupings_sym <- rlang::syms(groupings)
     res <- dplyr::bind_rows(df) %>%
       dplyr::group_by(!!! groupings_sym) %>%
-      dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile)
+      dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile, na.rm =TRUE)
     data_cols <- rlang::syms(names(res)[!names(res) %in% groupings])
     dplyr::rename_at(res, dplyr::vars(!!!data_cols), ~ paste0(., "_", suffix))
   }

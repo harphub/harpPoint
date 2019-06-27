@@ -143,7 +143,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
 #' @export
 det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
-  parameter <- rlang::enquo(parameter)
+  parameter   <- rlang::enquo(parameter)
   list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings, show_progress)
   list(
     det_summary_scores   = dplyr::bind_rows(
@@ -160,9 +160,10 @@ det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings 
 sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
 
   sweep_cont_tab <- function(.cont_tab) {
+    .cont_tab           <- as.data.frame(.cont_tab)
+    colnames(.cont_tab) <- c("observed", "forecasted", "count")
     .cont_tab %>%
       tibble::as_tibble() %>%
-      dplyr::rename(observed = .data$Var1, forecasted = .data$Var2, count = .data$n) %>%
       dplyr::mutate(
         type = dplyr::case_when(
           .data$observed == 0 & .data$forecasted == 0 ~ "correct_rejection",
@@ -170,7 +171,7 @@ sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
           .data$observed == 0 & .data$forecasted == 1 ~ "false_alarm",
           .data$observed == 1 & .data$forecasted == 1 ~ "hit"
         )
-      )
+      ) %>% dplyr::select(.data$type, .data$count)
   }
 
   det_threshold_df %>%
@@ -231,10 +232,8 @@ empty_det_threshold_scores <- function(fcst_df, groupings) {
       forecasted_cases                   = NA_real_,
       cont_tab                           = list(
         tibble::tibble(
-          observed   = character(),
-          forecasted = character(),
-          count      = integer(),
-          type       = character()
+          type       = character(),
+          count      = integer()
         )
       ),
       threat_score                       = NA_real_,
