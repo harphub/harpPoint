@@ -5,7 +5,7 @@
 \title{Combine data with point forecasts.}
 \usage{
 join_to_fcst(.fcst, .join, join_type = c("inner", "left", "right",
-  "full", "semi", "anti"), ...)
+  "full", "semi", "anti"), by = NULL, force_join = FALSE, ...)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object.}
@@ -17,14 +17,27 @@ object.}
 "left", "right", "full", "semi", "anti". See \code{\link[dplyr]{join}} for
 more details.}
 
-\item{by}{Which columns to join by.}
+\item{by}{Which columns to join by - if set to NULL a natural join will be
+done, using all variables with common names across .fcst and .join.}
+
+\item{force_join}{Set to TRUE to force the join to happen even if the units
+in .fcst and .join are not compatible.}
+
+\item{...}{Other arguments for \link[dplyr]{join}.}
 }
 \value{
-The input forecast data fram with an "obs" column added.
+The input forecast data frame with column(s) added from \code{.join}.
 }
 \description{
 Works in a similar way to the \link[dplyr]{join} family of functions, excpet
 that the join type is specified as an argument.
+}
+\details{
+This function would typically be used to add a column of observations to the
+forecast data. If units columns are found in the data, the function will
+check if the units are the same for both .fcst and .join. If they are not, an
+error will be thrown and the join will not be done. This behaviour can be
+overridden with the force_join argument.
 }
 \examples{
 
