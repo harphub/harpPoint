@@ -32,7 +32,7 @@ det_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabil
 
   dplyr::bind_cols(
     .fcst,
-    harp_probs(.fcst, !! parameter, thresholds, obs_prob = obs_probabilities, fcst_type = "det")
+    harp_probs(.fcst, thresholds, chr_param, obs_prob = obs_probabilities, fcst_type = "det")
   )
 
 }

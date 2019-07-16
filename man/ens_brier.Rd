@@ -5,7 +5,8 @@
 \title{Brier score and its decomposition for an ensemble.}
 \usage{
 ens_brier(.fcst, parameter, thresholds, groupings = "leadtime",
-  climatology = "sample")
+  climatology = "sample", num_ref_members = NA,
+  keep_score = c("both", "brier", "reliability"), ...)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -25,6 +26,17 @@ works.}
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally leadtime.}
+
+\item{num_ref_members}{The number of members for which to compute the fair
+Brier score.}
+
+\item{keep_score}{\code{ens_brier} computes the Brier Score and its
+components, as well as reliability. If you only want to output the Brier
+score and its decomposition set to "brier", to only keep the reliability
+information set to "reliability". To keep both, set to "both". The default
+behaviour is "both".}
+
+\item{...}{Used internally depending on the class of the input.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and

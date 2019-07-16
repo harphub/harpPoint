@@ -20,7 +20,7 @@ harp_rank_hist <- function (.fcst, .param) {
 
 #####################################################################################
 
-harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = "EPS") {
+harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst_type = "EPS") {
 
   # Separate out a matrix of member forecasts and call the fast fcprob
   # function from HARPrcpp. The columns then need naming
@@ -37,8 +37,7 @@ harp_probs <- function (.fcst, .param, thresholds, obs_prob = TRUE, fcst_type = 
 
   if (obs_prob) {
 
-    param                <- rlang::enquo(.param)
-    obs                  <- dplyr::select(.fcst, !! param)
+    obs                  <- dplyr::select(.fcst, .data[[.param]])
     binary_obs           <- fcprob(as.matrix(obs), thresholds) %>%
       tibble::as_tibble()
     colnames(binary_obs) <- c(paste0("obs_prob_", thresholds), "numMember", "ensMean", "ensVar")

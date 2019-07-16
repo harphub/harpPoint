@@ -50,6 +50,7 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
     dplyr::summarise(
       num_cases = dplyr::n(),
       mean_bias = mean(!! ens_mean - !! parameter),
+      stde      = stats::sd(!! ens_mean - !! parameter),
       rmse      = sqrt(mean((!! ens_mean - !! parameter) ^ 2)),
       spread    = sqrt(mean(!! ens_var))
     )

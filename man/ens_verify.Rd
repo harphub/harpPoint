@@ -5,8 +5,8 @@
 \title{Compute all verification scores for an ensemble.}
 \usage{
 ens_verify(.fcst, parameter, verify_members = TRUE, thresholds = NULL,
-  groupings = "leadtime", jitter_fcst = NULL, climatology = "sample",
-  show_progress = TRUE)
+  groupings = "leadtime", num_ref_members = NA, jitter_fcst = NULL,
+  climatology = "sample", show_progress = TRUE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -26,6 +26,10 @@ scores.}
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
 
+\item{num_ref_members}{For "fair" scores, the score is scaled to be valid for
+this number of ensemble members. Set to NA (the default) to not modify the
+score.}
+
 \item{jitter_fcst}{A function to perturb the forecast values by. This is used
 to account for observation error in the rank histogram. For other
 statistics it is likely to make little difference since it is expected that
@@ -37,12 +41,12 @@ elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally leadtime.}
 
-\item{show_progress}{Logical - whether to show a progress bar. Defaults to
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
 TRUE.}
 }
 \value{
-A list containting two data frames: \code{ens_summary_scores} and
-  \code{ens_threshold_scores}.
+A list containting three data frames: \code{ens_summary_scores},
+  \code{ens_threshold_scores} and \code{det_summary_scores}.
 }
 \description{
 Compute all verification scores for an ensemble.

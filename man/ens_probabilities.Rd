@@ -4,16 +4,16 @@
 \alias{ens_probabilities}
 \title{Compute probabilities of threshold exceedence for ensemble forecasts}
 \usage{
-ens_probabilities(.fcst, parameter, thresholds, obs_probabilities = TRUE)
+ens_probabilities(.fcst, thresholds, parameter = NULL)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
 observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
-
 \item{thresholds}{A numeric vector of thresholds for which to compute
 probabilities.}
+
+\item{parameter}{The name of the column for the observed data.}
 
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping

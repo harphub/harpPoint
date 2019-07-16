@@ -10,6 +10,8 @@
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
+#' @param num_ref_members The number of members for which to compute the fair
+#'   CRPS.
 #' @param keep_full_ouput Logical. Whether to keep the full output to computing
 #' CRPS for ungrouped data.
 #'
@@ -19,12 +21,12 @@
 #' @export
 #'
 #' @examples
-ens_crps <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
+ens_crps <- function(.fcst, parameter, groupings = "leadtime", num_ref_members = NA, keep_full_output = FALSE, show_progress = FALSE) {
   UseMethod("ens_crps")
 }
 
 #' @export
-ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
+ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_members = NA, keep_full_output = FALSE, show_progress = FALSE) {
 
   col_names   <- colnames(.fcst)
   parameter   <- rlang::enquo(parameter)
@@ -44,26 +46,44 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", keep_full
     res
   }
 
+  fair_crps <- function(df, parameter, R_new, show_progress) {
+    parameter <- rlang::enquo(parameter)
+    obs       <- dplyr::pull(df, !!parameter)
+    fcst      <- as.matrix(
+      df %>%
+      dplyr::select(dplyr::contains("_mbr")) %>%
+      dplyr::select_if(~sum(!is.na(.)) > 0)
+    )
+    res       <- mean(SpecsVerification::EnsCrps(fcst, obs, R.new = R_new))
+    if (show_progress) {
+      fair_crps_progress$tick()
+    }
+    res
+  }
+
+
   grouped_fcst <- .fcst %>%
     dplyr::group_by(!!! groupings) %>%
     tidyr::nest(.key = "grouped_fcst")
 
-  crps_progress <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+  crps_progress      <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+  fair_crps_progress <- progress::progress_bar$new(format = "  Fair CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
 
   grouped_fcst %>%
     dplyr::transmute(
       !!! groupings,
       num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
-      !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress)
+      !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress),
+      fair_crps       = purrr::map_dbl(.data$grouped_fcst, fair_crps, !! parameter, num_ref_members, show_progress)
     ) %>%
     sweep_crps(crps_output, keep_full_output)
 }
 
 #' @export
-ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", keep_full_output = FALSE, show_progress = FALSE) {
+ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", num_ref_members = NA, keep_full_output = FALSE, show_progress = FALSE) {
   parameter <- rlang::enquo(parameter)
   list(
-    ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, keep_full_output, show_progress) %>%
+    ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, num_ref_members, keep_full_output, show_progress) %>%
     dplyr::bind_rows(.id = "mname"),
     ens_threshold_scores = NULL
   ) %>%

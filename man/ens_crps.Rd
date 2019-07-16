@@ -5,7 +5,8 @@
 \title{Continuous Rank Probability Score (CRPS) for an ensemble.}
 \usage{
 ens_crps(.fcst, parameter, groupings = "leadtime",
-  keep_full_output = FALSE, show_progress = FALSE)
+  num_ref_members = NA, keep_full_output = FALSE,
+  show_progress = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
@@ -16,6 +17,9 @@ observations, or a single forecast table.}
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
+
+\item{num_ref_members}{The number of members for which to compute the fair
+CRPS.}
 
 \item{keep_full_ouput}{Logical. Whether to keep the full output to computing
 CRPS for ungrouped data.}

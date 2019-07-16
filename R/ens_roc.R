@@ -23,29 +23,14 @@ ens_roc <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 #' @export
 ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
 
-  groupings  <- rlang::syms(union("threshold", groupings))
+  if (!is.null(groupings)) {
+    groupings  <- rlang::syms(union("threshold", groupings))
+  }
   parameter  <- rlang::enquo(parameter)
-  meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
-  join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
 
-
-  .fcst   <- ens_probabilities(.fcst, !! parameter, thresholds)
-
-  fcst_thresh <- .fcst %>%
-    dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
-    tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
-    dplyr::mutate(threshold = readr::parse_number(.data$threshold))
-
-  obs_thresh <- .fcst %>%
-    dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
-    tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
-    dplyr::mutate(threshold = readr::parse_number(.data$threshold))
-
-  .fcst <- dplyr::inner_join(
-    fcst_thresh,
-    obs_thresh,
-    by = join_cols
-  )
+  if (!inherits(.fcst, "harp_ens_probs")) {
+    .fcst   <- ens_probabilities(.fcst, thresholds, !! parameter)
+  }
 
   .fcst %>%
     dplyr::group_by(!!! groupings) %>%
