@@ -19,17 +19,18 @@
 #' @export
 #'
 #' @examples
-lag_forecast <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
 
+lag_forecast <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
   if (!direction %in% c(1, -1)) {
     stop("direction must be 1 to lag backwards in time, or -1 to lag forwards in time", call. = FALSE)
   }
+  UseMethod("lag_forecast")
+}
 
-  fcst_df <- .fcst[[fcst_model]]
+#' @export
+lag_forecast.default <- function(fcst_df, fcst_model, parent_cycles, direction = 1) {
 
-  if (is.null(fcst_df)) {
-    stop("fcst_model '",fcst_model,"' not found in .fcst.", call. = FALSE)
-  }
+  message("Lagging: ", fcst_model)
 
   if (!all(parent_cycles %in% as.numeric(unique(fcst_df$fcst_cycle)))) {
     stop(
@@ -53,11 +54,21 @@ lag_forecast <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
       )
     )
 
-  .fcst[[fcst_model]] <- purrr::map_dfr(split(fcst_df, fcst_df$parent_cycle), lag_cycle, direction)
+  purrr::map_dfr(split(fcst_df, fcst_df$parent_cycle), lag_cycle, direction) %>%
+    tidyr::drop_na()
 
-  purrr::map_at(.fcst, fcst_model, tidyr::drop_na) %>%
+}
+
+#' @export
+lag_forecast.harp_fcst <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
+
+  missing_fcst_models <- setdiff(fcst_model, names(.fcst))
+  if (length(missing_fcst_models) > 0) {
+    stop("fcst_model: ", paste(missing_fcst_models, collapse = ", "), " not found in .fcst", call. = FALSE)
+  }
+
+  purrr::map2(.fcst[fcst_model], fcst_model, lag_forecast, parent_cycles, direction) %>%
     new_harp_fcst()
-
 }
 
 find_parent <- function(val, vec, direction) {
