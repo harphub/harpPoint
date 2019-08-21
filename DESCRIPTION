@@ -33,5 +33,7 @@ Imports:
     progress,
     matrixStats,
     SpecsVerification
+Remotes:
+    andrew-MET/harpIO
 URL: https://github.com/andrew-MET/harpPoint
 BugReports: https://github.com/andrew-MET/harpPoint/issues
