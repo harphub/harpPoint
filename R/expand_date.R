@@ -29,10 +29,10 @@ expand_date <- function(.fcst, date_col) {
 
   dplyr::mutate(
     .fcst,
-    !! year_col   := unix2datetime(!!date_col_quo) %>% lubridate::year(),
-    !! month_col  := unix2datetime(!!date_col_quo) %>% lubridate::month(),
-    !! day_col    := unix2datetime(!!date_col_quo) %>% lubridate::day(),
-    !! hour_col   := unix2datetime(!!date_col_quo) %>% lubridate::hour(),
-    !! minute_col := unix2datetime(!!date_col_quo) %>% lubridate::minute()
+    !! year_col   := harpIO::unix2datetime(!!date_col_quo) %>% lubridate::year(),
+    !! month_col  := harpIO::unix2datetime(!!date_col_quo) %>% lubridate::month(),
+    !! day_col    := harpIO::unix2datetime(!!date_col_quo) %>% lubridate::day(),
+    !! hour_col   := harpIO::unix2datetime(!!date_col_quo) %>% lubridate::hour(),
+    !! minute_col := harpIO::unix2datetime(!!date_col_quo) %>% lubridate::minute()
   )
 }
