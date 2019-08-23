@@ -155,6 +155,8 @@ ens_read_and_verify <- function(
 
   }
 
+  verif_data <- verif_data[purrr::map_lgl(verif_data, ~!is.null(.x))]
+
   if (length(verif_data) < 1) {
     stop("No data to verify", call. = FALSE)
   }

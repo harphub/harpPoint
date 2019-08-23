@@ -71,11 +71,12 @@ check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
         tolerance_allowed = .data$spread * num_sd_allowed
       )
 
-    tolerance <- join_to_fcst(
+    tolerance <- suppressWarnings(suppressMessages(join_to_fcst(
       tolerance,
       tolerance_df,
-      by = c("SID", "leadtime")
-    )
+      by = c("SID", "leadtime"),
+      force_join = TRUE
+    )))
 
     tolerance <- tolerance[[1]] %>%
       dplyr::mutate_at(
@@ -106,13 +107,14 @@ check_obs_against_fcst <- function(.fcst, parameter, num_sd_allowed = NULL) {
       dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
       dplyr::ungroup()
 
-    .fcst <- .fcst %>%
-      join_to_fcst(
-        dplyr::select(
-          good_obs, .data$SID, .data$validdate
-        ),
-        by = c("SID", "validdate")
-      )
+    .fcst <- suppressWarnings(suppressMessages(join_to_fcst(
+      .fcst,
+      dplyr::select(
+        good_obs, .data$SID, .data$validdate
+      ),
+      by = c("SID", "validdate"),
+      force_join = TRUE
+    )))
 
     attr(.fcst, "removed_cases") <- bad_obs
 
