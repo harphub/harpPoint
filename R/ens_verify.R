@@ -77,7 +77,7 @@ ens_verify.default <- function(
   }
 
   if (is.function(jitter_fcst)) {
-    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::matches("_mbr\\d{3}$")), ~ purrr::map_dbl(., jitter_fcst))
+    .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::matches("_mbr[[:digit]]+")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
   if (verify_members) {
@@ -87,7 +87,7 @@ ens_verify.default <- function(
     det_summary_scores <- NULL
   }
 
-  num_members <- length(grep("_mbr\\d{3}$", colnames(.fcst)))
+  num_members <- length(grep("_mbr[[:digit]]+", colnames(.fcst)))
 
   if (num_members <= 1) {
 

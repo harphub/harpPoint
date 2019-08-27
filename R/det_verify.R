@@ -38,7 +38,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   } else if (length(fcst_col) < 1) {
 
-    fcst_col <- col_names[grep("_mbr\\d{3}$", col_names)]
+    fcst_col <- col_names[grep("_mbr\\d{3}", col_names)]
     if (length(fcst_col) < 1) {
       stop(
         "Cannot find any forecast data. Forecast column names must contain '_det' or '_mbr'",

@@ -12,7 +12,7 @@ harp_rank_hist <- function (.fcst, .param) {
 
   param <- rlang::enquo(.param)
   obs   <- dplyr::pull(.fcst, !! param)
-  eps   <- dplyr::select(.fcst, dplyr::contains("mbr")) %>%
+  eps   <- dplyr::select(.fcst, dplyr::contains("_mbr")) %>%
     as.matrix()
   rankHistogram(obs, eps)
 
@@ -25,7 +25,7 @@ harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst
   # Separate out a matrix of member forecasts and call the fast fcprob
   # function from HARPrcpp. The columns then need naming
 
-  fcst_col_name   <- ifelse (fcst_type == "EPS", "mbr", "det")
+  fcst_col_name   <- ifelse (fcst_type == "EPS", "_mbr", "_det")
   eps             <- dplyr::select(.fcst, dplyr::contains(fcst_col_name))
   probs           <- fcprob(as.matrix(eps), thresholds) %>%
     tibble::as_tibble()

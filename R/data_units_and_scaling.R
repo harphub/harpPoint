@@ -22,7 +22,7 @@ set_units.default <- function(point_data, units_name) {
   # Check for data columns so that units is added between the metadata and the data
 
   # Ensemble forecast data
-  data_cols <- grep("[[:graph:]]+mbr+[[:digit:]]+$", colnames(point_data), perl = TRUE, value = TRUE)
+  data_cols <- grep("[[:graph:]]+mbr+[[:digit:]]+", colnames(point_data), perl = TRUE, value = TRUE)
 
   # Deterministic forecast data
   if (length(data_cols) < 1) {

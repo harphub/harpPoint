@@ -66,7 +66,7 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 
   }
 
-  num_members <- length(grep("_mbr[[:digit:]]+$", colnames(.fcst)))
+  num_members <- length(grep("_mbr[[:digit:]]+", colnames(.fcst)))
 
   class(ens_probs)               <- c("harp_ens_probs", class(ens_probs))
   attr(ens_probs, "num_members") <- num_members
