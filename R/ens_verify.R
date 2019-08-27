@@ -87,7 +87,7 @@ ens_verify.default <- function(
     det_summary_scores <- NULL
   }
 
-  num_members <- length(grep("_mbr[[:digit]]+", colnames(.fcst)))
+  num_members <- length(grep("_mbr[[:digit:]]+", colnames(.fcst)))
 
   if (num_members <= 1) {
 

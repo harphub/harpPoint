@@ -6,7 +6,7 @@ harp_crps <- function (.fcst, .param) {
   param <- rlang::enquo(.param)
   obs <- .fcst %>% dplyr::pull(!! param)
   eps <- .fcst %>%
-    dplyr::select(dplyr::contains("mbr")) %>%
+    dplyr::select(dplyr::contains("_mbr")) %>%
     dplyr::select_if(~sum(!is.na(.)) > 0)
   nMember = dim(eps)[2]
   nObs <- length(obs)
