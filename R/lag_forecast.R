@@ -67,8 +67,9 @@ lag_forecast.harp_fcst <- function(.fcst, fcst_model, parent_cycles, direction =
     stop("fcst_model: ", paste(missing_fcst_models, collapse = ", "), " not found in .fcst", call. = FALSE)
   }
 
-  purrr::map2(.fcst[fcst_model], fcst_model, lag_forecast, parent_cycles, direction) %>%
-    new_harp_fcst()
+  .fcst[fcst_model] <- purrr::map2(.fcst[fcst_model], fcst_model, lag_forecast, parent_cycles, direction)
+
+  new_harp_fcst(.fcst)
 }
 
 find_parent <- function(val, vec, direction) {
