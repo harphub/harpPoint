@@ -4,7 +4,8 @@
 \alias{ens_roc}
 \title{Relative Operating Characteristics for an ensemble.}
 \usage{
-ens_roc(.fcst, parameter, thresholds, groupings = "leadtime")
+ens_roc(.fcst, parameter, thresholds, groupings = "leadtime",
+  show_progress = FALSE)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

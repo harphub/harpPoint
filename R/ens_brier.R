@@ -37,7 +37,7 @@ ens_brier <- function(
   climatology = "sample",
   num_ref_members = NA,
   keep_score = c("both", "brier", "reliability"),
-  ...
+  show_progress = FALSE
 ) {
   keep_score <- match.arg(keep_score)
   UseMethod("ens_brier")
@@ -50,14 +50,16 @@ ens_brier.default <- function(
   thresholds,
   groupings = "leadtime",
   climatology = "sample",
-  num_members = NA,
   num_ref_members = NA,
-  keep_score = "both"
+  keep_score = "both",
+  show_progress = FALSE
 ) {
 
-  if (!is.null(groupings)) {
-    groupings  <- rlang::syms(union("threshold", groupings))
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
   }
+
+  groupings <- purrr::map(groupings, union, "threshold")
 
   sweep_function <- get(paste0("sweep_brier_", keep_score))
 
@@ -71,11 +73,10 @@ ens_brier.default <- function(
       stop ("thresholds must be passed as an argument if probabilities have not been derived.", call. = FALSE)
     }
     .fcst       <- ens_probabilities(.fcst, thresholds, !! parameter)
-    num_members <- attr(.fcst, "num_members")
-
-  } else {
 
   }
+
+  num_members <- attr(.fcst, "num_members")
 
   if (inherits(climatology, "data.frame")) {
     if (all(c("leadtime", "threshold") %in% names(climatology))) {
@@ -87,55 +88,79 @@ ens_brier.default <- function(
       dplyr::rename(bss_ref_climatology = .data$climatology)
   }
 
-  brier_function <- function(df) {
+  brier_function <- function(df, prog_bar) {
     if (is.element("bss_ref_climatology", names(df))) {
-      verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$bss_ref_climatology))
+      res <- verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$bss_ref_climatology))
     } else {
-      verification::brier(df$obs_prob, df$fcst_prob)
+      res <- verification::brier(df$obs_prob, df$fcst_prob)
     }
+    if (prog_bar) {
+      brier_progress$tick()
+    }
+    res
+  }
+
+  if (show_progress) {
+    progress_total <- sum(
+      sapply(
+        groupings,
+        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
+      )
+    )
+    brier_progress      <- progress::progress_bar$new(format = "  Brier [:bar] :percent eta: :eta", total = progress_total)
+    fair_brier_progress <- progress::progress_bar$new(format = "  Fair Brier [:bar] :percent eta: :eta", total = progress_total)
   }
 
 
-  .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
-    dplyr::transmute(
-      !!! groupings,
-      brier_output = purrr::map(
-        .data$grouped_fcst,
-        brier_function
-      ),
-      fair_brier_score = purrr::map_dbl(
-        .data$grouped_fcst,
-        ~ fair_brier_score(
-          .x$fcst_prob,
-          .x$obs_prob,
-          num_members,
-          num_ref_members
+  compute_brier <- function(compute_group, fcst_df) {
+    compute_group_sym <- rlang::syms(compute_group)
+    fcst_df %>%
+      dplyr::group_by(!!! compute_group_sym) %>%
+      tidyr::nest(.key = "grouped_fcst") %>%
+      dplyr::transmute(
+        !!! compute_group_sym,
+        brier_output = purrr::map(
+          .data$grouped_fcst,
+          brier_function,
+          show_progress
+        ),
+        fair_brier_score = purrr::map_dbl(
+          .data$grouped_fcst,
+          ~ fair_brier_score(
+            .x$fcst_prob,
+            .x$obs_prob,
+            num_members,
+            num_ref_members,
+            show_progress
+          )
+        ),
+        sample_climatology = purrr::map_dbl(
+          .data$grouped_fcst,
+          ~ sum(.x$obs_prob) / nrow(.x)
+        ),
+        bss_ref_climatology = purrr::map_dbl(
+          .data$grouped_fcst,
+          ~ mean(.x$bss_ref_climatology)
+        ),
+        num_cases_total = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
+        ),
+        num_cases_observed = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(.x$obs_prob))
+        ),
+        num_cases_forecast = purrr::map_int(
+          .data$grouped_fcst,
+          ~ sum(as.integer(ceiling(.x$fcst_prob)))
         )
-      ),
-      sample_climatology = purrr::map_dbl(
-        .data$grouped_fcst,
-        ~ sum(.x$obs_prob) / nrow(.x)
-      ),
-      bss_ref_climatology = purrr::map_dbl(
-        .data$grouped_fcst,
-        ~ mean(.x$bss_ref_climatology)
-      ),
-      num_cases_total = purrr::map_int(
-        .data$grouped_fcst,
-        ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))
-      ),
-      num_cases_observed = purrr::map_int(
-        .data$grouped_fcst,
-        ~ sum(as.integer(.x$obs_prob))
-      ),
-      num_cases_forecast = purrr::map_int(
-        .data$grouped_fcst,
-        ~ sum(as.integer(ceiling(.x$fcst_prob)))
-      )
-    ) %>%
-    sweep_function()
+      ) %>%
+      sweep_function()
+  }
+
+  purrr::map_dfr(groupings, compute_brier, .fcst) %>%
+    fill_group_na(groupings)
+
 }
 
 #' @export
@@ -147,7 +172,7 @@ ens_brier.harp_fcst <- function(
   climatology = "sample",
   num_ref_members = NA,
   keep_score = "both",
-  ...
+  show_progress = FALSE
 ) {
   if (missing(parameter)) {
     parameter <- rlang::quo(NULL)
@@ -171,21 +196,20 @@ ens_brier.harp_fcst <- function(
 
   list(
     ens_summary_scores   = NULL,
-    ens_threshold_scores = purrr::map2(
+    ens_threshold_scores = purrr::map(
       .fcst,
-      .fcst_num_members,
       ~ ens_brier(
         .x,
         parameter       = !! parameter,
         thresholds      = thresholds,
         groupings       = groupings,
         climatology     = climatology,
-        num_members     = .y,
         num_ref_members = num_ref_members,
-        keep_score      = keep_score
+        keep_score      = keep_score,
+        show_progress   = show_progress
       )
     ) %>%
-    dplyr::bind_rows(.id = "mname")
+      dplyr::bind_rows(.id = "mname")
   ) %>%
     add_attributes(.fcst, !! parameter)
 }
@@ -261,7 +285,7 @@ sweep_brier_both <- function(ens_threshold_df) {
 # where M is the reference number of members, m is the number of members,
 # n is the sample size of t occurences and Qt is the probability is the probability
 
-fair_brier_score <- function(fcst_prob, obs_prob, m, M) {
+fair_brier_score <- function(fcst_prob, obs_prob, m, M, prob_bar) {
 
   stopifnot(length(fcst_prob) == length(obs_prob))
 
@@ -273,6 +297,10 @@ fair_brier_score <- function(fcst_prob, obs_prob, m, M) {
 
   n <- length(fcst_prob)
 
-  BS - ((M - m) / (M * (m - 1) * n)) * sum(fcst_prob * (1 - fcst_prob))
+  res <- BS - ((M - m) / (M * (m - 1) * n)) * sum(fcst_prob * (1 - fcst_prob))
+
+  if (prog_bar) {
+    fair_brier_progress$tick()
+  }
 
 }

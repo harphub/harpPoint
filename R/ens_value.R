@@ -15,42 +15,70 @@
 #' @export
 #'
 #' @examples
-ens_value <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_value <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
   UseMethod("ens_value")
 }
 
 #' @export
-ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
 
-  if (!is.null(groupings)) {
-    groupings  <- rlang::syms(union("threshold", groupings))
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
   }
+
+  groupings <- purrr::map(groupings, union, "threshold")
+
   parameter  <- rlang::enquo(parameter)
 
   if (!inherits(.fcst, "harp_ens_probs")) {
     .fcst   <- ens_probabilities(.fcst, thresholds, !! parameter)
   }
 
-  .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
-    dplyr::transmute(
-      !!! groupings,
-      economic_value = purrr::map(
-        .data$grouped_fcst,
-        ~ harp_ecoval(.x$obs_prob, .x$fcst_prob)
+  if (show_progress) {
+    progress_total <- sum(
+      sapply(
+        groupings,
+        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
       )
     )
+    value_progress <- progress::progress_bar$new(format = "  Value [:bar] :percent eta: :eta", total = progress_total)
+  }
+
+  value_function <- function(obs_vector, prob_vector, prog_bar) {
+    res <- harp_ecoval(obs_vector, prob_vector)
+    if (prog_bar) {
+      value_progress$tick()
+    }
+    res
+  }
+
+
+  compute_value <- function(compute_group, fcst_df) {
+    compute_group <- rlang::syms(compute_group)
+    fcst_df %>%
+      dplyr::group_by(!!! compute_group) %>%
+      tidyr::nest(.key = "grouped_fcst") %>%
+      dplyr::transmute(
+        !!! compute_group,
+        economic_value = purrr::map(
+          .data$grouped_fcst,
+          ~ value_function(.x$obs_prob, .x$fcst_prob, prog_bar = show_progress)
+        )
+      )
+  }
+
+  purrr::map_dfr(groupings, compute_value, .fcst) %>%
+    fill_group_na(groupings)
 
 }
 
 #' @export
-ens_value.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime") {
+ens_value.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
   parameter <- rlang::enquo(parameter)
   list(
     ens_summary_scores = NULL,
-    ens_threshold_scores = purrr::map(.fcst, ens_value, !! parameter, thresholds, groupings) %>%
-    dplyr::bind_rows(.id = "mname")
+    ens_threshold_scores = purrr::map(.fcst, ens_value, !! parameter, thresholds, groupings, show_progress) %>%
+      dplyr::bind_rows(.id = "mname")
   ) %>%
     add_attributes(.fcst, !! parameter)
 }

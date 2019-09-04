@@ -59,18 +59,9 @@ ens_verify.default <- function(
   show_progress   = TRUE
 ) {
 
-  if (length(groupings) == 1 && groupings == "threshold") {
-    .fcst                <- dplyr::mutate(.fcst, group_col = NA_real_)
-    summary_score_groups <- "group_col"
-  } else {
-    summary_score_groups <- groupings[groupings != "threshold"]
-  }
-
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
-  group_sym  <- rlang::syms(summary_score_groups)
-  crps_out   <- rlang::sym("crps_output")
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
@@ -81,7 +72,7 @@ ens_verify.default <- function(
   }
 
   if (verify_members) {
-    det_summary_scores <- det_verify(.fcst, !! parameter, groupings = summary_score_groups, show_progress = show_progress) %>%
+    det_summary_scores <- det_verify(.fcst, !! parameter, groupings = groupings, show_progress = show_progress) %>%
       purrr::pluck("det_summary_scores")
   } else {
     det_summary_scores <- NULL
@@ -101,115 +92,29 @@ ens_verify.default <- function(
 
   } else {
 
-    select_non_missing_members <- function(df) {
-      dplyr::select_if(df, ~ !all(is.na(.)))
-    }
+    .fcst <- ens_mean_and_var(.fcst,mean_name = "ens_mean", var_name = "ens_var")
 
-    grouped_fcst <- .fcst %>%
-      dplyr::group_by(!!! group_sym)
-
-    grouped_fcst <- tidyr::nest(grouped_fcst, .key = "grouped_fcst") %>%
-      dplyr::mutate(
-        grouped_fcst = purrr::map(.data$grouped_fcst, select_non_missing_members),
-        grouped_fcst = purrr::map(.data$grouped_fcst, ens_mean_and_var, mean_name = "ens_mean", var_name = "ens_var"),
-        grouped_fcst = purrr::map(.data$grouped_fcst, tidyr::drop_na)
-      )
-    ens_summary_scores <- grouped_fcst %>%
-      dplyr::transmute(
-        !!! group_sym,
-        num_cases      = purrr::map_int(grouped_fcst, nrow),
-        ss             = purrr::map(grouped_fcst, ens_spread_and_skill, !! parameter, groupings = NULL),
-        rank_histogram = purrr::map(grouped_fcst, ens_rank_histogram, !! parameter, groupings = NULL),
-        crps           = purrr::map(grouped_fcst, ens_crps, !! parameter, groupings = NULL, num_ref_members = num_ref_members, show_progress = show_progress)
-      ) %>%
-      tidyr::unnest(.data$ss, .data$crps, .data$rank_histogram) %>%
-      dplyr::select(-dplyr::matches("^num_cases[[:digit:]]+$"))
+    ens_summary_scores <- ens_spread_and_skill(.fcst, !! parameter, groupings = groupings) %>%
+      dplyr::inner_join(ens_rank_histogram(.fcst, !! parameter, groupings = groupings)) %>%
+      dplyr::inner_join(ens_crps(.fcst, !! parameter, groupings = groupings, num_ref_members = num_ref_members, show_progress = show_progress))
 
   }
 
   if (is.numeric(thresholds) && num_members > 1) {
 
-    groupings  <- union("threshold", groupings)
-    group_sym  <- rlang::syms(groupings)
-    join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
-    meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
-
     if (!inherits(.fcst, "harp_ens_probs")) {
       .fcst <- ens_probabilities(.fcst, thresholds, !! parameter)
     }
 
-    brier_function <- function(df, climatology, show_progress) {
-      res <- ens_brier(df, climatology = NULL, groupings = NULL)
-      if (show_progress) {
-        brier_progress$tick()
-      }
-      res
-    }
-
-    value_function <- function(df, show_progress) {
-      res <- ens_value(df, groupings = NULL)
-      if (show_progress) {
-        value_progress$tick()
-      }
-      res
-    }
-
-    roc_function <- function(df, show_progress) {
-      res <- ens_roc(df, groupings = NULL)
-      if (show_progress) {
-        roc_progress$tick()
-      }
-      res
-    }
-
-    if (inherits(climatology, "data.frame")) {
-      if (all(c("leadtime", "threshold") %in% names(climatology))) {
-        join_cols <- c("leadtime", "threshold")
-      } else {
-        join_cols <- "threshold"
-      }
-      .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols) %>%
-        dplyr::rename(bss_ref_climatology = .data$climatology)
-    }
-
-    grouped_fcst <- .fcst %>%
-      dplyr::group_by(!!! group_sym) %>%
-      tidyr::nest(.key = "grouped_fcst")
-
-    if (inherits(.fcst, "harp_ens_probs")) {
-      grouped_fcst$grouped_fcst <- purrr::map(
-        grouped_fcst$grouped_fcst,
-        ~ structure(.x, class = c("harp_ens_probs", class(.x)))
-      )
-    }
-
-    if (show_progress) {
-      brier_progress <- progress::progress_bar$new(format = "  Brier [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
-      value_progress <- progress::progress_bar$new(format = "  Value [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
-      roc_progress   <- progress::progress_bar$new(format = "  ROC   [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
-    }
-
-    ens_threshold_scores <- grouped_fcst %>%
-      dplyr::transmute(
-        !!! group_sym,
-        brier_output = purrr::map(
-          .data$grouped_fcst,
-          brier_function,
-          climatology,
-          show_progress
-        ),
-        economic_value = purrr::map(
-          .data$grouped_fcst,
-          value_function,
-          show_progress
-        ),
-        roc_output = purrr::map(
-          .data$grouped_fcst,
-          roc_function,
-          show_progress
-        )
-      ) %>%
-      tidyr::unnest(.data$brier_output, .data$economic_value, .data$roc_output)
+    ens_threshold_scores <- ens_brier(
+      .fcst,
+      groupings       = groupings,
+      climatology     = climatology,
+      num_ref_members = num_ref_members,
+      show_progress   = show_progress
+    ) %>%
+      dplyr::inner_join(ens_roc(.fcst, groupings = groupings, show_progress = show_progress)) %>%
+      dplyr::inner_join(ens_value(.fcst, groupings = groupings, show_progress = show_progress))
 
   } else {
 

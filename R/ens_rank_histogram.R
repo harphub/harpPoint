@@ -29,10 +29,13 @@ ens_rank_histogram <- function(.fcst, parameter, groupings = "leadtime", jitter_
 #' @export
 ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
 
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
-  groupings  <- rlang::syms(groupings)
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
@@ -41,14 +44,19 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
     .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
-  .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
-    dplyr::transmute(
-      !!! groupings,
-      rank_count = purrr::map(.data$grouped_fcst, harp_rank_hist, !! parameter)
-    ) %>%
-    sweep_rank_histogram()
+  compute_rank_hist <- function(compute_group, fcst_df) {
+    fcst_df %>%
+      group_without_threshold(compute_group) %>%
+      tidyr::nest(.key = "grouped_fcst") %>%
+      dplyr::mutate(
+        rank_count = purrr::map(.data$grouped_fcst, harp_rank_hist, !! parameter)
+      ) %>%
+      dplyr::select(-.data[["grouped_fcst"]]) %>%
+      sweep_rank_histogram()
+  }
+
+  purrr::map_dfr(groupings, compute_rank_hist, .fcst) %>%
+    fill_group_na(groupings)
 
 }
 

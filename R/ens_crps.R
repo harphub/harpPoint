@@ -28,10 +28,13 @@ ens_crps <- function(.fcst, parameter, groupings = "leadtime", num_ref_members =
 #' @export
 ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_members = NA, keep_full_output = FALSE, show_progress = FALSE) {
 
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
   col_names   <- colnames(.fcst)
   parameter   <- rlang::enquo(parameter)
   chr_param   <- rlang::quo_name(parameter)
-  groupings   <- rlang::syms(groupings)
   crps_output <- rlang::sym("crps_output")
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
@@ -61,22 +64,40 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
     res
   }
 
+  if (show_progress) {
+    progress_total <- sum(
+      sapply(
+        groupings,
+        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
+      )
+    )
+    crps_progress      <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = progress_total)
+    fair_crps_progress <- progress::progress_bar$new(format = "  Fair CRPS [:bar] :percent eta: :eta", total = progress_total)
+  }
 
-  grouped_fcst <- .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst")
+  compute_crps <- function(compute_group, fcst_df) {
 
-  crps_progress      <- progress::progress_bar$new(format = "  CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
-  fair_crps_progress <- progress::progress_bar$new(format = "  Fair CRPS [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
+    grouped_fcst <- group_without_threshold(fcst_df, compute_group) %>%
+      tidyr::nest(.key = "grouped_fcst") %>%
+      dplyr::mutate(
+        num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
+        !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress)
+      )
 
-  grouped_fcst %>%
-    dplyr::transmute(
-      !!! groupings,
-      num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
-      !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress),
-      fair_crps       = purrr::map_dbl(.data$grouped_fcst, fair_crps, !! parameter, num_ref_members, show_progress)
-    ) %>%
-    sweep_crps(crps_output, keep_full_output)
+    if (!is.na(num_ref_members)) {
+      grouped_fcst <- dplyr::mutate(
+        grouped_fcst,
+        fair_crps       = purrr::map_dbl(.data$grouped_fcst, fair_crps, !! parameter, num_ref_members, show_progress)
+      )
+    }
+
+    grouped_fcst %>%
+      dplyr::select(-.data$grouped_fcst) %>%
+      sweep_crps(crps_output, keep_full_output)
+  }
+
+  purrr::map_dfr(groupings, compute_crps, .fcst) %>%
+    fill_group_na(groupings)
 }
 
 #' @export
