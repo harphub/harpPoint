@@ -22,6 +22,10 @@ det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtim
 #' @export
 det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
 
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
   chr_param <- rlang::quo_name(parameter)
@@ -53,83 +57,108 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
       .fcst     <- gather_members(.fcst) %>%
         dplyr::rename(forecast_det = .data$forecast)
-      groupings <- rlang::syms(c(groupings, "member"))
+
+      groupings <- purrr::map(groupings, union, "member")
       fcst_col  <- "forecast_det"
 
     }
 
-  } else {
+  }
 
-    groupings <- rlang::syms(groupings)
+  if (show_progress) {
+    progress_total <- sum(
+      sapply(
+        groupings,
+        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
+      )
+    )
+    det_progress <- progress::progress_bar$new(format = "  Deterministic [:bar] :percent eta: :eta", total = progress_total)
+  }
+
+  sd_function <- function(fcst_vector, obs_vector, prog_bar) {
+    res <- stats::sd(fcst_vector - obs_vector)
+    if (prog_bar) {
+      det_progress$tick()
+    }
+    res
+  }
+
+  compute_summary_scores <- function(compute_group, fcst_df) {
+
+    group_without_threshold(fcst_df, compute_group) %>%
+      tidyr::nest(.key = "grouped_fcst") %>%
+      dplyr::mutate(
+        num_cases = purrr::map_int(.data$grouped_fcst, nrow),
+        bias      = purrr::map_dbl(.data$grouped_fcst, ~ mean(.x[[fcst_col]] - .x[[chr_param]])),
+        rmse      = purrr::map_dbl(.data$grouped_fcst, ~ sqrt(mean((.x[[fcst_col]] - .x[[chr_param]]) ^ 2))),
+        mae       = purrr::map_dbl(.data$grouped_fcst, ~ mean(abs(.x[[fcst_col]] - .x[[chr_param]]))),
+        stde      = purrr::map_dbl(.data$grouped_fcst, ~ sd_function(.x[[fcst_col]], .x[[chr_param]], prog_bar = show_progress))
+      ) %>%
+      dplyr::select(-.data[["grouped_fcst"]])
 
   }
 
-  det_summary_scores <- .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    tidyr::nest(.key = "grouped_fcst") %>%
-    dplyr::transmute(
-      !!! groupings,
-      num_cases = purrr::map_int(.data$grouped_fcst, nrow),
-      bias      = purrr::map_dbl(.data$grouped_fcst, ~ mean(.x[[fcst_col]] - .x[[chr_param]])),
-      rmse      = purrr::map_dbl(.data$grouped_fcst, ~ sqrt(mean((.x[[fcst_col]] - .x[[chr_param]]) ^ 2))),
-      mae       = purrr::map_dbl(.data$grouped_fcst, ~ mean(abs(.x[[fcst_col]] - .x[[chr_param]]))),
-      stde      = purrr::map_dbl(.data$grouped_fcst, ~ sd(.x[[fcst_col]] - .x[[chr_param]]))
-    )
+  det_summary_scores <- purrr::map_dfr(groupings, compute_summary_scores, .fcst) %>%
+    fill_group_na(groupings)
 
   if (is.numeric(thresholds)) {
 
-    join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
-    meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
-    if (is.element("member", names(.fcst))) {
-      join_cols <- c(join_cols, "member")
-      meta_cols <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate", "member"))
-    }
-    thresh_col <- rlang::sym("threshold")
+    meta_cols     <- grep("_mbr[[:digit:]]+", colnames(.fcst), value = TRUE, invert = TRUE)
+    meta_cols_sym <- rlang::syms(meta_cols)
+    thresh_col    <- rlang::sym("threshold")
 
     .fcst <- det_probabilities(.fcst, !! parameter, thresholds)
 
     fcst_thresh <- .fcst %>%
-      dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
+      dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
       tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
       dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
     obs_thresh <- .fcst %>%
-      dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
+      dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
       tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
       dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
-    .fcst <- dplyr::inner_join(
-      fcst_thresh,
-      obs_thresh,
-      by = join_cols
-    )
+    .fcst <- dplyr::mutate(fcst_thresh, obs_prob = obs_thresh[["obs_prob"]])
 
     verif_func <- function(.df, show_progress) {
       res <- harp_verify(.df$obs_prob, .df$fcst_prob, frcst.type = "binary", obs.type = "binary")
       if (show_progress) {
-        pb$tick()
+        thresh_progress$tick()
       }
       res
     }
 
-    grouped_fcst <- .fcst %>%
-      dplyr::group_by(!!! groupings, !! thresh_col) %>%
-      tidyr::nest(.key = "grouped_fcst")
+    groupings <- purrr::map(groupings, union, "threshold")
 
     if (show_progress) {
-      pb <- progress::progress_bar$new(format = "  Verifying [:bar] :percent eta: :eta", total = nrow(grouped_fcst))
-    }
-    det_threshold_scores <- grouped_fcst %>%
-      dplyr::transmute(
-        !!! groupings,
-        !! thresh_col,
-        verif = purrr::map(
-          .data$grouped_fcst,
-          verif_func,
-          show_progress
+      progress_total <- sum(
+        sapply(
+          groupings,
+          function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
         )
-      ) %>%
-      sweep_det_thresh(groupings, thresh_col)
+      )
+      thresh_progress <- progress::progress_bar$new(format = "  Deterministic thresholds [:bar] :percent eta: :eta", total = progress_total)
+    }
+
+    compute_threshold_scores <- function(compute_group, fcst_df) {
+      compute_group <- rlang::syms(compute_group)
+      fcst_df %>%
+        dplyr::group_by(!!! compute_group) %>%
+        tidyr::nest(.key = "grouped_fcst") %>%
+        dplyr::transmute(
+          !!! compute_group,
+          verif = purrr::map(
+            .data$grouped_fcst,
+            verif_func,
+            show_progress
+          )
+        ) %>%
+        sweep_det_thresh(compute_group, thresh_col)
+    }
+
+    det_threshold_scores <- purrr::map_dfr(groupings, compute_threshold_scores, .fcst) %>%
+      fill_group_na(groupings)
 
   } else {
 
@@ -220,7 +249,7 @@ sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
 }
 
 empty_det_threshold_scores <- function(fcst_df, groupings) {
-  groupings <- rlang::syms(groupings)
+  groupings <- rlang::syms(unique(unlist(groupings)))
   fcst_df %>%
     dplyr::transmute(!!! groupings) %>%
     dplyr::group_by(!!! groupings) %>%

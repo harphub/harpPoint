@@ -36,7 +36,9 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
     obs_probabilities <- TRUE
   }
 
-  meta_cols  <- rlang::syms(c("SID", "fcdate", "leadtime", "validdate"))
+  meta_cols     <- grep("_mbr[[:digit:]]+", colnames(.fcst), invert = TRUE, value = TRUE) %>%
+    .[!. %in% chr_param]
+  meta_cols_sym <- rlang::syms(meta_cols)
 
   ens_probs <- dplyr::bind_cols(
     .fcst,
@@ -45,16 +47,16 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 
 
   fcst_thresh <- ens_probs %>%
-    dplyr::select(!!! meta_cols, dplyr::contains("fcst_prob")) %>%
+    dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
     tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
     dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 
   if (obs_probabilities) {
 
-    join_cols  <- c("SID", "fcdate", "leadtime", "validdate", "threshold")
+    join_cols  <- c(meta_cols, "threshold")
 
     obs_thresh <- ens_probs %>%
-      dplyr::select(!!! meta_cols, dplyr::contains("obs_prob")) %>%
+      dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
       tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
       dplyr::mutate(threshold = readr::parse_number(.data$threshold))
 

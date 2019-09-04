@@ -28,10 +28,13 @@ ens_spread_and_skill <- function(.fcst, parameter, groupings = "leadtime", jitte
 #' @export
 ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
 
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
-  groupings  <- rlang::syms(groupings)
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
@@ -40,20 +43,32 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
     .fcst <- dplyr::mutate_at(.fcst,  dplyr::vars(dplyr::contains("_mbr")), ~ purrr::map_dbl(., jitter_fcst))
   }
 
-  .fcst <- ens_mean_and_var(.fcst, mean_name = "ss_mean", var_name = "ss_var")
+  ens_mean <- "ss_mean"
+  ens_var  <- "ss_var"
 
-  ens_mean <- rlang::sym("ss_mean")
-  ens_var  <- rlang::sym("ss_var")
+  .fcst <- ens_mean_and_var(.fcst, mean_name = ens_mean, var_name = ens_var)
 
-  .fcst %>%
-    dplyr::group_by(!!! groupings) %>%
-    dplyr::summarise(
-      num_cases = dplyr::n(),
-      mean_bias = mean(!! ens_mean - !! parameter),
-      stde      = stats::sd(!! ens_mean - !! parameter),
-      rmse      = sqrt(mean((!! ens_mean - !! parameter) ^ 2)),
-      spread    = sqrt(mean(!! ens_var))
-    )
+  compute_spread_skill <- function(compute_group, fcst_df) {
+    if (length(compute_group) == 1 && compute_group == "threshold") {
+      grouped_fcst <- fcst_df
+    } else {
+      compute_group <- rlang::syms(compute_group[compute_group != "threshold"])
+      grouped_fcst  <- dplyr::group_by(fcst_df, !!! compute_group)
+    }
+
+    grouped_fcst %>%
+      dplyr::summarise(
+        num_cases = dplyr::n(),
+        mean_bias = mean(.data[[ens_mean]] - !! parameter),
+        stde      = stats::sd(.data[[ens_mean]] - !! parameter),
+        rmse      = sqrt(mean((.data[[ens_mean]] - !! parameter) ^ 2)),
+        spread    = sqrt(mean(.data[[ens_var]]))
+      )
+  }
+
+  purrr::map_dfr(groupings, compute_spread_skill, .fcst) %>%
+    fill_group_na(groupings)
+
 }
 
 #' @export
