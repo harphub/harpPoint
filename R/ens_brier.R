@@ -285,7 +285,7 @@ sweep_brier_both <- function(ens_threshold_df) {
 # where M is the reference number of members, m is the number of members,
 # n is the sample size of t occurences and Qt is the probability is the probability
 
-fair_brier_score <- function(fcst_prob, obs_prob, m, M, prob_bar) {
+fair_brier_score <- function(fcst_prob, obs_prob, m, M, prog_bar) {
 
   stopifnot(length(fcst_prob) == length(obs_prob))
 
