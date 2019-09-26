@@ -44,9 +44,14 @@ lag_forecast.default <- function(fcst_df, fcst_model, parent_cycles, direction =
     )
   }
 
+  if (harpIO:::tidyr_new_interface()) {
+    fcst_df <- tidyr::nest(fcst_df, data = -tidyr::one_of("fcst_cycle"))
+  } else {
+    fcst_df <- fcst_df %>%
+      dplyr::group_by(.data$fcst_cycle) %>%
+      tidyr::nest()
+  }
   fcst_df <- fcst_df %>%
-    dplyr::group_by(.data$fcst_cycle) %>%
-    tidyr::nest() %>%
     dplyr::arrange(.data$fcst_cycle) %>%
     dplyr::mutate(
       parent_cycle = purrr::map_chr(
@@ -100,8 +105,13 @@ lag_cycle <- function(df, direction) {
   parent_cycle   <- unique(df$parent_cycle)
   child_cycles   <- df$fcst_cycle[df$fcst_cycle != parent_cycle]
   num_children   <- length(child_cycles)
-  lagged_df      <- dplyr::filter(df, .data$fcst_cycle == parent_cycle) %>%
-    tidyr::unnest() %>%
+  lagged_df      <- dplyr::filter(df, .data$fcst_cycle == parent_cycle)
+  if (harpIO:::tidyr_new_interface()) {
+    lagged_df <- tidyr::unnest(lagged_df, tidyr::one_of("data"))
+  } else {
+    lagged_df <- tidyr::unnest(lagged_df)
+  }
+  lagged_df <- lagged_df %>%
     dplyr::select_if(~ !all(is.na(.))) %>%
     dplyr::select(-.data$parent_cycle)
 
@@ -112,10 +122,15 @@ lag_cycle <- function(df, direction) {
       lag_hours <- (as.numeric(parent_cycle) - as.numeric(child_cycles[i])) * direction
       lag_hours[lag_hours < 0] <- lag_hours[lag_hours < 0] + 24
 
+      child_members <- dplyr::filter(df, .data$fcst_cycle == child_cycles[i])
+      if (harpIO:::tidyr_new_interface()) {
+        child_members <- tidyr::unnest(child_members, tidyr::one_of("data"))
+      } else {
+        child_members <- tidyr::unnest(child_members)
+      }
       lagged_df <- dplyr::inner_join(
         lagged_df,
-        dplyr::filter(df, .data$fcst_cycle == child_cycles[i]) %>%
-          tidyr::unnest() %>%
+        child_members %>%
           dplyr::select_if(~ !all(is.na(.))) %>%
           dplyr::mutate(
             leadtime = .data$leadtime - lag_hours * direction,

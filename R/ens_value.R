@@ -54,12 +54,18 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
 
   compute_value <- function(compute_group, fcst_df) {
-    compute_group <- rlang::syms(compute_group)
+    compute_group_sym <- rlang::syms(compute_group)
+    class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group))
+    } else {
+      fcst_df <- fcst_df %>%
+        dplyr::group_by(!!! compute_group_sym) %>%
+        tidyr::nest(.key = "grouped_fcst")
+    }
     fcst_df %>%
-      dplyr::group_by(!!! compute_group) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
       dplyr::transmute(
-        !!! compute_group,
+        !!! compute_group_sym,
         economic_value = purrr::map(
           .data$grouped_fcst,
           ~ value_function(.x$obs_prob, .x$fcst_prob, prog_bar = show_progress)

@@ -114,9 +114,15 @@ ens_brier.default <- function(
 
   compute_brier <- function(compute_group, fcst_df) {
     compute_group_sym <- rlang::syms(compute_group)
-    fcst_df %>%
+    class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group))
+    } else {
+    fcst_df <- fcst_df %>%
       dplyr::group_by(!!! compute_group_sym) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
+      tidyr::nest(.key = "grouped_fcst")
+    }
+    fcst_df %>%
       dplyr::transmute(
         !!! compute_group_sym,
         brier_output = purrr::map(
@@ -158,7 +164,7 @@ ens_brier.default <- function(
       sweep_function()
   }
 
-  purrr::map_dfr(groupings, compute_brier, .fcst) %>%
+  suppressWarnings(purrr::map_dfr(groupings, compute_brier, .fcst)) %>%
     fill_group_na(groupings)
 
 }
@@ -218,7 +224,7 @@ ens_brier.harp_fcst <- function(
 
 # Sweep functions
 sweep_brier_brier <- function(brier_df) {
-  brier_col <- rlang::quo(brier_output)
+  brier_col <- rlang::sym("brier_output")
   brier_df %>%
     dplyr::mutate(
       brier_score             = purrr::map_dbl(!! brier_col, "bs"),
@@ -231,28 +237,46 @@ sweep_brier_brier <- function(brier_df) {
 }
 
 sweep_brier_reliability <- function(brier_df) {
-  brier_col <- rlang::quo(brier_output)
-  brier_df %>%
+  brier_col <- rlang::sym("brier_output")
+  brier_df <- brier_df %>%
     dplyr::mutate(
       forecast_probability = purrr::map(!! brier_col, "y.i"),
       observed_frequency   = purrr::map(!! brier_col, "obar.i"),
       proportion_occurred  = purrr::map(!! brier_col, "prob.y")
     ) %>%
-    dplyr::select(-!! brier_col) %>%
-    tidyr::unnest() %>%
+    dplyr::select(-!! brier_col)
+
+  if (harpIO:::tidyr_new_interface()) {
+    tidyr::unnest(
+      brier_df,
+      tidyr::one_of(c("forecast_probability", "observed_frequency", "proportion_occurred"))
+    ) %>%
+      tidyr::nest(
+        reliability = tidyr::one_of(
+          c("forecast_probability", "observed_frequency", "proportion_occurred")
+        )
+      )
+  } else {
+    tidyr::unnest(
+      brier_df,
+      .data$forecast_probability,
+      .data$observed_frequency,
+      .data$proportion_occurred) %>%
     tidyr::nest(
       .data$forecast_probability,
       .data$observed_frequency,
       .data$proportion_occurred,
       .key = "reliability"
     )
+  }
+
 }
 
 sweep_brier_both <- function(ens_threshold_df) {
 
   brier_output_col <- rlang::sym("brier_output")
 
-  ens_threshold_df %>%
+  ens_threshold_df <- ens_threshold_df %>%
     dplyr::mutate(
       brier_score             = purrr::map_dbl(!! brier_output_col, "bs"),
       brier_skill_score       = purrr::map_dbl(!! brier_output_col, "ss"),
@@ -263,8 +287,20 @@ sweep_brier_both <- function(ens_threshold_df) {
       observed_frequency      = purrr::map(!! brier_output_col, "obar.i"),
       proportion_occurred     = purrr::map(!! brier_output_col, "prob.y")
     ) %>%
-    dplyr::select(-!! brier_output_col) %>%
+    dplyr::select(-!! brier_output_col)
+  if (harpIO:::tidyr_new_interface()) {
     tidyr::unnest(
+      ens_threshold_df,
+      tidyr::one_of(c("forecast_probability", "observed_frequency", "proportion_occurred"))
+    ) %>%
+      tidyr::nest(
+        reliability = tidyr::one_of(
+          c("forecast_probability", "observed_frequency", "proportion_occurred")
+        )
+      )
+  } else {
+    tidyr::unnest(
+      ens_threshold_df,
       .data$forecast_probability,
       .data$observed_frequency,
       .data$proportion_occurred) %>%
@@ -274,6 +310,8 @@ sweep_brier_both <- function(ens_threshold_df) {
       .data$proportion_occurred,
       .key = "reliability"
     )
+
+  }
 
 }
 
@@ -302,5 +340,7 @@ fair_brier_score <- function(fcst_prob, obs_prob, m, M, prog_bar) {
   if (prog_bar) {
     fair_brier_progress$tick()
   }
+
+  res
 
 }

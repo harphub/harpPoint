@@ -45,7 +45,7 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
     roc_progress <- progress::progress_bar$new(format = "  ROC [:bar] :percent eta: :eta", total = progress_total)
   }
 
-  roc_function <-function(obs_vector, prob_vector, prog_bar) {
+  roc_function <- function(obs_vector, prob_vector, prog_bar) {
     res <- harp_roc(obs_vector, prob_vector)
     if (prog_bar) {
       roc_progress$tick()
@@ -54,12 +54,18 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
   }
 
   compute_roc <- function(compute_group, fcst_df) {
-    compute_group <- rlang::syms(compute_group)
+    compute_group_sym <- rlang::syms(compute_group)
+    class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group))
+    } else {
+    fcst_df <- fcst_df %>%
+      dplyr::group_by(!!! compute_group_sym) %>%
+      tidyr::nest(.key = "grouped_fcst")
+    }
     fcst_df %>%
-      dplyr::group_by(!!! compute_group) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
       dplyr::transmute(
-        !!! compute_group,
+        !!! compute_group_sym,
         roc_output = purrr::map(
           .data$grouped_fcst,
           ~ roc_function(.x$obs_prob, .x$fcst_prob, prog_bar = show_progress)

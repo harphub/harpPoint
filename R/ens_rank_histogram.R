@@ -45,9 +45,14 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
   }
 
   compute_rank_hist <- function(compute_group, fcst_df) {
+    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group)) %>%
+        dplyr::ungroup()
+    } else {
+      fcst_df <- tidyr::nest(fcst_df, .key = "grouped_fcst")
+    }
     fcst_df %>%
-      group_without_threshold(compute_group) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
       dplyr::mutate(
         rank_count = purrr::map(.data$grouped_fcst, harp_rank_hist, !! parameter)
       ) %>%
@@ -55,7 +60,7 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
       sweep_rank_histogram()
   }
 
-  purrr::map_dfr(groupings, compute_rank_hist, .fcst) %>%
+  suppressWarnings(purrr::map_dfr(groupings, compute_rank_hist, .fcst)) %>%
     fill_group_na(groupings)
 
 }
@@ -73,11 +78,17 @@ ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime
 
 # Internal function to return nicely formatted column for ens_rank_histogram.
 sweep_rank_histogram <- function(rank_hist_df) {
-  nest_cols <- rlang::syms(c("rank", "rank_count"))
-  rank_hist_df %>%
+  nest_cols <- c("rank", "rank_count")
+  rank_hist_df <- rank_hist_df %>%
     dplyr::mutate(
-      rank = purrr::map(rank_count, ~ seq(1, length(.x)))
-    ) %>%
-    tidyr::unnest() %>%
+      rank = purrr::map(.data$rank_count, ~ seq(1, length(.x)))
+    )
+  if (harpIO:::tidyr_new_interface()) {
+    tidyr::unnest(rank_hist_df, tidyr::one_of(nest_cols)) %>%
+      tidyr::nest(rank_histogram = tidyr::one_of(nest_cols))
+  } else {
+    nest_cols <- rlang::syms(nest_cols)
+    tidyr::unnest(rank_hist_df) %>%
     tidyr::nest(!!! nest_cols, .key = "rank_histogram")
+  }
 }

@@ -77,21 +77,27 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
 
   compute_crps <- function(compute_group, fcst_df) {
 
-    grouped_fcst <- group_without_threshold(fcst_df, compute_group) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
+    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group)) %>%
+        dplyr::ungroup()
+    } else {
+      fcst_df <- tidyr::nest(fcst_df, .key = "grouped_fcst")
+    }
+    fcst_df <- fcst_df %>%
       dplyr::mutate(
         num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
         !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress)
       )
 
     if (!is.na(num_ref_members)) {
-      grouped_fcst <- dplyr::mutate(
-        grouped_fcst,
-        fair_crps       = purrr::map_dbl(.data$grouped_fcst, fair_crps, !! parameter, num_ref_members, show_progress)
+      fcst_df <- dplyr::mutate(
+        fcst_df,
+        fair_crps = purrr::map_dbl(.data$grouped_fcst, fair_crps, !! parameter, num_ref_members, show_progress)
       )
     }
 
-    grouped_fcst %>%
+    fcst_df %>%
       dplyr::select(-.data$grouped_fcst) %>%
       sweep_crps(crps_output, keep_full_output)
   }

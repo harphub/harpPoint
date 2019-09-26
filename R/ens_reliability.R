@@ -20,8 +20,23 @@
 #' @export
 #'
 #' @examples
-ens_reliability <- function(.fcst, parameter, thresholds, groupings = "leadtime", climatology = "sample") {
+ens_reliability <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings = "leadtime",
+  climatology = "sample",
+  show_progress = FALSE
+) {
   parameter <- rlang::enquo(parameter)
-  ens_brier(.fcst, !! parameter, thresholds, groupings = groupings, climatology = climatology, keep_score = "reliability")
+  ens_brier(
+    .fcst,
+    !! parameter,
+    thresholds,
+    groupings = groupings,
+    climatology = climatology,
+    keep_score = "reliability",
+    show_progress = show_progress
+  )
 }
 

@@ -48,21 +48,30 @@ pooled_bootstrap_score <- function(
 
   dots <- rlang::dots_list(...)
 
-  if(is.element("thresholds", names(dots))) {
+  if (is.element("thresholds", names(dots))) {
       groupings <- c(groupings, "threshold")
   }
 
   pooled_groupings <- c(pooled_by, groupings)
 
   pooled_score <- score_function(.fcst, !! parameter, groupings = pooled_groupings, ...)
-  pooled_score <- pooled_score[[score_table]] %>%
-    dplyr::group_by(!! pooled_by_sym) %>%
-    tidyr::nest()
+  pooled_score <- pooled_score[[score_table]]
+  if (harpIO:::tidyr_new_interface()) {
+    pooled_score <- tidyr::nest(pooled_score, data = -tidyr::one_of(pooled_by))
+  } else {
+    pooled_score <- pooled_score %>%
+      dplyr::group_by(!! pooled_by_sym) %>%
+      tidyr::nest()
+  }
 
   replicates <- modelr::bootstrap(pooled_score, n)
 
-  map_strap <-function(.verif, group_cols, pool_cols) {
-    .verif            <- tidyr::unnest(.verif$data[.verif$idx, ])
+  map_strap <- function(.verif, group_cols, pool_cols) {
+    if (harpIO:::tidyr_new_interface()) {
+      .verif          <- tidyr::unnest(.verif$data[.verif$idx, ], tidyr::one_of("data"))
+    } else {
+      .verif          <- tidyr::unnest(.verif$data[.verif$idx, ])
+    }
     grouping_cols     <- rlang::syms(setdiff(group_cols, pool_cols))
     .verif            <- dplyr::select_if(.verif, function(x) !is.list(x))
     cols_to_summarise <- setdiff(colnames(.verif), group_cols)
@@ -117,7 +126,7 @@ pooled_bootstrap_score <- function(
     groupings_sym <- rlang::syms(groupings)
     res <- dplyr::bind_rows(df) %>%
       dplyr::group_by(!!! groupings_sym) %>%
-      dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile, na.rm =TRUE)
+      dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile, na.rm = TRUE)
     data_cols <- rlang::syms(names(res)[!names(res) %in% groupings])
     dplyr::rename_at(res, dplyr::vars(!!!data_cols), ~ paste0(., "_", suffix))
   }
@@ -146,7 +155,7 @@ pooled_bootstrap_score <- function(
         col_name_sym <- rlang::sym(col_name)
         bound_replicates[[m]] <- bound_replicates[[m]] %>%
           dplyr::mutate(
-            !! col_name := value - bound_replicates[[n]]$value
+            !! col_name := .data$value - bound_replicates[[n]]$value
           )
       }
     }

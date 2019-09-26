@@ -15,7 +15,7 @@
 #' @param fcst_model The forecast model(s) to verify. Can be a single string or
 #'   a character vector of model names.
 #' @param fcst_path The path to the forecast FCTABLE files.
-#' @param obs_path The path to the observatoin OBSTABLE files.
+#' @param obs_path The path to the observation OBSTABLE files.
 #' @param lead_time The lead times to verify.
 #' @param num_iterations The number of iterations per verification calculation.
 #'   The default is to do the same number of iterations as there are lead times.
@@ -71,27 +71,37 @@ ens_read_and_verify <- function(
   fcst_model,
   fcst_path,
   obs_path,
-  lead_time           = seq(0, 48, 3),
-  num_iterations      = length(lead_time),
-  verify_members      = TRUE,
-  thresholds          = NULL,
-  members             = NULL,
-  obsfile_template    = "obstable",
-  groupings           = "leadtime",
-  by                  = "1d",
-  climatology         = "sample",
-  stations            = NULL,
-  jitter_fcst         = NULL,
-  gross_error_check   = TRUE,
-  min_allowed         = NULL,
-  max_allowed         = NULL,
-  num_sd_allowed      = NULL,
-  show_progress       = FALSE,
-  verif_path          = NULL
+  lead_time             = seq(0, 48, 3),
+  num_iterations        = length(lead_time),
+  verify_members        = TRUE,
+  thresholds            = NULL,
+  members               = NULL,
+  fctable_file_template = "fctable_eps",
+  obsfile_template      = "obstable",
+  groupings             = "leadtime",
+  by                    = "1d",
+  lags                  = "0s",
+  lag_fcst_models       = NULL,
+  parent_cycles         = NULL,
+  lag_direction         = 1,
+  fcst_shifts           = NULL,
+  keep_unshifted        = FALSE,
+  drop_neg_leadtimes    = TRUE,
+  climatology           = "sample",
+  stations              = NULL,
+  jitter_fcst           = NULL,
+  common_cases_only     = TRUE,
+  check_obs_fcst        = TRUE,
+  gross_error_check     = TRUE,
+  min_allowed           = NULL,
+  max_allowed           = NULL,
+  num_sd_allowed        = NULL,
+  show_progress         = FALSE,
+  verif_path            = NULL
 ) {
 
   first_obs <- start_date
-  last_obs  <- (harpIO::str_datetime_to_unixtime(end_date) + 3600 * max(lead_time)) %>%
+  last_obs  <- (suppressMessages(harpIO::str_datetime_to_unixtime(end_date)) + 3600 * max(lead_time)) %>%
     harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
 
   obs_data <- harpIO::read_point_obs(
@@ -106,7 +116,6 @@ ens_read_and_verify <- function(
   )
 
   verif_data     <- list()
-  verif_data_det <- list()
 
   parameter_sym <- rlang::sym(parameter)
 
@@ -121,24 +130,66 @@ ens_read_and_verify <- function(
     cat("Lead time:", lead_list[[i]], "( Iteration", i, "of", num_iterations, ")\n")
     cat(rep("=", 80), "\n", sep = "")
 
-    fcst_data <- harpIO::read_point_forecast(
-      start_date = start_date,
-      end_date   = end_date,
-      fcst_model = fcst_model,
-      fcst_type  = "EPS",
-      parameter  = parameter,
-      lead_time  = lead_list[[i]],
-      by         = by,
-      file_path  = fcst_path,
-      stations   = stations,
-      members    = members
-    ) %>%
-      merge_multimodel() %>%
-      dplyr::filter(.data$leadtime %in% lead_list[[i]]) %>%
-      common_cases()
+    if (!is.null(fcst_shifts)) {
+      if (keep_unshifted) {
+        if (!any(grepl("_unshifted$", names(lags)))) {
+          unshifted_names       <- paste0(names(fcst_shifts), "_unshifted")
+          fcst_model            <- c(fcst_model, unshifted_names)
+          lags[unshifted_names] <- lags[names(fcst_shifts)]
+        }
+      }
+      lags[names(fcst_shifts)] <- lapply(fcst_shifts, paste0, "h")
+    }
 
-    fcst_data <- join_to_fcst(fcst_data, obs_data) %>%
-      check_obs_against_fcst(!! parameter_sym, num_sd_allowed = num_sd_allowed)
+    fcst_data <- harpIO::read_point_forecast(
+      start_date     = start_date,
+      end_date       = end_date,
+      fcst_model     = fcst_model,
+      fcst_type      = "EPS",
+      parameter      = parameter,
+      lead_time      = lead_list[[i]],
+      lags           = lags,
+      by             = by,
+      file_path      = fcst_path,
+      stations       = stations,
+      members        = members,
+      file_template  = fctable_file_template
+    ) %>%
+      merge_multimodel()
+
+    if (!is.null(lag_fcst_models)) {
+      if (is.null(parent_cycles)) {
+        stop("'parent_cycles' must be passed as well as 'lag_fcst_models'.")
+      }
+      fcst_data <- lag_forecast(
+        fcst_data,
+        lag_fcst_models,
+        parent_cycles,
+        direction = lag_direction
+      )
+    }
+
+    if (!is.null(fcst_shifts)) {
+      fcst_data <- shift_forecast(
+        fcst_data,
+        fcst_shifts,
+        keep_unshifted           = FALSE,
+        drop_negative_lead_times = drop_neg_leadtimes
+      )
+    }
+
+    fcst_data <- fcst_data %>%
+      dplyr::filter(.data$leadtime %in% lead_list[[i]])
+
+    if (common_cases_only) {
+      fcst_data <- common_cases(fcst_data)
+    }
+
+    fcst_data <- join_to_fcst(fcst_data, obs_data)
+
+    if (check_obs_fcst) {
+      fcst_data <- check_obs_against_fcst(fcst_data, !! parameter_sym, num_sd_allowed = num_sd_allowed)
+    }
 
     if (any(purrr::map_int(fcst_data, nrow) == 0)) next
 
@@ -169,6 +220,17 @@ ens_read_and_verify <- function(
     det_summary_scores   = purrr::map_dfr(verif_data, "det_summary_scores")
   )
 
+  verif_data <- purrr::map(
+    verif_data,
+    ~ dplyr::mutate(
+      .x,
+      mname = case_when(
+        grepl("_unshifted$", .data$mname) ~ gsub("_unshifted", "", .data$mname),
+        TRUE                             ~ .data$mname
+      )
+    )
+  )
+
   attr(verif_data, "parameter")    <- parameter
   attr(verif_data, "start_date")   <- start_date
   attr(verif_data, "end_date")     <- end_date
@@ -178,10 +240,6 @@ ens_read_and_verify <- function(
     harpIO::save_point_verif(verif_data, verif_path = verif_path)
   }
 
-  if (length(verif_data_det) > 0) {
-    list(member_scores = verif_data_det, ensemble_scores = verif_data)
-  } else {
-    verif_data
-  }
+  verif_data
 
 }

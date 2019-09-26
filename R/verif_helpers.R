@@ -17,6 +17,7 @@ fill_group_na <- function(df, groupings) {
   groups_to_fill <- groups_to_fill[groups_to_fill != "threshold"]
 
   fill_fun <- function(group_col, df) {
+    if (!any(is.na(df[[group_col]]))) return(df)
     all_values <- sort(unique(stats::na.omit(df[[group_col]])))
     df[[group_col]] <- as.character(df[[group_col]])
     if (length(all_values) < 5) {

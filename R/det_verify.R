@@ -85,8 +85,15 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   compute_summary_scores <- function(compute_group, fcst_df) {
 
-    group_without_threshold(fcst_df, compute_group) %>%
-      tidyr::nest(.key = "grouped_fcst") %>%
+    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    if (harpIO:::tidyr_new_interface()) {
+      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(dplyr::group_vars(fcst_df))) %>%
+        dplyr::ungroup()
+    } else {
+      fcst_df <- tidyr::nest(fcst_df, .key = "grouped_fcst")
+    }
+
+    fcst_df %>%
       dplyr::mutate(
         num_cases = purrr::map_int(.data$grouped_fcst, nrow),
         bias      = purrr::map_dbl(.data$grouped_fcst, ~ mean(.x[[fcst_col]] - .x[[chr_param]])),
@@ -142,19 +149,24 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     }
 
     compute_threshold_scores <- function(compute_group, fcst_df) {
-      compute_group <- rlang::syms(compute_group)
+      compute_group_sym <- rlang::syms(compute_group)
+      if (harpIO:::tidyr_new_interface()) {
+        fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group))
+      } else {
+        fcst_df <- fcst_df %>%
+          dplyr::group_by(!!! compute_group_sym) %>%
+          tidyr::nest(.key = "grouped_fcst")
+      }
       fcst_df %>%
-        dplyr::group_by(!!! compute_group) %>%
-        tidyr::nest(.key = "grouped_fcst") %>%
         dplyr::transmute(
-          !!! compute_group,
+          !!! compute_group_sym,
           verif = purrr::map(
             .data$grouped_fcst,
             verif_func,
             show_progress
           )
         ) %>%
-        sweep_det_thresh(compute_group, thresh_col)
+        sweep_det_thresh(compute_group_sym, thresh_col)
     }
 
     det_threshold_scores <- purrr::map_dfr(groupings, compute_threshold_scores, .fcst) %>%
