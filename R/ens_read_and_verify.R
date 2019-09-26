@@ -89,6 +89,8 @@ ens_read_and_verify <- function(
   drop_neg_leadtimes    = TRUE,
   climatology           = "sample",
   stations              = NULL,
+  scale_fcst            = NULL,
+  scale_obs             = NULL,
   jitter_fcst           = NULL,
   common_cases_only     = TRUE,
   check_obs_fcst        = TRUE,
@@ -115,9 +117,18 @@ ens_read_and_verify <- function(
     max_allowed       = max_allowed
   )
 
-  verif_data     <- list()
-
   parameter_sym <- rlang::sym(parameter)
+
+  if (!is.null(scale_obs)) {
+    stopifnot(is.list(scale_obs))
+    check_scale_data(scale_obs, "obs")
+    obs_data <- do.call(
+      scale_point_obs,
+      c(list(.obs = obs_data, parameter = parameter_sym), scale_obs)
+    )
+  }
+
+  verif_data     <- list()
 
   if (num_iterations > length(lead_time)) {
     num_iterations <- length(lead_time)
@@ -136,6 +147,12 @@ ens_read_and_verify <- function(
           unshifted_names       <- paste0(names(fcst_shifts), "_unshifted")
           fcst_model            <- c(fcst_model, unshifted_names)
           lags[unshifted_names] <- lags[names(fcst_shifts)]
+          if (!is.null(scale_fcst)) {
+            shifted_and_scaled <- intersect(names(scale_fcst), names(fcst_shifts))
+            if (length(shifted_and_scaled) > 0) {
+              scale_fcst[paste0(shifted_and_scaled, "_unshifted")] <- scale_fcst[shifted_and_scaled]
+            }
+          }
         }
       }
       lags[names(fcst_shifts)] <- lapply(fcst_shifts, paste0, "h")
@@ -156,6 +173,33 @@ ens_read_and_verify <- function(
       file_template  = fctable_file_template
     ) %>%
       merge_multimodel()
+
+    if (!is.null(scale_fcst)) {
+      stopifnot(is.list(scale_fcst))
+      if (is.null(names(scale_fcst))) {
+        if (length(scale_fcst) == 1 && length(fcst_model) > 1) {
+          warning("Only one scaling given in 'scale_fcst'. Applying scaling to all elements of 'fcst_model'.", immediate. = TRUE, call. = FALSE)
+          scale_fcst <- rep(scale_fcst, length(fcst_model)) %>%
+            purrr::set_names(fcst_model)
+        } else if (length(scale_fcst) == length(fcst_model)) {
+          warning("No names given in 'scale_fcst'. Assuming same order as elements of 'fcst_model'.", immediate. = TRUE, call. = FALSE)
+          names(scale_fcst) <- fcst_model
+        } else {
+          stop("'scale_fcst' must be a named list with names as in 'fcst_model'.", call. = FALSE)
+        }
+      } else {
+        bad_names <- setdiff(names(scale_fcst), fcst_model)
+        if (length(bad_names) > 0) {
+          stop(paste(bad_names, collapse = ", "), "supplied in 'scale_fcst', but do not exist in 'fcst_model'.", call. = FALSE)
+        }
+      }
+      purrr::walk(scale_fcst, check_scale_data, "fcst")
+      fcst_data[names(scale_fcst)] <- purrr::map2(
+        fcst_data[names(scale_fcst)],
+        scale_fcst,
+        ~ do.call(scale_point_forecast, c(list(.fcst = .x), .y))
+      )
+    }
 
     if (!is.null(lag_fcst_models)) {
       if (is.null(parent_cycles)) {
@@ -241,5 +285,19 @@ ens_read_and_verify <- function(
   }
 
   verif_data
+
+}
+
+check_scale_data <- function(scale_data, scale_what) {
+  expected_args <- sort(c("scale_factor", "new_units", "multiplicative"))
+  ref_function <- ifelse(scale_what == "obs", "'scale_point_obs'", "'scale_point_forecast'")
+  text_start   <- ifelse(scale_what == "obs", "'scale_obs'", "Elements of 'scale_point_forecast'")
+  if (!identical(sort(names(scale_data)), sort(expected_args))) {
+    stop(
+      text_start, " must be a named list with names scale_factor, new_units and multiplicative\n",
+      "See ", ref_function, " for more details.",
+      call. = FALSE
+    )
+  }
 
 }
