@@ -7,11 +7,16 @@
 ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   obs_path, lead_time = seq(0, 48, 3),
   num_iterations = length(lead_time), verify_members = TRUE,
-  thresholds = NULL, members = NULL, obsfile_template = "obstable",
-  groupings = "leadtime", by = "1d", climatology = "sample",
-  stations = NULL, jitter_fcst = NULL, gross_error_check = TRUE,
-  min_allowed = NULL, max_allowed = NULL, num_sd_allowed = NULL,
-  show_progress = FALSE, verif_path = NULL)
+  thresholds = NULL, members = NULL,
+  fctable_file_template = "fctable_eps", obsfile_template = "obstable",
+  groupings = "leadtime", by = "1d", lags = "0s",
+  lag_fcst_models = NULL, parent_cycles = NULL, lag_direction = 1,
+  fcst_shifts = NULL, keep_unshifted = FALSE,
+  drop_neg_leadtimes = TRUE, climatology = "sample", stations = NULL,
+  scale_fcst = NULL, scale_obs = NULL, jitter_fcst = NULL,
+  common_cases_only = TRUE, check_obs_fcst = TRUE,
+  gross_error_check = TRUE, min_allowed = NULL, max_allowed = NULL,
+  num_sd_allowed = NULL, show_progress = FALSE, verif_path = NULL)
 }
 \arguments{
 \item{start_date}{Start date to for the verification. Should be numeric or
@@ -27,7 +32,7 @@ a character vector of model names.}
 
 \item{fcst_path}{The path to the forecast FCTABLE files.}
 
-\item{obs_path}{The path to the observatoin OBSTABLE files.}
+\item{obs_path}{The path to the observation OBSTABLE files.}
 
 \item{lead_time}{The lead times to verify.}
 
@@ -44,9 +49,15 @@ computed. If you wish to compute categorical scores, the separate
 
 \item{thresholds}{The thresholds to compute categorical scores for.}
 
-\item{members}{The members to include in the iteration. This will select the
-same member numbers from each \code{fcst_model}. In the future it will
-become possible to specify members for each \code{fcst_model}.}
+\item{members}{The members to retrieve if reading an EPS forecast. To select
+the same members for all forecast models, this should be a numeric vector.
+For specific members from specific models a named list with each element
+having the name of the forecast model and containing a a numeric vector.
+e.g. \cr \code{members = list(eps_model1 = seq(0, 3), eps_model2 = c(2,
+3))}. \cr For multi model ensembles, each element of this named list should
+contain another named list with sub model name followed by the desired
+members, e.g. \cr \code{members = list(eps_model1 = list(sub_model1 =
+seq(0, 3), sub_model2 = c(2, 3)))}}
 
 \item{obsfile_template}{The template for OBSTABLE files - the default is
 "obstable", which is \code{OBSTABLE_{YYYY}.sqlite}.}

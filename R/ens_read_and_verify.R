@@ -27,9 +27,15 @@
 #'   computed. If you wish to compute categorical scores, the separate
 #'   \link[harpPoint]{det_verify} function must be used.
 #' @param thresholds The thresholds to compute categorical scores for.
-#' @param members The members to include in the iteration. This will select the
-#'   same member numbers from each \code{fcst_model}. In the future it will
-#'   become possible to specify members for each \code{fcst_model}.
+#' @param members The members to retrieve if reading an EPS forecast. To select
+#'   the same members for all forecast models, this should be a numeric vector.
+#'   For specific members from specific models a named list with each element
+#'   having the name of the forecast model and containing a a numeric vector.
+#'   e.g. \cr \code{members = list(eps_model1 = seq(0, 3), eps_model2 = c(2,
+#'   3))}. \cr For multi model ensembles, each element of this named list should
+#'   contain another named list with sub model name followed by the desired
+#'   members, e.g. \cr \code{members = list(eps_model1 = list(sub_model1 =
+#'   seq(0, 3), sub_model2 = c(2, 3)))}
 #' @param obsfile_template The template for OBSTABLE files - the default is
 #'   "obstable", which is \code{OBSTABLE_{YYYY}.sqlite}.
 #' @param groupings The groups to verify for. The default is "leadtime". Another
@@ -151,6 +157,12 @@ ens_read_and_verify <- function(
             shifted_and_scaled <- intersect(names(scale_fcst), names(fcst_shifts))
             if (length(shifted_and_scaled) > 0) {
               scale_fcst[paste0(shifted_and_scaled, "_unshifted")] <- scale_fcst[shifted_and_scaled]
+            }
+          }
+          if (!is.null(members)) {
+            shifted_and_select_members <- intersect(names(members), names(fcst_shifts))
+            if (length(shifted_and_select_members) > 0) {
+              members[paste0(shifted_and_select_members, "_unshifted")] <- members[shifted_and_select_members]
             }
           }
         }
