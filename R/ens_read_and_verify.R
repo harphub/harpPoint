@@ -243,6 +243,8 @@ ens_read_and_verify <- function(
 
     fcst_data <- join_to_fcst(fcst_data, obs_data)
 
+    if (any(purrr::map_int(fcst_data, nrow) == 0)) next
+
     if (check_obs_fcst) {
       fcst_data <- check_obs_against_fcst(fcst_data, !! parameter_sym, num_sd_allowed = num_sd_allowed)
     }
