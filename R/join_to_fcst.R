@@ -97,8 +97,10 @@ join_to_fcst.default <- function(
   if (!do_join) {
     if (force_join) {
       message("Forcing join without units taken into account.")
-      by <- intersect(colnames(.fcst), colnames(.join))
-      by <- by[by != "units"]
+      if (is.null(by)) {
+        by <- intersect(colnames(.fcst), colnames(.join))
+        by <- by[by != "units"]
+      }
     } else {
       stop(
         "Join will not be done due to units incompatibility. You can force the join by setting force_join = TRUE\n",

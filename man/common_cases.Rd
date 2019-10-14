@@ -2,17 +2,20 @@
 % Please edit documentation in R/common_cases.R
 \name{common_cases}
 \alias{common_cases}
-\title{Title}
+\title{Filter to common cases}
 \usage{
 common_cases(.fcst)
 }
 \arguments{
-\item{.fcst}{A harp3 format data frame of forecasts}
+\item{.fcst}{A harp_fcst object}
 }
 \value{
 The input data frame with only the common stations and forecast dates
-  for each experiment selected.
+  for each forecast model selected.
 }
 \description{
-Title
+For a fair comparison of models, the verification should only be done for
+dates and locations that are common to all models. \code{common_cases} takes
+a harp_fcst object as input and then identifies and filters to only those
+cases that are common to all of the forecast models in the harp_fcst object.
 }

@@ -7,8 +7,15 @@
 bind_point_verif(...)
 }
 \arguments{
-\item{...}{Verification objects that are to be combined}
+\item{...}{Verification objects that are to be combined. Can be individual
+objects or a list.}
+}
+\value{
+A harp verification object with all attributes moved up to columns
+  and combined in the new attributes.
 }
 \description{
-Bind harp verification objects into a single object
+For plotting it may be desirable to combine various differen verifications
+into a single object. For example, verification for different parameters for
+the same set of forecast models.
 }

@@ -9,7 +9,7 @@ ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   num_iterations = length(lead_time), verify_members = TRUE,
   thresholds = NULL, members = NULL,
   fctable_file_template = "fctable_eps", obsfile_template = "obstable",
-  groupings = "leadtime", by = "1d", lags = "0s",
+  groupings = "leadtime", by = "6h", lags = "0s",
   lag_fcst_models = NULL, parent_cycles = NULL, lag_direction = 1,
   fcst_shifts = NULL, keep_unshifted = FALSE,
   drop_neg_leadtimes = TRUE, climatology = "sample", stations = NULL,
@@ -81,6 +81,8 @@ stations from \link[harpIO]{station_list} that are common to all
 to account for observation error in the rank histogram. For other
 statistics it is likely to make little difference since it is expected that
 the observations will have a mean error of zero.}
+
+\item{check_obs_fcst}{}
 
 \item{gross_error_check}{Logical of whether to perform a gross error check.}
 

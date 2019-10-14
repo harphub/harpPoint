@@ -5,7 +5,7 @@
 #' between forecasts is also computed.
 #'
 #' @param .fcst A \code{harp_fcst} object.
-#' @param score The name of the verification function to bootstrap for.
+#' @param score_function The name of the verification function to bootstrap for.
 #' @param parameter The parameter that gives the name of the observations
 #'   columns.
 #' @param n Th number of bootstrap replicants.
@@ -34,7 +34,7 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
 
   map_strap <- function(.fcst, score_func, parameter, groupings, ...) {
     parameter     <- rlang::enquo(parameter)
-    groupings_sym <- rlang::syms(groupings)
+    groupings_sym <- rlang::syms(unique(unlist(groupings)))
     res <- score_func(.fcst$data[.fcst$idx, ], !! parameter, groupings = groupings, ...) %>%
       dplyr::arrange(!!! groupings_sym)
     pb$tick()
@@ -57,18 +57,18 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
   lower_bound <- (1 - confidence_interval) / 2
 
   quantile_func <- function(df, groupings, qtile, suffix) {
-    groupings_sym <- rlang::syms(groupings)
+    groupings_sym <- rlang::syms(unique(unlist(groupings)))
     res <- dplyr::bind_rows(df) %>%
       dplyr::group_by(!!! groupings_sym) %>%
       dplyr::summarise_if(~ !is.list(.), .funs = quantile, qtile)
-    data_cols <- rlang::syms(names(res)[!names(res) %in% groupings])
+    data_cols <- rlang::syms(names(res)[!names(res) %in% unique(unlist(groupings))])
     dplyr::rename_at(res, dplyr::vars(!!!data_cols), ~ paste0(., "_", suffix))
   }
 
   confidence_upper <- purrr::map(replicants, quantile_func, groupings, upper_bound, "upper")
   confidence_lower <- purrr::map(replicants, quantile_func, groupings, lower_bound, "lower")
 
-  confidence_limits <- purrr::map2(confidence_lower, confidence_upper, dplyr::inner_join, by = groupings) %>%
+  confidence_limits <- purrr::map2(confidence_lower, confidence_upper, dplyr::inner_join, by = unique(unlist(groupings))) %>%
     dplyr::bind_rows(.id = "mname")
 
   # Compute the confidence of differences between forecast models
@@ -80,7 +80,7 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
 
   bound_replicants <- purrr::map(replicants, dplyr::bind_rows, .id = "replicant") %>%
     purrr::map(dplyr::select_if, ~ !is.list(.)) %>%
-    purrr::map(gather_function, c(groupings, "replicant"))
+    purrr::map(gather_function, c(unique(unlist(groupings)), "replicant"))
 
   for (m in 1:length(bound_replicants)) {
     for (n in 1:length(bound_replicants)) {
@@ -100,14 +100,15 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
     ifelse(prop >= 0.5, prop, prop - 1)
   }
 
-  summarise_func <- function(df) {
+  summarise_func <- function(df, groupings) {
+    groupings_sym <- rlang::syms(c(unique(unlist(groupings)), "score"))
     df %>%
-      dplyr::group_by(.data$leadtime, .data$score) %>%
+      dplyr::group_by(!!! groupings_sym) %>%
       dplyr::summarise_at(dplyr::vars(dplyr::starts_with("diff_")), dplyr::funs(proportion_func)) %>%
       dplyr::ungroup()
   }
 
-  confidence_of_differences <- purrr::map(bound_replicants, summarise_func)
+  confidence_of_differences <- purrr::map(bound_replicants, summarise_func, groupings)
   confidence_of_differences <- confidence_of_differences %>%
     dplyr::bind_rows(.id = "master_fcst") %>%
     tidyr::gather(

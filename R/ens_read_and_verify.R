@@ -64,6 +64,18 @@
 #' @param show_progress Logical - whether to show a progress bar. Defaults to
 #'   FALSE.
 #' @param verif_path If set, verification files will be saved to this path.
+#' @param fctable_file_template
+#' @param lags
+#' @param lag_fcst_models
+#' @param parent_cycles
+#' @param lag_direction
+#' @param fcst_shifts
+#' @param keep_unshifted
+#' @param drop_neg_leadtimes
+#' @param scale_fcst
+#' @param scale_obs
+#' @param common_cases_only
+#' @param check_obs_fcst
 #'
 #' @return A list containting two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
@@ -85,7 +97,7 @@ ens_read_and_verify <- function(
   fctable_file_template = "fctable_eps",
   obsfile_template      = "obstable",
   groupings             = "leadtime",
-  by                    = "1d",
+  by                    = "6h",
   lags                  = "0s",
   lag_fcst_models       = NULL,
   parent_cycles         = NULL,

@@ -5,14 +5,8 @@
 #' @param parameter The name of the column for the observed data.
 #' @param thresholds A numeric vector of thresholds for which to compute
 #'   probabilities.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#'
-#' @return An object of the same format as the inputs but with data grouped for
-#'   the \code{groupings} column(s) and columns for \code{rank} and
-#'   \code{rank_count} that are nested together in a column with the name
-#'   \code{rank_histogram}.
+#' @return A \code{harp_fcst} object with each data frame having columns for threshold,
+#' fcst_prob and obs_prob instead of the columns for each member forecast.
 #' @export
 #'
 #' @examples

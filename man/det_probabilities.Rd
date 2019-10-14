@@ -15,15 +15,12 @@ observations, or a single forecast table.}
 \item{thresholds}{A numeric vector of thresholds for which to compute
 probabilities.}
 
-\item{groupings}{The groups for which to compute the ensemble mean and
-spread. See \link[dplyr]{group_by} for more information of how grouping
-works.}
+\item{obs_probabilities}{A logical indicating whether or not to compute the
+binary probabilities for the observations.}
 }
 \value{
-An object of the same format as the inputs but with data grouped for
-  the \code{groupings} column(s) and columns for \code{rank} and
-  \code{rank_count} that are nested together in a column with the name
-  \code{rank_histogram}.
+A \code{harp_fcst} object with each data frame having columns for threshold,
+fcst_prob and optionally obs_prob instead of the raw forecast column.
 }
 \description{
 Compute binary probabilities for deterministic forecasts

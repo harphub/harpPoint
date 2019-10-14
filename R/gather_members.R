@@ -31,9 +31,9 @@ gather_members.default <- function(.fcst, member_prefix = "_mbr") {
     value = "forecast"
   )
 
-  .fcst <- .fcst %>% dplyr::mutate(
-    member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
-  )
+  #.fcst <- .fcst %>% dplyr::mutate(
+  #  member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
+  #)
 
   .fcst
 }

@@ -10,6 +10,8 @@ bootstrap_score(.fcst, score_function, parameter, n,
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object.}
 
+\item{score_function}{The name of the verification function to bootstrap for.}
+
 \item{parameter}{The parameter that gives the name of the observations
 columns.}
 
@@ -19,8 +21,6 @@ columns.}
 is leadtime.}
 
 \item{...}{Other arguments to the score function. e.g. thresholds.}
-
-\item{score}{The name of the verification function to bootstrap for.}
 }
 \description{
 Compute the confidence intervals of verification scores using a bootstrap
