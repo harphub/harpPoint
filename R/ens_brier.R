@@ -100,6 +100,14 @@ ens_brier.default <- function(
     res
   }
 
+  fair_brier_function <- function(f_prob, o_prob, num_mem, num_ref_mem, prog_bar) {
+    res <- fair_brier_score(f_prob, o_prob, num_mem, num_ref_mem)
+    if (prog_bar) {
+      fair_brier_progress$tick()
+    }
+    res
+  }
+
   if (show_progress) {
     progress_total <- sum(
       sapply(
@@ -132,7 +140,7 @@ ens_brier.default <- function(
         ),
         fair_brier_score = purrr::map_dbl(
           .data$grouped_fcst,
-          ~ fair_brier_score(
+          ~ fair_brier_function(
             .x$fcst_prob,
             .x$obs_prob,
             num_members,
@@ -323,7 +331,7 @@ sweep_brier_both <- function(ens_threshold_df) {
 # where M is the reference number of members, m is the number of members,
 # n is the sample size of t occurences and Qt is the probability is the probability
 
-fair_brier_score <- function(fcst_prob, obs_prob, m, M, prog_bar) {
+fair_brier_score <- function(fcst_prob, obs_prob, m, M) {
 
   stopifnot(length(fcst_prob) == length(obs_prob))
 
@@ -336,10 +344,6 @@ fair_brier_score <- function(fcst_prob, obs_prob, m, M, prog_bar) {
   n <- length(fcst_prob)
 
   res <- BS - ((M - m) / (M * (m - 1) * n)) * sum(fcst_prob * (1 - fcst_prob))
-
-  if (prog_bar) {
-    fair_brier_progress$tick()
-  }
 
   res
 
