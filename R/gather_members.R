@@ -10,15 +10,15 @@
 #' @export
 #'
 #' @examples
-gather_members <- function(.fcst, member_prefix = "_mbr") {
+gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
   UseMethod("gather_members")
 }
 
 #' @export
-gather_members.default <- function(.fcst, member_prefix = "_mbr") {
+gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
 
-  required_colnames <- member_prefix
-  if (ncol(dplyr::select(.fcst, dplyr::contains(member_prefix))) < 1) {
+  required_colnames <- member_regex
+  if (ncol(dplyr::select(.fcst, dplyr::matches(member_regex))) < 1) {
     stop(
       paste0("Input data frame must include columns with names containing: ", member_prefix)
     )
@@ -26,10 +26,14 @@ gather_members.default <- function(.fcst, member_prefix = "_mbr") {
 
   .fcst <- tidyr::gather(
     .fcst,
-    dplyr::contains(member_prefix),
+    dplyr::matches(member_regex),
     key   = "member",
     value = "forecast"
-  )
+  ) %>%
+    dplyr::mutate(
+      sub_model = split_member_name(.data$member, member_regex)$sub_model,
+      member    = split_member_name(.data$member, member_regex)$member
+    )
 
   #.fcst <- .fcst %>% dplyr::mutate(
   #  member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
@@ -39,8 +43,19 @@ gather_members.default <- function(.fcst, member_prefix = "_mbr") {
 }
 
 #' @export
-gather_members.harp_fcst <- function(.fcst, member_prefix = "_mbr") {
-  purrr::map(.fcst, gather_members, member_prefix) %>%
+gather_members.harp_fcst <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
+  purrr::map(.fcst, gather_members, member_regex) %>%
     new_harp_fcst()
 }
 
+
+split_member_name <- function(mbr, mbr_regex) {
+  regex_starts  <- regexpr(mbr_regex, mbr)
+  mbr_start     <- regex_starts + 1
+  sub_model_end <- regex_starts  - 1
+  mapply_func   <- function(x, start, end) substr(x, start, end)
+  list(
+    sub_model = mapply(mapply_func, mbr, 1, sub_model_end, USE.NAMES = FALSE),
+    member    = mapply(mapply_func, mbr, mbr_start, nchar(mbr), USE.NAMES = FALSE)
+  )
+}

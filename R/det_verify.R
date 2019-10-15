@@ -58,7 +58,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
       .fcst     <- gather_members(.fcst) %>%
         dplyr::rename(forecast_det = .data$forecast)
 
-      groupings <- purrr::map(groupings, union, "member")
+      groupings <- purrr::map(groupings, union, c("member", "sub_model"))
       fcst_col  <- "forecast_det"
 
     }
