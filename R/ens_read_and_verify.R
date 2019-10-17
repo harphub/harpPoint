@@ -132,7 +132,8 @@ ens_read_and_verify <- function(
     obsfile_template  = obsfile_template,
     gross_error_check = gross_error_check,
     min_allowed       = min_allowed,
-    max_allowed       = max_allowed
+    max_allowed       = max_allowed,
+    stations          = stations
   )
 
   parameter_sym <- rlang::sym(parameter)
