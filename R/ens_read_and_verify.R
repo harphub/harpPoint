@@ -99,6 +99,7 @@ ens_read_and_verify <- function(
   groupings             = "leadtime",
   by                    = "6h",
   lags                  = "0s",
+  merge_lags_on_read    = TRUE,
   lag_fcst_models       = NULL,
   parent_cycles         = NULL,
   lag_direction         = 1,
@@ -191,6 +192,7 @@ ens_read_and_verify <- function(
       parameter      = parameter,
       lead_time      = lead_list[[i]],
       lags           = lags,
+      merge_lags     = merge_lags_on_read,
       by             = by,
       file_path      = fcst_path,
       stations       = stations,
@@ -226,16 +228,18 @@ ens_read_and_verify <- function(
       )
     }
 
-    if (!is.null(lag_fcst_models)) {
-      if (is.null(parent_cycles)) {
-        stop("'parent_cycles' must be passed as well as 'lag_fcst_models'.")
+    if (!merge_lags_on_read) {
+      if (!is.null(lag_fcst_models)) {
+        if (is.null(parent_cycles)) {
+          stop("'parent_cycles' must be passed as well as 'lag_fcst_models'.")
+        }
+        fcst_data <- lag_forecast(
+          fcst_data,
+          lag_fcst_models,
+          parent_cycles,
+          direction = lag_direction
+        )
       }
-      fcst_data <- lag_forecast(
-        fcst_data,
-        lag_fcst_models,
-        parent_cycles,
-        direction = lag_direction
-      )
     }
 
     if (!is.null(fcst_shifts)) {
