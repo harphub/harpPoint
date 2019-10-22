@@ -94,6 +94,7 @@ ens_read_and_verify <- function(
   verify_members        = TRUE,
   thresholds            = NULL,
   members               = NULL,
+  vertical_coordinate   = c(NA_character_, "pressure", "model", "height"),
   fctable_file_template = "fctable_eps",
   obsfile_template      = "obstable",
   groupings             = "leadtime",
@@ -125,16 +126,19 @@ ens_read_and_verify <- function(
   last_obs  <- (suppressMessages(harpIO::str_datetime_to_unixtime(end_date)) + 3600 * max(lead_time)) %>%
     harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
 
+  vertical_coordinate <- match.arg(vertical_coordinate)
+
   obs_data <- harpIO::read_point_obs(
-    start_date        = first_obs,
-    end_date          = last_obs,
-    parameter         = parameter,
-    obs_path          = obs_path,
-    obsfile_template  = obsfile_template,
-    gross_error_check = gross_error_check,
-    min_allowed       = min_allowed,
-    max_allowed       = max_allowed,
-    stations          = stations
+    start_date          = first_obs,
+    end_date            = last_obs,
+    parameter           = parameter,
+    obs_path            = obs_path,
+    obsfile_template    = obsfile_template,
+    gross_error_check   = gross_error_check,
+    min_allowed         = min_allowed,
+    max_allowed         = max_allowed,
+    stations            = stations,
+    vertical_coordinate = vertical_coordinate
   )
 
   parameter_sym <- rlang::sym(parameter)
@@ -161,6 +165,26 @@ ens_read_and_verify <- function(
     cat("Lead time:", lead_list[[i]], "( Iteration", i, "of", num_iterations, ")\n")
     cat(rep("=", 80), "\n", sep = "")
 
+    harp_parameter <- harpIO::parse_harp_parameter(
+      parameter,
+      vertical_coordinate = vertical_coordinate
+    )
+
+    if (harp_parameter$accum > 0 && lead_list[[i]] * 3600 < harp_parameter$accum) {
+      warning_message <- paste0(
+        "Cannot accumulate ",
+        harpIO:::parse_accum(harp_parameter),
+        harp_parameter$acc_unit,
+        " ",
+        harp_parameter$basename,
+        " for lead time: ",
+        lead_list[[i]],
+        "h. Skipping to next iteration."
+      )
+      warning(warning_message, call. = FALSE, immediate. = TRUE)
+      next()
+    }
+
     if (!is.null(fcst_shifts)) {
       if (keep_unshifted) {
         if (!any(grepl("_unshifted$", names(lags)))) {
@@ -185,19 +209,20 @@ ens_read_and_verify <- function(
     }
 
     fcst_data <- harpIO::read_point_forecast(
-      start_date     = start_date,
-      end_date       = end_date,
-      fcst_model     = fcst_model,
-      fcst_type      = "EPS",
-      parameter      = parameter,
-      lead_time      = lead_list[[i]],
-      lags           = lags,
-      merge_lags     = merge_lags_on_read,
-      by             = by,
-      file_path      = fcst_path,
-      stations       = stations,
-      members        = members,
-      file_template  = fctable_file_template
+      start_date          = start_date,
+      end_date            = end_date,
+      fcst_model          = fcst_model,
+      fcst_type           = "EPS",
+      parameter           = parameter,
+      lead_time           = lead_list[[i]],
+      lags                = lags,
+      merge_lags          = merge_lags_on_read,
+      by                  = by,
+      file_path           = fcst_path,
+      stations            = stations,
+      members             = members,
+      file_template       = fctable_file_template,
+      vertical_coordinate = vertical_coordinate
     ) %>%
       merge_multimodel()
 
