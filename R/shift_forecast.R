@@ -32,7 +32,7 @@ shift_forecast.default <- function(.fcst, fcst_shifts, drop_negative_lead_times 
     dplyr::mutate(
       fcdate     = .data$fcdate + fcst_shifts * 3600,
       leadtime   = .data$leadtime - fcst_shifts,
-      fcst_cycle = substr(harpIO::unixtime_to_str_datetime(.data$fcdate, YMDh), 9, 10)
+      fcst_cycle = substr(harpIO::unixtime_to_str_datetime(.data$fcdate, harpIO::YMDh), 9, 10)
     )
 
   if (drop_negative_lead_times) {

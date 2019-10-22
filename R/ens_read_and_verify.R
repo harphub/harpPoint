@@ -243,12 +243,22 @@ ens_read_and_verify <- function(
     }
 
     if (!is.null(fcst_shifts)) {
-      fcst_data <- shift_forecast(
-        fcst_data,
-        fcst_shifts,
-        keep_unshifted           = FALSE,
-        drop_negative_lead_times = drop_neg_leadtimes
-      )
+      if (merge_lags_on_read) {
+        shifted_models <- names(fcst_data)[names(fcst_data) %in% names(fcst_shifts)]
+        names(fcst_data)[names(fcst_data) %in% names(fcst_shifts)] <- paste(
+          shifted_models,
+          "shifted",
+          paste0(fcst_shifts, "h"),
+          sep = "_"
+        )
+      } else {
+        fcst_data <- shift_forecast(
+          fcst_data,
+          fcst_shifts,
+          keep_unshifted           = FALSE,
+          drop_negative_lead_times = drop_neg_leadtimes
+        )
+      }
     }
 
     fcst_data <- fcst_data %>%
