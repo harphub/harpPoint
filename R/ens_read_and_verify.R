@@ -64,7 +64,13 @@
 #' @param show_progress Logical - whether to show a progress bar. Defaults to
 #'   FALSE.
 #' @param verif_path If set, verification files will be saved to this path.
-#' @param fctable_file_template
+#' @param fctable_file_template The template for the file names of the files to be read
+#'   from. This would normally be one of the "fctable_*" templates that can be
+#'   seen in \code\link{show_file_templates}. Can be a single string, a
+#'   character vector or list of the same length as \code{fcst_model}. If not
+#'   named, the order of templates is assumed to be the same as in
+#'   \code{fcst_model}. If named, the names must match the entries in
+#'   \code{fcst_model}.
 #' @param lags
 #' @param lag_fcst_models
 #' @param parent_cycles
@@ -76,6 +82,8 @@
 #' @param scale_obs
 #' @param common_cases_only
 #' @param check_obs_fcst
+#' @param vertical_coordinate
+#' @param merge_lags_on_read
 #'
 #' @return A list containting two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
@@ -295,13 +303,13 @@ ens_read_and_verify <- function(
 
     fcst_data <- join_to_fcst(fcst_data, obs_data)
 
-    if (any(purrr::map_int(fcst_data, nrow) == 0)) next
+    if (any(purrr::map_int(fcst_data, nrow) == 0)) next()
 
     if (check_obs_fcst) {
       fcst_data <- check_obs_against_fcst(fcst_data, !! parameter_sym, num_sd_allowed = num_sd_allowed)
     }
 
-    if (any(purrr::map_int(fcst_data, nrow) == 0)) next
+    if (any(purrr::map_int(fcst_data, nrow) == 0)) next()
 
     verif_data[[i]] <- ens_verify(
       fcst_data,

@@ -8,15 +8,17 @@ ens_read_and_verify(start_date, end_date, parameter, fcst_model, fcst_path,
   obs_path, lead_time = seq(0, 48, 3),
   num_iterations = length(lead_time), verify_members = TRUE,
   thresholds = NULL, members = NULL,
+  vertical_coordinate = c(NA_character_, "pressure", "model", "height"),
   fctable_file_template = "fctable_eps", obsfile_template = "obstable",
   groupings = "leadtime", by = "6h", lags = "0s",
-  lag_fcst_models = NULL, parent_cycles = NULL, lag_direction = 1,
-  fcst_shifts = NULL, keep_unshifted = FALSE,
-  drop_neg_leadtimes = TRUE, climatology = "sample", stations = NULL,
-  scale_fcst = NULL, scale_obs = NULL, jitter_fcst = NULL,
-  common_cases_only = TRUE, check_obs_fcst = TRUE,
-  gross_error_check = TRUE, min_allowed = NULL, max_allowed = NULL,
-  num_sd_allowed = NULL, show_progress = FALSE, verif_path = NULL)
+  merge_lags_on_read = TRUE, lag_fcst_models = NULL,
+  parent_cycles = NULL, lag_direction = 1, fcst_shifts = NULL,
+  keep_unshifted = FALSE, drop_neg_leadtimes = TRUE,
+  climatology = "sample", stations = NULL, scale_fcst = NULL,
+  scale_obs = NULL, jitter_fcst = NULL, common_cases_only = TRUE,
+  check_obs_fcst = TRUE, gross_error_check = TRUE,
+  min_allowed = NULL, max_allowed = NULL, num_sd_allowed = NULL,
+  show_progress = FALSE, verif_path = NULL)
 }
 \arguments{
 \item{start_date}{Start date to for the verification. Should be numeric or
@@ -59,6 +61,14 @@ contain another named list with sub model name followed by the desired
 members, e.g. \cr \code{members = list(eps_model1 = list(sub_model1 =
 seq(0, 3), sub_model2 = c(2, 3)))}}
 
+\item{fctable_file_template}{The template for the file names of the files to be read
+from. This would normally be one of the "fctable_*" templates that can be
+seen in \code\link{show_file_templates}. Can be a single string, a
+character vector or list of the same length as \code{fcst_model}. If not
+named, the order of templates is assumed to be the same as in
+\code{fcst_model}. If named, the names must match the entries in
+\code{fcst_model}.}
+
 \item{obsfile_template}{The template for OBSTABLE files - the default is
 "obstable", which is \code{OBSTABLE_{YYYY}.sqlite}.}
 
@@ -66,6 +76,8 @@ seq(0, 3), sub_model2 = c(2, 3)))}}
 common grouping might be \code{groupings = c("leadtime", "fcst_cycle")}.}
 
 \item{by}{The frequency of forecast cycles to verify.}
+
+\item{merge_lags_on_read}{}
 
 \item{climatology}{The climatology to use for the Brier Skill Score. Can be
 "sample" for the sample climatology (the default), a named list with
@@ -81,8 +93,6 @@ stations from \link[harpIO]{station_list} that are common to all
 to account for observation error in the rank histogram. For other
 statistics it is likely to make little difference since it is expected that
 the observations will have a mean error of zero.}
-
-\item{check_obs_fcst}{}
 
 \item{gross_error_check}{Logical of whether to perform a gross error check.}
 
