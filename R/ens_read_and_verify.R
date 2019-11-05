@@ -66,7 +66,7 @@
 #' @param verif_path If set, verification files will be saved to this path.
 #' @param fctable_file_template The template for the file names of the files to be read
 #'   from. This would normally be one of the "fctable_*" templates that can be
-#'   seen in \code\link{show_file_templates}. Can be a single string, a
+#'   seen in \link{show_file_templates}. Can be a single string, a
 #'   character vector or list of the same length as \code{fcst_model}. If not
 #'   named, the order of templates is assumed to be the same as in
 #'   \code{fcst_model}. If named, the names must match the entries in
