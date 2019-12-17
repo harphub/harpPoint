@@ -78,10 +78,11 @@ ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime
 
 # Internal function to return nicely formatted column for ens_rank_histogram.
 sweep_rank_histogram <- function(rank_hist_df) {
-  nest_cols <- c("rank", "rank_count")
+  nest_cols <- c("rank", "relative_rank", "rank_count")
   rank_hist_df <- rank_hist_df %>%
     dplyr::mutate(
-      rank = purrr::map(.data$rank_count, ~ seq(1, length(.x)))
+      rank          = purrr::map(.data$rank_count, ~ seq(1, length(.x))),
+      relative_rank = purrr::map(.data$rank, ~ .x / max(.x))
     )
   if (harpIO:::tidyr_new_interface()) {
     tidyr::unnest(rank_hist_df, tidyr::one_of(nest_cols)) %>%
