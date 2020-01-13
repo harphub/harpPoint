@@ -90,7 +90,10 @@ scale_point_forecast.default <- function(.fcst, scale_factor, new_units = NULL, 
   }
 
   # Ensemble forecast data
-  data_cols <- grep("[[:graph:]]+mbr+[[:digit:]]+$", colnames(.fcst), perl = TRUE, value = TRUE)
+  data_cols <- union(
+    grep("[[:graph:]]+mbr+[[:digit:]]+$", colnames(.fcst), perl = TRUE, value = TRUE),
+    grep("[[:graph:]]+mbr+[[:digit:]]+_lag$", colnames(.fcst), perl = TRUE, value = TRUE)
+  )
 
   # Deterministic forecast data
   if (length(data_cols) < 1) {

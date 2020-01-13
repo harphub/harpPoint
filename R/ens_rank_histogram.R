@@ -82,7 +82,7 @@ sweep_rank_histogram <- function(rank_hist_df) {
   rank_hist_df <- rank_hist_df %>%
     dplyr::mutate(
       rank          = purrr::map(.data$rank_count, ~ seq(1, length(.x))),
-      relative_rank = purrr::map(.data$rank, ~ .x / max(.x))
+      relative_rank = purrr::map(.data$rank, ~ (.x - min(.x)) / (max(.x) - min(.x)))
     )
   if (harpIO:::tidyr_new_interface()) {
     tidyr::unnest(rank_hist_df, tidyr::one_of(nest_cols)) %>%
