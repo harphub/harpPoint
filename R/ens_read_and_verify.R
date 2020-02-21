@@ -193,6 +193,12 @@ ens_read_and_verify <- function(
       next()
     }
 
+    if (length(lags) == 1 && is.null(names(lags))) {
+      lags <- rep(lags, length(fcst_models)) %>%
+        as.list() %>%
+        purrr::set_names(fcst_models)
+    }
+
     if (!is.null(fcst_shifts)) {
       if (keep_unshifted) {
         if (!any(grepl("_unshifted$", names(lags)))) {
@@ -209,6 +215,12 @@ ens_read_and_verify <- function(
             shifted_and_select_members <- intersect(names(members), names(fcst_shifts))
             if (length(shifted_and_select_members) > 0) {
               members[paste0(shifted_and_select_members, "_unshifted")] <- members[shifted_and_select_members]
+            }
+          }
+          if (!is.null(names(fctable_file_template))) {
+            shifted_and_template <- intersect(names(fctable_file_template), names(fcst_shifts))
+            if (length(shifted_and_template) > 0) {
+              fctable_file_template[paste0(shifted_and_template, "_unshifted")] <- fctable_file_template[shifted_and_template]
             }
           }
         }
