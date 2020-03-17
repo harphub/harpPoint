@@ -4,12 +4,22 @@
 \alias{pooled_bootstrap_score}
 \title{Title}
 \usage{
-pooled_bootstrap_score(.fcst, score_function, parameter, n,
-  pooled_by = "fcdate", groupings = "leadtime",
-  confidence_interval = 0.95, ...)
+pooled_bootstrap_score(
+  .fcst,
+  score_function,
+  parameter,
+  n,
+  pooled_by = "fcdate",
+  groupings = "leadtime",
+  confidence_interval = 0.95,
+  ...
+)
 }
 \arguments{
 \item{...}{}
+}
+\value{
+
 }
 \description{
 Title

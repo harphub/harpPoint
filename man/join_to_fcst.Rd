@@ -4,8 +4,14 @@
 \alias{join_to_fcst}
 \title{Combine data with point forecasts.}
 \usage{
-join_to_fcst(.fcst, .join, join_type = c("inner", "left", "right",
-  "full", "semi", "anti"), by = NULL, force_join = FALSE, ...)
+join_to_fcst(
+  .fcst,
+  .join,
+  join_type = c("inner", "left", "right", "full", "semi", "anti"),
+  by = NULL,
+  force_join = FALSE,
+  ...
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object.}

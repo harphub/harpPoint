@@ -4,9 +4,17 @@
 \alias{ens_verify}
 \title{Compute all verification scores for an ensemble.}
 \usage{
-ens_verify(.fcst, parameter, verify_members = TRUE, thresholds = NULL,
-  groupings = "leadtime", num_ref_members = NA, jitter_fcst = NULL,
-  climatology = "sample", show_progress = TRUE)
+ens_verify(
+  .fcst,
+  parameter,
+  verify_members = TRUE,
+  thresholds = NULL,
+  groupings = "leadtime",
+  num_ref_members = NA,
+  jitter_fcst = NULL,
+  climatology = "sample",
+  show_progress = TRUE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

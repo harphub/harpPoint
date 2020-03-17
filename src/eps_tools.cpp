@@ -7,7 +7,6 @@ using namespace Rcpp;
 //'
 //' @param x A two dimensional numeric array.
 //' @param byrow Set to true sort rows, false to sort columns.
-//' @export
 // [[Rcpp::export]]
 NumericMatrix sort_members(NumericMatrix x, bool byrow=true) {
 // sort a matrix by row
@@ -30,7 +29,6 @@ NumericMatrix sort_members(NumericMatrix x, bool byrow=true) {
 //'
 //' @param obs A vector of observations.
 //' @param fc A two dimensional array of EPS data with members in columns.
-//' @export
 // [[Rcpp::export]]
 NumericVector rankHistogram(NumericVector obs, NumericMatrix fc) {
 // fc is a matrix with each column containing forecast of another ensemble member
@@ -50,7 +48,6 @@ NumericVector rankHistogram(NumericVector obs, NumericMatrix fc) {
 //'
 //' @param fc A two dimensional array of EPS data with members in columns.
 //' @param byrow The thresholds to compute probabilities for
-//' @export
 // [[Rcpp::export]]
 NumericMatrix fcprob(NumericMatrix fc, NumericVector thresholds) {
   int i, j, k, nmbr=fc.ncol(), npoints=fc.nrow(), nthresh=thresholds.size();

@@ -4,8 +4,13 @@
 \alias{scale_point_obs}
 \title{Scale observations data}
 \usage{
-scale_point_obs(.obs, parameter, scale_factor, new_units = NULL,
-  multiplicative = FALSE)
+scale_point_obs(
+  .obs,
+  parameter,
+  scale_factor,
+  new_units = NULL,
+  multiplicative = FALSE
+)
 }
 \arguments{
 \item{.obs}{A data frame of point observations as read in by read in by

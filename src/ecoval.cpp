@@ -10,7 +10,6 @@ using namespace Rcpp;
 //' @param costloss A vector of cost/loss ratios
 //' @param thresholds A vector of threshold probabilities
 //' @value a list of cl, value, Vmax, Venv, H, F, s, n
-//' @export
 // [[Rcpp::export]]
 List ecoval(NumericVector obs, NumericVector pred,
     NumericVector costloss,
@@ -74,7 +73,7 @@ List ecoval(NumericVector obs, NumericVector pred,
         a = b = 0. ;
         // In fact we don't even need c and d
         // c = d = 0;
-  
+
         // TODO: with a lot of threshold values, this double loop becomes inefficient!
         // ---> use ordered list of predictions
         for (i = 0 ; i < ncases ; i++) {

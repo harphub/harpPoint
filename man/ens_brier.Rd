@@ -4,10 +4,16 @@
 \alias{ens_brier}
 \title{Brier score and its decomposition for an ensemble.}
 \usage{
-ens_brier(.fcst, parameter, thresholds, groupings = "leadtime",
-  climatology = "sample", num_ref_members = NA,
+ens_brier(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings = "leadtime",
+  climatology = "sample",
+  num_ref_members = NA,
   keep_score = c("both", "brier", "reliability"),
-  show_progress = FALSE)
+  show_progress = FALSE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

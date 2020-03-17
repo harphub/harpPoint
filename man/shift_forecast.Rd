@@ -4,8 +4,12 @@
 \alias{shift_forecast}
 \title{Shift a forecast}
 \usage{
-shift_forecast(.fcst, fcst_shifts, keep_unshifted = FALSE,
-  drop_negative_lead_times = TRUE)
+shift_forecast(
+  .fcst,
+  fcst_shifts,
+  keep_unshifted = FALSE,
+  drop_negative_lead_times = TRUE
+)
 }
 \arguments{
 \item{.fcst}{A harp_fcst object as created by \link{read_point_forecast}, or

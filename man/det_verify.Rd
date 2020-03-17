@@ -4,8 +4,13 @@
 \alias{det_verify}
 \title{Compute verification scores for deterministic forecasts.}
 \usage{
-det_verify(.fcst, parameter, thresholds = NULL, groupings = "leadtime",
-  show_progress = FALSE)
+det_verify(
+  .fcst,
+  parameter,
+  thresholds = NULL,
+  groupings = "leadtime",
+  show_progress = FALSE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

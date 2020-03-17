@@ -4,8 +4,12 @@
 \alias{scale_point_forecast}
 \title{Scale forecast data}
 \usage{
-scale_point_forecast(.fcst, scale_factor, new_units = NULL,
-  multiplicative = FALSE)
+scale_point_forecast(
+  .fcst,
+  scale_factor,
+  new_units = NULL,
+  multiplicative = FALSE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object as read in by read_point_forecast from

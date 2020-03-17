@@ -4,8 +4,15 @@
 \alias{bootstrap_score}
 \title{Bootstrap a score}
 \usage{
-bootstrap_score(.fcst, score_function, parameter, n,
-  groupings = "leadtime", confidence_interval = 0.95, ...)
+bootstrap_score(
+  .fcst,
+  score_function,
+  parameter,
+  n,
+  groupings = "leadtime",
+  confidence_interval = 0.95,
+  ...
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object.}
@@ -21,6 +28,9 @@ columns.}
 is leadtime.}
 
 \item{...}{Other arguments to the score function. e.g. thresholds.}
+}
+\value{
+
 }
 \description{
 Compute the confidence intervals of verification scores using a bootstrap

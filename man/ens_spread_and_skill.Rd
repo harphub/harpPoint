@@ -4,8 +4,12 @@
 \alias{ens_spread_and_skill}
 \title{Compute the skill (RMSE) and spread of an ensemble forecast}
 \usage{
-ens_spread_and_skill(.fcst, parameter, groupings = "leadtime",
-  jitter_fcst = NULL)
+ens_spread_and_skill(
+  .fcst,
+  parameter,
+  groupings = "leadtime",
+  jitter_fcst = NULL
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

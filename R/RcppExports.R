@@ -8,7 +8,6 @@
 #' @param costloss A vector of cost/loss ratios
 #' @param thresholds A vector of threshold probabilities
 #' @value a list of cl, value, Vmax, Venv, H, F, s, n
-#' @export
 ecoval <- function(obs, pred, costloss, thresholds) {
     .Call('_harpPoint_ecoval', PACKAGE = 'harpPoint', obs, pred, costloss, thresholds)
 }
@@ -17,7 +16,6 @@ ecoval <- function(obs, pred, costloss, thresholds) {
 #'
 #' @param x A two dimensional numeric array.
 #' @param byrow Set to true sort rows, false to sort columns.
-#' @export
 sort_members <- function(x, byrow = TRUE) {
     .Call('_harpPoint_sort_members', PACKAGE = 'harpPoint', x, byrow)
 }
@@ -26,7 +24,6 @@ sort_members <- function(x, byrow = TRUE) {
 #'
 #' @param obs A vector of observations.
 #' @param fc A two dimensional array of EPS data with members in columns.
-#' @export
 rankHistogram <- function(obs, fc) {
     .Call('_harpPoint_rankHistogram', PACKAGE = 'harpPoint', obs, fc)
 }
@@ -35,7 +32,6 @@ rankHistogram <- function(obs, fc) {
 #'
 #' @param fc A two dimensional array of EPS data with members in columns.
 #' @param byrow The thresholds to compute probabilities for
-#' @export
 fcprob <- function(fc, thresholds) {
     .Call('_harpPoint_fcprob', PACKAGE = 'harpPoint', fc, thresholds)
 }
@@ -46,7 +42,6 @@ fcprob <- function(fc, thresholds) {
 #' @param pred A vector of probabilities [0,1].
 #' @param thresholds A vector of threshold probabilities
 #' @value a list with area and vectors thresholds, H, F
-#' @export
 roc <- function(obs, pred, thresholds) {
     .Call('_harpPoint_roc', PACKAGE = 'harpPoint', obs, pred, thresholds)
 }

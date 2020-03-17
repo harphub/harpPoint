@@ -4,8 +4,12 @@
 \alias{ens_rank_histogram}
 \title{Rank histogram for an ensemble.}
 \usage{
-ens_rank_histogram(.fcst, parameter, groupings = "leadtime",
-  jitter_fcst = NULL)
+ens_rank_histogram(
+  .fcst,
+  parameter,
+  groupings = "leadtime",
+  jitter_fcst = NULL
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for

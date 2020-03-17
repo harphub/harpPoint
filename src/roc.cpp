@@ -9,7 +9,6 @@ using namespace Rcpp;
 //' @param pred A vector of probabilities [0,1].
 //' @param thresholds A vector of threshold probabilities
 //' @value a list with area and vectors thresholds, H, F
-//' @export
 // [[Rcpp::export]]
 List roc(NumericVector obs, NumericVector pred,
     NumericVector thresholds ) {
@@ -89,15 +88,15 @@ List roc(NumericVector obs, NumericVector pred,
       pp = pred[index[i]];
       while (j < ncases && pred[index[j]] == pp ) { mean_rank += j++; }
       rcount = j - i ;
- 
+
       for ( ; i < j ; i++) ranked[index[i]] = mean_rank / rcount + 1;
     }
 
     // according to Rcpp documentation "mean(ranked[obs==1])" should work
     // but for some reason it doesn't
     mean_rank = 0;
-    for (i = 0 ; i< ncases ; i++) if (obs[i]) mean_rank += ranked[i]; 
-    
+    for (i = 0 ; i< ncases ; i++) if (obs[i]) mean_rank += ranked[i];
+
     area[0] = (mean_rank/nevents - (nevents + 1.)/2.) / (ncases - nevents);
 
 

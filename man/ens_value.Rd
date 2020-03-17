@@ -4,8 +4,13 @@
 \alias{ens_value}
 \title{Economic value for an ensemble.}
 \usage{
-ens_value(.fcst, parameter, thresholds, groupings = "leadtime",
-  show_progress = FALSE)
+ens_value(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings = "leadtime",
+  show_progress = FALSE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object with tables that have a column for
