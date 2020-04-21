@@ -4,10 +4,13 @@
 \alias{common_cases}
 \title{Filter to common cases}
 \usage{
-common_cases(.fcst)
+common_cases(.fcst, ...)
 }
 \arguments{
 \item{.fcst}{A harp_fcst object}
+
+\item{...}{Extra columns from which to determine the common cases. To remove
+one of the default columns from the test use -<col>.}
 }
 \value{
 The input data frame with only the common stations and forecast dates
@@ -18,4 +21,6 @@ For a fair comparison of models, the verification should only be done for
 dates and locations that are common to all models. \code{common_cases} takes
 a harp_fcst object as input and then identifies and filters to only those
 cases that are common to all of the forecast models in the harp_fcst object.
+By default this is done with the SID, fcdate and leadtime columns, but extra
+columns can be added via ...
 }
