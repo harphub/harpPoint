@@ -35,6 +35,7 @@ ens_read_and_verify(
   scale_obs = NULL,
   jitter_fcst = NULL,
   common_cases_only = TRUE,
+  common_cases_xtra_cols = NULL,
   check_obs_fcst = TRUE,
   gross_error_check = TRUE,
   min_allowed = NULL,

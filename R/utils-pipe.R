@@ -10,3 +10,7 @@
 #' @importFrom rlang .data :=
 #' @usage lhs \%>\% rhs
 NULL
+
+#' @importFrom dplyr vars
+#' @export
+dplyr::vars

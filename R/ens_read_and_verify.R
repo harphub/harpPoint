@@ -97,37 +97,38 @@ ens_read_and_verify <- function(
   fcst_model,
   fcst_path,
   obs_path,
-  lead_time             = seq(0, 48, 3),
-  num_iterations        = length(lead_time),
-  verify_members        = TRUE,
-  thresholds            = NULL,
-  members               = NULL,
-  vertical_coordinate   = c(NA_character_, "pressure", "model", "height"),
-  fctable_file_template = "fctable_eps",
-  obsfile_template      = "obstable",
-  groupings             = "leadtime",
-  by                    = "6h",
-  lags                  = "0s",
-  merge_lags_on_read    = TRUE,
-  lag_fcst_models       = NULL,
-  parent_cycles         = NULL,
-  lag_direction         = 1,
-  fcst_shifts           = NULL,
-  keep_unshifted        = FALSE,
-  drop_neg_leadtimes    = TRUE,
-  climatology           = "sample",
-  stations              = NULL,
-  scale_fcst            = NULL,
-  scale_obs             = NULL,
-  jitter_fcst           = NULL,
-  common_cases_only     = TRUE,
-  check_obs_fcst        = TRUE,
-  gross_error_check     = TRUE,
-  min_allowed           = NULL,
-  max_allowed           = NULL,
-  num_sd_allowed        = NULL,
-  show_progress         = FALSE,
-  verif_path            = NULL
+  lead_time              = seq(0, 48, 3),
+  num_iterations         = length(lead_time),
+  verify_members         = TRUE,
+  thresholds             = NULL,
+  members                = NULL,
+  vertical_coordinate    = c(NA_character_, "pressure", "model", "height"),
+  fctable_file_template  = "fctable_eps",
+  obsfile_template       = "obstable",
+  groupings              = "leadtime",
+  by                     = "6h",
+  lags                   = "0s",
+  merge_lags_on_read     = TRUE,
+  lag_fcst_models        = NULL,
+  parent_cycles          = NULL,
+  lag_direction          = 1,
+  fcst_shifts            = NULL,
+  keep_unshifted         = FALSE,
+  drop_neg_leadtimes     = TRUE,
+  climatology            = "sample",
+  stations               = NULL,
+  scale_fcst             = NULL,
+  scale_obs              = NULL,
+  jitter_fcst            = NULL,
+  common_cases_only      = TRUE,
+  common_cases_xtra_cols = NULL,
+  check_obs_fcst         = TRUE,
+  gross_error_check      = TRUE,
+  min_allowed            = NULL,
+  max_allowed            = NULL,
+  num_sd_allowed         = NULL,
+  show_progress          = FALSE,
+  verif_path             = NULL
 ) {
 
   first_obs <- start_date
@@ -310,7 +311,32 @@ ens_read_and_verify <- function(
       dplyr::filter(.data$leadtime %in% lead_list[[i]])
 
     if (common_cases_only) {
-      fcst_data <- common_cases(fcst_data)
+      col_names    <- unique(unlist(lapply(fcst_data, colnames)))
+      xtra_cols_err <- paste("common_cases_xtra_cols must be wrapped in vars and unquoted,\n",
+        "e.g. common_cases_xtra_cols = vars(p).")
+      xtra_cols_null <- try(is.null(common_cases_xtra_cols), silent = TRUE)
+      if (inherits(xtra_cols_null, "try-error")) {
+        stop(xtra_cols_err, call. = FALSE)
+      } else {
+        if (xtra_cols_null) {
+          fcst_data <- common_cases(fcst_data)
+        } else {
+          if (inherits(common_cases_xtra_cols, "quosures")) {
+            xtra_cols <- purrr::map_chr(rlang::eval_tidy(common_cases_xtra_cols), rlang::quo_name)
+            if (length(setdiff(xtra_cols, col_names)) > 1) {
+              stop(
+                "Column(s) '", paste(setdiff(xtra_cols, col_names), collapse = "','"), "' ",
+                "for selecting common cases not found.",
+                call. = FALSE
+              )
+            } else {
+              fcst_data <- common_cases(fcst_data, !!!common_cases_xtra_cols)
+            }
+          } else {
+            stop(xtra_cols_err, call. = FALSE)
+          }
+        }
+      }
     }
 
     fcst_data <- join_to_fcst(fcst_data, obs_data)
