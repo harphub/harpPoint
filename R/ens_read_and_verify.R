@@ -195,9 +195,9 @@ ens_read_and_verify <- function(
     }
 
     if (length(lags) == 1 && is.null(names(lags))) {
-      lags <- rep(lags, length(fcst_models)) %>%
+      lags <- rep(lags, length(fcst_model)) %>%
         as.list() %>%
-        purrr::set_names(fcst_models)
+        purrr::set_names(fcst_model)
     }
 
     if (!is.null(fcst_shifts)) {
@@ -337,6 +337,11 @@ ens_read_and_verify <- function(
           }
         }
       }
+    }
+
+    if (all(sapply(fcst_data, nrow)) < 1) {
+      message("No forecast data available. Skipping to next iteration.")
+      next()
     }
 
     fcst_data <- join_to_fcst(fcst_data, obs_data)
