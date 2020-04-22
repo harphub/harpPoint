@@ -169,6 +169,7 @@ ens_read_and_verify <- function(
 
   lead_list <- split(lead_time, sort(seq_along(lead_time) %% num_iterations))
 
+  stations_used <- list()
   for (i in 1:num_iterations) {
 
     cat("Lead time:", lead_list[[i]], "( Iteration", i, "of", num_iterations, ")\n")
@@ -345,6 +346,7 @@ ens_read_and_verify <- function(
     }
 
     fcst_data <- join_to_fcst(fcst_data, obs_data)
+    stations_used[[i]] <- unique(unlist(dplyr::pull(fcst_data, .data[["SID"]])))
 
     if (any(purrr::map_int(fcst_data, nrow) == 0)) next()
 
@@ -365,7 +367,7 @@ ens_read_and_verify <- function(
       show_progress  = show_progress
     )
 
-  }
+  } # end loop over lead times
 
   verif_data <- verif_data[purrr::map_lgl(verif_data, ~!is.null(.x))]
 
@@ -373,13 +375,10 @@ ens_read_and_verify <- function(
     stop("No data to verify", call. = FALSE)
   }
 
-  num_stations <- max(purrr::map_int(verif_data, attr, "num_stations"))
+  stations_used <- unique(unlist(stations_used))
 
-  verif_data <- list(
-    ens_summary_scores   = purrr::map_dfr(verif_data, "ens_summary_scores"),
-    ens_threshold_scores = purrr::map_dfr(verif_data, "ens_threshold_scores"),
-    det_summary_scores   = purrr::map_dfr(verif_data, "det_summary_scores")
-  )
+  verif_data       <- bind_point_verif(verif_data)
+  verif_attributes <- attributes(verif_data)
 
   verif_data <- purrr::map(
     verif_data,
@@ -392,10 +391,9 @@ ens_read_and_verify <- function(
     )
   )
 
-  attr(verif_data, "parameter")    <- parameter
-  attr(verif_data, "start_date")   <- start_date
-  attr(verif_data, "end_date")     <- end_date
-  attr(verif_data, "num_stations") <- num_stations
+  attributes(verif_data)           <- verif_attributes
+  attr(verif_data, "num_stations") <- as.character(length(stations_used))
+  attr(verif_data, "stations")     <- sort(stations_used)
 
   if (!is.null(verif_path)) {
     harpIO::save_point_verif(verif_data, verif_path = verif_path)
