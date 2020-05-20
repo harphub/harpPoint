@@ -9,7 +9,7 @@ det_verify(
   parameter,
   thresholds = NULL,
   groupings = "leadtime",
-  show_progress = FALSE
+  show_progress = TRUE
 )
 }
 \arguments{

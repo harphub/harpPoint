@@ -40,9 +40,15 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
-  crps_function <- function(df, parameter, show_progress) {
-    parameter <- rlang::enquo(parameter)
-    res       <- harp_crps(df, !! parameter)
+  .fcst <- bind_crps_vars(.fcst, !!parameter)
+
+  crps_function <- function(df, show_progress) {
+    res       <- verification::crpsFromAlphaBeta(
+      do.call(rbind, df[["alpha"]]),
+      do.call(rbind, df[["beta"]]),
+      df[["h0"]],
+      df[["hN"]]
+    )
     if (show_progress) {
       crps_progress$tick()
     }
@@ -87,7 +93,7 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
     fcst_df <- fcst_df %>%
       dplyr::mutate(
         num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
-        !! crps_output := purrr::map(.data$grouped_fcst, crps_function, !! parameter, show_progress)
+        !! crps_output := purrr::map(.data$grouped_fcst, crps_function, show_progress)
       )
 
     if (!is.na(num_ref_members)) {
@@ -108,7 +114,13 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
 
 #' @export
 ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", num_ref_members = NA, keep_full_output = FALSE, show_progress = FALSE) {
-  parameter <- rlang::enquo(parameter)
+
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    parameter <- rlang::ensym(parameter)
+  }
+
   list(
     ens_summary_scores = purrr::map(.fcst, ens_crps, !! parameter, groupings, num_ref_members, keep_full_output, show_progress) %>%
     dplyr::bind_rows(.id = "mname"),
@@ -130,4 +142,33 @@ sweep_crps <- function(crps_df, crps_col, keep_full_output) {
     crps_df <- dplyr::select(crps_df, - !! crps_col)
   }
   crps_df
+}
+
+bind_crps_vars <- function(.fcst, parameter) {
+
+  parameter <- rlang::enquo(parameter)
+
+  crps_func <- function(df, col) {
+
+    col            <- rlang::enquo(col)
+    crps_data_cols <- c("alpha", "beta", "h0", "hN")
+
+    if (!identical(crps_data_cols, intersect(crps_data_cols, colnames(df)))) {
+      crps_data     <- harp_crps(df, !!col)
+      df[["alpha"]] <- unname(split(crps_data[["alpha"]], 1:nrow(crps_data[["alpha"]])))
+      df[["beta"]]  <- unname(split(crps_data[["beta"]], 1:nrow(crps_data[["beta"]])))
+      df[["h0"]]    <- crps_data[["heaviside0"]]
+      df[["hN"]]    <- crps_data[["heavisideN"]]
+    }
+
+    df
+
+  }
+
+  if (inherits(.fcst, "harp_fcst")) {
+    new_harp_fcst(lapply(.fcst, crps_func, !!parameter))
+  } else {
+    crps_func(.fcst, !!parameter)
+  }
+
 }

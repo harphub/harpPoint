@@ -15,12 +15,12 @@
 #' @export
 #'
 #' @examples
-det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
+det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
   UseMethod("det_verify")
 }
 
 #' @export
-det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
+det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
@@ -174,7 +174,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   } else {
 
-    det_threshold_scores <- empty_det_threshold_scores(.fcst, groupings)
+    det_threshold_scores <- NULL
 
   }
 
@@ -183,7 +183,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 }
 
 #' @export
-det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = FALSE) {
+det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
   parameter   <- rlang::enquo(parameter)
   list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings, show_progress)
   list(

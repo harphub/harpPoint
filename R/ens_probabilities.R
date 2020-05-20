@@ -73,7 +73,15 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 
 #' @export
 ens_probabilities.harp_fcst <- function(.fcst, thresholds, parameter = NULL) {
-  parameter <- rlang::enquo(parameter)
+
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    if (!is.null(parameter)) {
+      parameter <- rlang::ensym(parameter)
+    }
+  }
+
   purrr::map(.fcst, ens_probabilities, thresholds, !! parameter) %>%
     new_harp_fcst()
 }

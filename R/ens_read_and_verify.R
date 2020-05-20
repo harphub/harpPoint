@@ -345,6 +345,15 @@ ens_read_and_verify <- function(
       next()
     }
 
+    # Check column names for parameter - if not found, try the base name
+    if (!is.element(harp_parameter[["fullname"]], colnames(obs_data))) {
+      if (is.element(harp_parameter[["basename"]], colnames(obs_data))) {
+        names(obs_data)[names(obs_data) == harp_parameter[["basename"]]] <- harp_parameter[["fullname"]]
+      } else {
+        stop("Don't know what to do with parameter '", harp_parameter[["fullname"]], "'.", call. = FALSE)
+      }
+    }
+
     fcst_data <- join_to_fcst(fcst_data, obs_data)
     stations_used[[i]] <- unique(unlist(dplyr::pull(fcst_data, .data[["SID"]])))
 

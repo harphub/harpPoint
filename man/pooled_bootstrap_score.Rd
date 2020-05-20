@@ -12,6 +12,9 @@ pooled_bootstrap_score(
   pooled_by = "fcdate",
   groupings = "leadtime",
   confidence_interval = 0.95,
+  min_cases = 25,
+  perfect_scores = perfect_score(),
+  show_progress = TRUE,
   ...
 )
 }

@@ -188,11 +188,13 @@ ens_brier.harp_fcst <- function(
   keep_score = "both",
   show_progress = FALSE
 ) {
-  if (missing(parameter)) {
-    parameter <- rlang::quo(NULL)
-  } else {
-    parameter   <- rlang::enquo(parameter)
+
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    parameter <- rlang::ensym(parameter)
   }
+
   if (missing(thresholds)) {
     thresholds <- NULL
   }

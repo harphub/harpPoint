@@ -80,7 +80,13 @@ ens_value.default <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
 #' @export
 ens_value.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
-  parameter <- rlang::enquo(parameter)
+
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    parameter <- rlang::ensym(parameter)
+  }
+
   list(
     ens_summary_scores = NULL,
     ens_threshold_scores = purrr::map(.fcst, ens_value, !! parameter, thresholds, groupings, show_progress) %>%

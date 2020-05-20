@@ -27,9 +27,9 @@ harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst
 
   fcst_col_name   <- ifelse (fcst_type == "EPS", "_mbr", "_det")
   eps             <- dplyr::select(.fcst, dplyr::contains(fcst_col_name))
-  probs           <- fcprob(as.matrix(eps), thresholds) %>%
-    tibble::as_tibble()
+  probs           <- fcprob(as.matrix(eps), thresholds)
   colnames(probs) <- c(paste0("fcst_prob_", thresholds), "num_members", "ens_mean", "ens_var")
+  probs           <- tibble::as_tibble(probs)
   probs           <- dplyr::select(probs, dplyr::contains("_prob_"))
 
   # Do the same for the observations to get a binary 1 or 0. Then bind the
@@ -38,9 +38,9 @@ harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst
   if (obs_prob) {
 
     obs                  <- dplyr::select(.fcst, .data[[.param]])
-    binary_obs           <- fcprob(as.matrix(obs), thresholds) %>%
-      tibble::as_tibble()
+    binary_obs           <- fcprob(as.matrix(obs), thresholds)
     colnames(binary_obs) <- c(paste0("obs_prob_", thresholds), "numMember", "ensMean", "ensVar")
+    binary_obs           <- tibble::as_tibble(binary_obs)
 
     probs <- probs %>%
       dplyr::bind_cols(obs) %>%

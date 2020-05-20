@@ -21,6 +21,11 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
 
   parameter <- rlang::enquo(parameter)
 
+  fun_name  <- as.character(substitute(score_function))
+  if (fun_name == "ens_crps") {
+    .fcst <- bind_crps_vars(.fcst, !!parameter)
+  }
+
   dots <- rlang::dots_list(...)
   if(is.element("thresholds", names(dots))) {
       groupings <- c(groupings, "threshold")

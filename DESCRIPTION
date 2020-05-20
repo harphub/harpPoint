@@ -1,6 +1,6 @@
 Package: harpPoint
 Title: Point verifition for NWP forecasts
-Version: 0.0.0.9090
+Version: 0.0.0.9091
 Authors@R: as.person(c(
     "Andrew Singleton <andrewts@met.no> [aut, cre]", 
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut]"
@@ -33,7 +33,8 @@ Imports:
     progress,
     matrixStats,
     SpecsVerification,
-    lubridate
+    lubridate,
+    cli
 Remotes:
     andrew-MET/harpIO
 URL: https://github.com/andrew-MET/harpPoint

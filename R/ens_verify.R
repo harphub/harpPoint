@@ -143,6 +143,10 @@ ens_verify.harp_fcst <- function (
   show_progress   = TRUE
 ) {
   parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    parameter <- rlang::ensym(parameter)
+  }
   if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
   list_result <- purrr::map(.fcst, ens_verify, !! parameter, verify_members, thresholds, groupings, num_ref_members, jitter_fcst, climatology, show_progress)
   list(

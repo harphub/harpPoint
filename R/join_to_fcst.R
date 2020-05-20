@@ -114,7 +114,7 @@ join_to_fcst.default <- function(
     message("Joining, by = c(\"", paste(by, collapse = "\", \""), "\")")
   }
 
-  join_func(.fcst, .join, by = by, ...)
+  suppressMessages(join_func(.fcst, .join, by = by, ...))
 
 }
 

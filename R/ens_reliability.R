@@ -28,7 +28,13 @@ ens_reliability <- function(
   climatology = "sample",
   show_progress = FALSE
 ) {
-  parameter <- rlang::enquo(parameter)
+
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    parameter <- rlang::eval_tidy(parameter)
+    parameter <- rlang::ensym(parameter)
+  }
+
   ens_brier(
     .fcst,
     !! parameter,
