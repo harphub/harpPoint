@@ -76,8 +76,8 @@ ens_probabilities.harp_fcst <- function(.fcst, thresholds, parameter = NULL) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    parameter <- rlang::eval_tidy(parameter)
-    if (!is.null(parameter)) {
+    if (is.character(rlang::eval_tidy(parameter))) {
+      parameter <- rlang::eval_tidy(parameter)
       parameter <- rlang::ensym(parameter)
     }
   }

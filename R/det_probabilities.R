@@ -36,7 +36,13 @@ det_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabil
 
 #' @export
 det_probabilities.harp_fcst <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
-  parameter <- rlang::enquo(parameter)
+  parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    if (is.character(rlang::eval_tidy(parameter))) {
+      parameter <- rlang::eval_tidy(parameter)
+      parameter <- rlang::ensym(parameter)
+    }
+  }
   purrr::map(.fcst, det_probabilities, !! parameter, thresholds, obs_probabilities) %>%
     new_harp_fcst()
 }

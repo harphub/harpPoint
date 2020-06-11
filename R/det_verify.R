@@ -184,7 +184,15 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
 #' @export
 det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
+
   parameter   <- rlang::enquo(parameter)
+  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+    if (is.character(rlang::eval_tidy(parameter))) {
+      parameter <- rlang::eval_tidy(parameter)
+      parameter <- rlang::ensym(parameter)
+    }
+  }
+
   list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings, show_progress)
   list(
     det_summary_scores   = dplyr::bind_rows(

@@ -84,8 +84,10 @@ ens_roc.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtim
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    parameter <- rlang::eval_tidy(parameter)
-    parameter <- rlang::ensym(parameter)
+    if (is.character(rlang::eval_tidy(parameter))) {
+      parameter <- rlang::eval_tidy(parameter)
+      parameter <- rlang::ensym(parameter)
+    }
   }
 
   list(

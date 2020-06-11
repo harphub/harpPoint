@@ -117,8 +117,10 @@ ens_crps.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", num_ref
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    parameter <- rlang::eval_tidy(parameter)
-    parameter <- rlang::ensym(parameter)
+    if (is.character(rlang::eval_tidy(parameter))) {
+      parameter <- rlang::eval_tidy(parameter)
+      parameter <- rlang::ensym(parameter)
+    }
   }
 
   list(
