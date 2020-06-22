@@ -156,4 +156,84 @@ join_models.harp_fcst <- function(
   new_harp_fcst(out)
 }
 
+#' @export
+bind_rows.harp_fcst <- function(..., .id = NULL) {
+  NextMethod()
+}
+
+#' dplyr verbs for lists
+#'
+#' When you have a list of data frames, such as the output to a verification
+#' function, you may want to wrangle data in those data frames at the same time.
+#' This can be achieved using the dplyr verb followed by _list. For data frames
+#' where the function is applicaple the modified data frame is returned. If the
+#' verb fails (e.g. because the specified columns don't exist), the data frame
+#' is silently returned unmodified
+#'
+#' @param .list A list of data frames
+#' @param ... Other arguments to the dplyr verb
+#' @seealso /link[dplyr]{mutate}, /link[dplyr]{filter}, /link[dplyr]{select}
+#' @name dplyr_list
+NULL
+
+#' @rdname dplyr_list
+#' @export
+mutate_list <- function(.list, ...) {
+
+  stopifnot(is.list(.list))
+
+  possibly_mutate <- function(df1, ...) {
+    poss_func <- purrr::possibly(dplyr::mutate, otherwise = NA)
+    df <- poss_func(df1, ...)
+    if (!is.data.frame(df)) df <- df1
+    df
+  }
+
+  list_attr <- attributes(.list)
+  .list <- purrr::map(.list, dplyr::ungroup) %>%
+    purrr::map(possibly_mutate, ...)
+  attributes(.list) <- list_attr
+  .list
+}
+
+#' @rdname dplyr_list
+#' @export
+filter_list <- function(.list, ...) {
+
+  stopifnot(is.list(.list))
+
+  possibly_filter <- function(df1, ...) {
+    poss_func <- purrr::possibly(dplyr::filter, otherwise = NA)
+    df <- poss_func(df1, ...)
+    if (!is.data.frame(df)) df <- df1
+    df
+  }
+
+  list_attr <- attributes(.list)
+  .list <- purrr::map(.list, dplyr::ungroup) %>%
+    purrr::map(possibly_filter, ...)
+  attributes(.list) <- list_attr
+  .list
+}
+
+#' @rdname dplyr_list
+#' @export
+select_list <- function(.list, ...) {
+
+  stopifnot(is.list(.list))
+
+  possibly_select <- function(df1, ...) {
+    poss_func <- purrr::possibly(dplyr::select, otherwise = NA)
+    df <- poss_func(df1, ...)
+    if (!is.data.frame(df)) df <- df1
+    df
+  }
+
+  list_attr <- attributes(.list)
+  .list <- purrr::map(.list, dplyr::ungroup) %>%
+    purrr::map(possibly_select, ...)
+  attributes(.list) <- list_attr
+  .list
+}
+
 
