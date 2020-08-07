@@ -40,8 +40,8 @@ bind_point_verif <- function(...) {
 
   # Combine attributes for output
   parameter    <- paste(unique(purrr::map_chr(dots, attr, "parameter")), collapse = ", ")
-  start_date   <- paste(unique(purrr::map_chr(dots, attr, "start_date")), collapse = ", ")
-  end_date     <- paste(unique(purrr::map_chr(dots, attr, "end_date")), collapse = ", ")
+  start_date   <- as.character(min(as.numeric(purrr::map_chr(dots, attr, "start_date"))))
+  end_date     <- as.character(max(as.numeric(purrr::map_chr(dots, attr, "end_date"))))
   num_stations <- paste(unique(purrr::map_chr(dots, attr, "num_stations")), collapse = ", ")
 
   # Bring attributes up to columns
