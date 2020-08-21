@@ -33,10 +33,15 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
     renamed <- purrr::map2(.fcst[is_multimodel], multimodel_names, rename_submodel)
 
     merge_submodels <- function(x) {
+      join_cols <- unique(unlist(lapply(x, colnames)))
+      join_cols <- intersect(
+        c("SID", "fcdate", "leadtime", "validdate", "fcst_cycle", "lat", "lon", "units"),
+        join_cols
+      )
       purrr::reduce(
         x,
         dplyr::inner_join,
-        by = c("SID", "fcdate", "leadtime", "validdate", "fcst_cycle")
+        by = join_cols
       ) %>%
         tibble::as_tibble()
     }

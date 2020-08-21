@@ -148,6 +148,7 @@ scale_point_obs <- function(.obs, parameter, scale_factor, new_units = NULL, mul
 
   parameter      <- rlang::enquo(parameter)
   parameter_name <- rlang::quo_name(parameter)
+  parameter_sym  <- rlang::sym(parameter_name)
 
   if (!is.element(parameter_name, colnames(.obs))) {
     stop("Parameter \"", parameter_name, "\" not found in .obs", call. = FALSE)
@@ -163,7 +164,7 @@ scale_point_obs <- function(.obs, parameter, scale_factor, new_units = NULL, mul
     }
   }
 
-  .obs <- dplyr::mutate(.obs, !!parameter_name := scale_function(!!parameter, scale_factor))
+  .obs <- dplyr::mutate(.obs, !!parameter_name := scale_function(!!parameter_sym, scale_factor))
 
   if (!is.null(new_units)) {
     .obs <- set_units(.obs, new_units)

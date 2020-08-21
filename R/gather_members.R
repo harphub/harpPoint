@@ -10,12 +10,12 @@
 #' @export
 #'
 #' @examples
-gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
+gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
   UseMethod("gather_members")
 }
 
 #' @export
-gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
+gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
 
   required_colnames <- member_regex
   if (ncol(dplyr::select(.fcst, dplyr::matches(member_regex))) < 1) {
@@ -31,8 +31,8 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
     value = "forecast"
   ) %>%
     dplyr::mutate(
-      sub_model = split_member_name(.data$member, member_regex)$sub_model,
-      member    = split_member_name(.data$member, member_regex)$member
+      sub_model = gsub(member_regex, "", member),
+      member    = gsub("^_", "", regmatches(member, regexpr(member_regex, member)))
     )
 
   #.fcst <- .fcst %>% dplyr::mutate(
@@ -43,7 +43,7 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
 }
 
 #' @export
-gather_members.harp_fcst <- function(.fcst, member_regex = "_mbr[[:digit:]]+") {
+gather_members.harp_fcst <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
   purrr::map(.fcst, gather_members, member_regex) %>%
     new_harp_fcst()
 }
