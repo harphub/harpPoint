@@ -30,10 +30,14 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr
     key   = "member",
     value = "forecast"
   ) %>%
+    dplyr::group_by(.data$member) %>%
+    tidyr::nest() %>%
     dplyr::mutate(
-      sub_model = gsub(member_regex, "", member),
-      member    = gsub("^_", "", regmatches(member, regexpr(member_regex, member)))
-    )
+      sub_model = gsub(member_regex, "", .data$member),
+      member    = gsub(paste0(.data$sub_model, "_"), "", .data$member)
+    ) %>%
+    tidyr::unnest(.data$data) %>%
+    dplyr::ungroup()
 
   #.fcst <- .fcst %>% dplyr::mutate(
   #  member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
