@@ -18,6 +18,10 @@ spread_members.default <- function(.fcst, model_name) {
     stop("Input data frame must include column names: member, forecast.")
   }
 
+  if (is.element("sub_model", colnames(.fcst))) {
+    .fcst <- dplyr::select(.fcst, -.data[["sub_model"]])
+  }
+
   .fcst <- dplyr::mutate(.fcst, member = paste(model_name, .data$member, sep = "_"))
   .fcst <- tidyr::spread(.fcst, key = "member", value = "forecast")
 
