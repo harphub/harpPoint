@@ -24,6 +24,20 @@ select.harp_fcst <- function(.fcst, ...) {
   new_harp_fcst(purrr::map(.fcst, dplyr::select, ...))
 }
 
+#' Rename columns from tables in a \code{harp_fcst} object.
+#'
+#' Works in the same way as \link[dplyr]{rename}, except runs on all tables in
+#' the \code{harp_fcst} object. This means that only common columns between the
+#' objects can safely be renamed.
+#'
+#' @param .fcst A harp_fcst object
+#' @param ... Arguments as in \link[dplyr]{rename}
+#'
+#' @export
+rename.harp_fcst <- function(.fcst, ...) {
+  new_harp_fcst(purrr::map(.fcst, dplyr::rename, ...))
+}
+
 #' Pull columns from tables in a \code{harp_fcst} object.
 #'
 #' Works in the same way as \link[dplyr]{pull}, except runs on all tables in

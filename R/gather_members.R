@@ -10,12 +10,12 @@
 #' @export
 #'
 #' @examples
-gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
+gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$") {
   UseMethod("gather_members")
 }
 
 #' @export
-gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
+gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$") {
 
   required_colnames <- member_regex
   if (ncol(dplyr::select(.fcst, dplyr::matches(member_regex))) < 1) {
@@ -47,7 +47,7 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr
 }
 
 #' @export
-gather_members.harp_fcst <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+lag[[:graph:]]*$") {
+gather_members.harp_fcst <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$") {
   purrr::map(.fcst, gather_members, member_regex) %>%
     new_harp_fcst()
 }

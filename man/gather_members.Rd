@@ -5,7 +5,10 @@
 \title{Convert EPS forecast data from wide format data frame to long format data
 frame.}
 \usage{
-gather_members(.fcst, member_regex = "_mbr[[:digit:]]+")
+gather_members(
+  .fcst,
+  member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$"
+)
 }
 \arguments{
 \item{.fcst}{An EPS forecast data frame in wide format.}
