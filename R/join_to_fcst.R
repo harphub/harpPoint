@@ -17,9 +17,16 @@
 #'   "left", "right", "full", "semi", "anti". See \code{\link[dplyr]{join}} for
 #'   more details.
 #' @param by Which columns to join by - if set to NULL a natural join will be
-#'   done, using all variables with common names across .fcst and .join.
+#'   done, using all variables with common names across .fcst and .join. The
+#'   default is to join using all common columns in .fcst and .join excluding
+#'   lat, lon and elev. This is because they may be stored to different levels of
+#'   precision and the join will thus fail.
 #' @param force_join Set to TRUE to force the join to happen even if the units
 #'   in .fcst and .join are not compatible.
+#' @param keep_x,keep_y Where duplicate column names are found, but not used in
+#'   the join, these arguments are used to indicate whether the duplicate
+#'   columns from .fcst (\code{keep_x}), or .join (\code{keep_y}) should be
+#'   kept. The default is \code{keep_x = TRUE, keep_y = FALSE}.
 #' @param ... Other arguments for \link[dplyr]{join}.
 #'
 #' @return The input forecast data frame with column(s) added from \code{.join}.
@@ -33,6 +40,8 @@ join_to_fcst <- function(
   join_type  = c("inner", "left", "right", "full", "semi", "anti"),
   by         = NULL,
   force_join = FALSE,
+  keep_x     = TRUE,
+  keep_y     = FALSE,
   ...
 ) {
 
@@ -47,6 +56,8 @@ join_to_fcst.default <- function(
   join_type  = c("inner", "left", "right", "full", "semi", "anti"),
   by         = NULL,
   force_join = FALSE,
+  keep_x     = TRUE,
+  keep_y     = FALSE,
   ...
 ) {
 
@@ -61,6 +72,7 @@ join_to_fcst.default <- function(
   if (has_fcst_units & has_join_units) {
 
     do_join <- TRUE
+
     fcst_units <- unique(.fcst$units)
     join_units <- unique(.join$units)
 
@@ -99,8 +111,8 @@ join_to_fcst.default <- function(
       message("Forcing join without units taken into account.")
       if (is.null(by)) {
         by <- intersect(colnames(.fcst), colnames(.join))
-        by <- by[by != "units"]
       }
+      by <- by[by != "units"]
     } else {
       stop(
         "Join will not be done due to units incompatibility. You can force the join by setting force_join = TRUE\n",
@@ -110,11 +122,29 @@ join_to_fcst.default <- function(
     }
   }
 
-  if (!is.null(by)) {
-    message("Joining, by = c(\"", paste(by, collapse = "\", \""), "\")")
+  if (is.null(by)) {
+    by <- c(by, intersect(colnames(.fcst), colnames(.join)))
   }
 
-  suppressMessages(join_func(.fcst, .join, by = by, ...))
+  by <- by[!by %in% c("lat", "lon", "elev")]
+  message("Joining, by = c(\"", paste(by, collapse = "\", \""), "\")")
+
+  .fcst <- suppressMessages(join_func(.fcst, .join, by = by, ...))
+
+  if (!keep_x) {
+    .fcst <- dplyr::select(.fcst, -dplyr::matches(".x$"))
+  }
+
+  if (!keep_y) {
+    .fcst <- dplyr::select(.fcst, -dplyr::matches(".y$"))
+  }
+
+  if (!(keep_x && keep_y)) {
+    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches(".x$")), ~sub(".x", "", .x))
+    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches(".y$")), ~sub(".y", "", .x))
+  }
+
+  .fcst
 
 }
 
@@ -125,9 +155,13 @@ join_to_fcst.harp_fcst <- function(
   join_type  = c("inner", "left", "right", "full", "semi", "anti"),
   by         = NULL,
   force_join = FALSE,
+  keep_x     = TRUE,
+  keep_y     = FALSE,
   ...
 ) {
 
-  try(new_harp_fcst(purrr::map(.fcst, join_to_fcst, .join, join_type, by, force_join, ...)))
+  try(new_harp_fcst(purrr::map(
+    .fcst, join_to_fcst, .join, join_type, by, force_join, keep_x, keep_y, ...
+  )))
 
 }
