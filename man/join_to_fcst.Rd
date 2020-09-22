@@ -8,8 +8,10 @@ join_to_fcst(
   .fcst,
   .join,
   join_type = c("inner", "left", "right", "full", "semi", "anti"),
-  by = NULL,
+  by = "SID",
   force_join = FALSE,
+  keep_x = TRUE,
+  keep_y = FALSE,
   ...
 )
 }
@@ -24,10 +26,16 @@ object.}
 more details.}
 
 \item{by}{Which columns to join by - if set to NULL a natural join will be
-done, using all variables with common names across .fcst and .join.}
+done, using all variables with common names across .fcst and .join. The
+default is to join using only the SID column.}
 
 \item{force_join}{Set to TRUE to force the join to happen even if the units
 in .fcst and .join are not compatible.}
+
+\item{keep_x, keep_y}{Where duplicate column names are found, but not used in
+the join, these arguments are used to indicate whether the duplicate
+columns from .fcst (\code{keep_x}), or .join (\code{keep_y}) should be
+kept. The default is \code{keep_x = TRUE, keep_y = FALSE}.}
 
 \item{...}{Other arguments for \link[dplyr]{join}.}
 }
