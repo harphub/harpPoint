@@ -319,7 +319,7 @@ pooled_bootstrap_score <- function(
     !grepl(unwanted_scores, .data[["score"]])
   ) %>%
     dplyr::mutate(
-      better = (abs(.data[["value"]] - perfect_scores[.data[["score"]]]) <
+      better = as.numeric(abs(.data[["value"]] - perfect_scores[.data[["score"]]]) <
         abs(.data[["ref_value"]] - perfect_scores[.data[["score"]]])) * 2 - 1,
       parameter = param_name
     )
