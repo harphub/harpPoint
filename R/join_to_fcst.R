@@ -132,16 +132,16 @@ join_to_fcst.default <- function(
   .fcst <- suppressMessages(join_func(.fcst, .join, by = by, ...))
 
   if (!keep_x) {
-    .fcst <- dplyr::select(.fcst, -dplyr::matches(".x$"))
+    .fcst <- dplyr::select(.fcst, -dplyr::matches("\\.x$"))
   }
 
   if (!keep_y) {
-    .fcst <- dplyr::select(.fcst, -dplyr::matches(".y$"))
+    .fcst <- dplyr::select(.fcst, -dplyr::matches("\\.y$"))
   }
 
   if (!(keep_x && keep_y)) {
-    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches(".x$")), ~sub(".x", "", .x))
-    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches(".y$")), ~sub(".y", "", .x))
+    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches("\\.x$")), ~sub("\\.x", "", .x))
+    .fcst <- dplyr::rename_at(.fcst, dplyr::vars(dplyr::matches("\\.y$")), ~sub("\\.y", "", .x))
   }
 
   .fcst
