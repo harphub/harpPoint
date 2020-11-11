@@ -201,6 +201,7 @@ pooled_bootstrap_score <- function(
   raw_score <- lapply(raw_score, function(x) x[colnames(x) != "mname"])
 
   diff_func <- function(score_list) {
+    score_list <- lapply(score_list, dplyr::ungroup)
     for (m in 1:length(score_list)) {
       for (n in 1:length(score_list)) {
         if (n != m) {
