@@ -18,8 +18,8 @@ LinkingTo:
     Rcpp
 Imports: 
     Rcpp,
-    dplyr >= 1.0.0,
-    tidyr,
+    dplyr (>= 1.0.0),
+    tidyr (>= 1.0.0),
     readr,
     verification,
     tibble,
