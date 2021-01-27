@@ -1,6 +1,6 @@
 Package: harpPoint
 Title: Point verifition for NWP forecasts
-Version: 0.0.0.9099
+Version: 0.0.0.9100
 Authors@R: as.person(c(
     "Andrew Singleton <andrewts@met.no> [aut, cre]", 
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut]"
@@ -18,8 +18,8 @@ LinkingTo:
     Rcpp
 Imports: 
     Rcpp,
-    dplyr,
-    tidyr,
+    dplyr (>= 1.0.0),
+    tidyr (>= 1.0.0),
     readr,
     verification,
     tibble,
