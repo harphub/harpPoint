@@ -8,7 +8,7 @@ join_to_fcst(
   .fcst,
   .join,
   join_type = c("inner", "left", "right", "full", "semi", "anti"),
-  by = "SID",
+  by = NULL,
   force_join = FALSE,
   keep_x = TRUE,
   keep_y = FALSE,
@@ -27,7 +27,9 @@ more details.}
 
 \item{by}{Which columns to join by - if set to NULL a natural join will be
 done, using all variables with common names across .fcst and .join. The
-default is to join using only the SID column.}
+default is to join using all common columns in .fcst and .join excluding
+lat, lon and elev. This is because they may be stored to different levels of
+precision and the join will thus fail.}
 
 \item{force_join}{Set to TRUE to force the join to happen even if the units
 in .fcst and .join are not compatible.}
