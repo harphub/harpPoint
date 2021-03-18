@@ -16,7 +16,10 @@ expand_date <- function(.fcst, date_col) {
   if (!grepl("date", date_col_name)) {
     stop("The column name for 'date_col' must contain the string 'date'", call. = FALSE)
   }
-  if (!any(purrr::map_lgl(dplyr::pull(.fcst, !! date_col_quo), is.numeric))) {
+  if (!any(purrr::map_lgl(
+    dplyr::pull(.fcst, !! date_col_quo),
+    ~is.numeric(.x) | inherits(.x, "POSIXct")
+  ))) {
     stop("'date_col' must be numeric. It is assumed to be in unix epoch format", call. = FALSE)
   }
 
