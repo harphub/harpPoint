@@ -13,6 +13,9 @@ spread_members <- function(.fcst, ...) {
 
 #' @export
 spread_members.default <- function(.fcst, model_name) {
+
+  class_in <- class(.fcst)
+
   required_colnames <- c("member", "forecast")
   if (all(intersect(colnames(.fcst), required_colnames) != required_colnames)) {
     stop("Input data frame must include column names: member, forecast.")
@@ -25,7 +28,7 @@ spread_members.default <- function(.fcst, model_name) {
   .fcst <- dplyr::mutate(.fcst, member = paste(model_name, .data$member, sep = "_"))
   .fcst <- tidyr::spread(.fcst, key = "member", value = "forecast")
 
-  .fcst
+  structure(.fcst, class = class_in)
 }
 
 #' @export

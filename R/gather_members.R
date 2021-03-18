@@ -17,6 +17,8 @@ gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit
 #' @export
 gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$") {
 
+  class_in <- class(.fcst)
+
   required_colnames <- member_regex
   if (ncol(dplyr::select(.fcst, dplyr::matches(member_regex))) < 1) {
     stop(
@@ -43,7 +45,7 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr
   #  member = stringr::str_extract(.data$member, paste0(gsub("_", "", member_prefix), "[[:graph:]]+"))
   #)
 
-  .fcst
+  structure(.fcst, class = class_in)
 }
 
 #' @export
