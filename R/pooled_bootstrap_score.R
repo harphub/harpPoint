@@ -28,6 +28,11 @@ pooled_bootstrap_score <- function(
   ...
 ) {
 
+  warning(
+    "pooled_boostrap_score is DEPRECATED.",
+    " Use `bootstrap_verify()` with `pool_by = x` instead."
+  )
+
   if (!is.function(score_function)) {
     stop("'score_function' must be a function.", call. = FALSE)
   }

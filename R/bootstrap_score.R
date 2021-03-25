@@ -19,6 +19,8 @@
 #' @examples
 bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "leadtime", confidence_interval = 0.95, ...) {
 
+  warning("boostrap_score is DEPRECATED. Use `bootstrap_verify()` instead.")
+
   parameter <- rlang::enquo(parameter)
 
   fun_name  <- as.character(substitute(score_function))

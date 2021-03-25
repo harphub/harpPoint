@@ -14,6 +14,7 @@
 #'   to account for observation error in the spread. For other statistics it is
 #'   likely to make little difference since it is expected that the observations
 #'   will have a mean error of zero.
+#' @param ... Not used.
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
@@ -21,12 +22,16 @@
 #' @export
 #'
 #' @examples
-ens_spread_and_skill <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_spread_and_skill <- function(
+  .fcst, parameter, groupings = "leadtime", jitter_fcst = NULL, ...
+) {
   UseMethod("ens_spread_and_skill")
 }
 
 #' @export
-ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_spread_and_skill.default <- function(
+  .fcst, parameter, groupings = "leadtime", jitter_fcst = NULL, ...
+) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
@@ -75,7 +80,9 @@ ens_spread_and_skill.default <- function(.fcst, parameter, groupings = "leadtime
 }
 
 #' @export
-ens_spread_and_skill.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_spread_and_skill.harp_fcst <- function(
+  .fcst, parameter, groupings = "leadtime", jitter_fcst = NULL, ...
+) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
