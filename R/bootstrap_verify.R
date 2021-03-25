@@ -94,6 +94,7 @@ bootstrap_verify <- function(
       stopifnot(is.numeric(num_cores))
       num_cores <- min(num_cores, parallel::detectCores())
     }
+    show_progress <- FALSE
     message("Bootstrapping on ", num_cores, " cores.")
   }
 
