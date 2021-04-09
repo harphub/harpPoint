@@ -63,7 +63,8 @@ check_obs_against_fcst <- function(
           .fcst,
           function(x) {
             grep(
-              "_mbr[[:digit:]]+$|_det$", colnames(x),
+              "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:digit:]]*$|_det$",
+              colnames(x),
               value = TRUE, invert = TRUE
             )
           }
