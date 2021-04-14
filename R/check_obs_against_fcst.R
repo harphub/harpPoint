@@ -58,7 +58,7 @@ check_obs_against_fcst <- function(
     tolerance <- join_models(
       .fcst,
       by = Reduce(
-        union,
+        intersect,
         lapply(
           .fcst,
           function(x) {
