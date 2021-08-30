@@ -17,15 +17,39 @@
 #'
 #' @examples
 common_cases <- function(.fcst, ...) {
-  common_rows <- dplyr::select(
+  common_rows <- lapply(
     .fcst,
-    .data[["SID"]],
-    .data[["fcdate"]],
-    .data[["leadtime"]],
-    ...
+    function(x) {
+      dplyr::arrange(
+        dplyr::distinct(
+          dplyr::select(
+            x,
+            .data[["SID"]],
+            .data[["fcdate"]],
+            .data[["leadtime"]],
+            ...
+          )
+        ),
+        .data[["SID"]],
+        .data[["fcdate"]],
+        .data[["leadtime"]],
+        ...
+      )
+    }
   )
 
-  common_rows <- lapply(common_rows, dplyr::distinct)
+  all_identical <- all(
+    purrr::map2_lgl(
+      1:(length(common_rows) -1),
+      2:length(common_rows),
+      ~identical(common_rows[[.x]], common_rows[[.y]])
+    )
+  )
+
+  if (all_identical) {
+    return(.fcst)
+  }
+
   common_rows <- Reduce(
     function(x, y) suppressMessages(dplyr::inner_join(x, y)),
     common_rows

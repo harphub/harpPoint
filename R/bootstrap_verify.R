@@ -78,6 +78,7 @@ bootstrap_verify <- function(
     stop("`verif_func` must be a function.")
   }
 
+  .fcst <- common_cases(.fcst)
 
   q_lower <- (1 - conf) / 2
   q_upper <- conf + q_lower
@@ -183,8 +184,6 @@ sample_verif <- function(
   .fcst, obs_col, verif_func, grp, pool_by, min_cases, ...
 ) {
 
-  .fcst <- common_cases(.fcst)
-
   grp_sym <- rlang::syms(grp)
 
   if (!is.null(pool_by)) {
@@ -269,36 +268,47 @@ sample_verif <- function(
 
   if (!is.data.frame(pool_by)) { # No pools or pools passed as a column
 
-    counts <- purrr::map(
-      .fcst,
-      ~dplyr::summarise(
-        dplyr::group_by(.x, !!!grp_sym),
-        count = dplyr::n()
-      )
-    )
+    row_numbers <- dplyr::mutate(
+      .fcst[[1]],
+      row_num = dplyr::row_number()
+    ) %>%
+      dplyr::group_by(!!!grp_sym) %>%
+      dplyr::slice_sample(prop = 1, replace = TRUE) %>%
+      dplyr::pull(.data[["row_num"]])
 
-    stopifnot(length(unique(counts)) == 1)
-
-    counts <- dplyr::filter(counts[[1]], count >= min_cases)
-    stopifnot(nrow(counts) > 0)
-    counts <- dplyr::mutate(
-      counts,
-      rows = purrr::map(count, ~sample(1:.x, replace = TRUE))
-    )
-
-    .fcst <- purrr::map(
-      .fcst,
-      ~tidyr::unnest(
-        dplyr::select(
-          dplyr::mutate(
-            dplyr::inner_join(dplyr::group_nest(.x, !!!grp_sym), counts, by = grp),
-            data = purrr::map2(.data[["data"]], .data[["rows"]], ~.x[.y, ])
-          ),
-          -.data[["rows"]], -.data[["count"]]
-        ),
-        .data[["data"]]
-      )
-    )
+    .fcst <- purrr::map(.fcst, dplyr::slice, row_numbers)
+    # counts <- purrr::map(
+    #   .fcst,
+    #   ~dplyr::summarise(
+    #     dplyr::group_by(.x, !!!grp_sym),
+    #     count = dplyr::n()
+    #   )
+    # )
+    #
+    # stopifnot(length(unique(counts)) == 1)
+    #
+    # counts <- dplyr::filter(counts[[1]], count >= min_cases)
+    # stopifnot(nrow(counts) > 0)
+    # counts <- dplyr::mutate(
+    #   counts,
+    #   rows = purrr::map(count, ~sample(1:.x, replace = TRUE))
+    # )
+    #
+    # .fcst <- purrr::map(
+    #   .fcst,
+    #   ~#tidyr::unnest(
+    #     dplyr::select(
+    #       dplyr::mutate(
+    #         dplyr::inner_join(dplyr::group_nest(.x, !!!grp_sym), counts, by = grp),
+    #         data = purrr::map2(.data[["data"]], .data[["rows"]], ~.x[.y, ])
+    #       ),
+    #       -.data[["rows"]], -.data[["count"]]
+    #     ),
+    #     .data[["data"]]
+    #   #)
+    # )
+    #
+    # .fcst <- purrr::map(.fcst, tidyr::unnest, .data[["data"]])
 
   }
 
