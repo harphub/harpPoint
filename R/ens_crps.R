@@ -63,7 +63,7 @@ ens_crps.default <- function(.fcst, parameter, groupings = "leadtime", num_ref_m
       dplyr::select(dplyr::contains("_mbr")) %>%
       dplyr::select_if(~sum(!is.na(.)) > 0)
     )
-    res       <- mean(SpecsVerification::EnsCrps(fcst, obs, R.new = R_new))
+    res       <- mean(SpecsVerification::enscrps_cpp(fcst, obs, R_new = R_new))
     if (show_progress) {
       fair_crps_progress$tick()
     }

@@ -5,6 +5,13 @@ harp_crps <- function (.fcst, .param) {
 
   param <- rlang::enquo(.param)
   obs <- .fcst %>% dplyr::pull(!! param)
+  # Accounting problems occur when there are many forecast -
+  # observation pairs that have the exact same value, e.g. for
+  # cloud amount in oktas. This is fixed by adding a very small
+  # random number to the observations - here 1e-6 * std dev of obs
+  # is used as the standard deviation in the random number generation
+  # from a Gaussian distribution
+  obs <- obs + rnorm(length(obs), 0, 1e-6 * stats::sd(obs))
   eps <- .fcst %>%
     dplyr::select(dplyr::contains("_mbr")) %>%
     dplyr::select_if(~sum(!is.na(.)) > 0)

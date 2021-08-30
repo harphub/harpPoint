@@ -247,13 +247,16 @@ get_climatology <- function(.fcst, parameter, thresholds, climatology) {
 add_attributes <- function(.verif, .fcst, parameter) {
   parameter <- rlang::enquo(parameter)
 
-  dates     <- unlist(purrr::map(.fcst, "fcdate"))
-  SIDs      <- unlist(purrr::map(.fcst, "SID"))
+  date_range  <- function(x) range(purrr::pluck(x, "fcdate"))
+  unique_sids <- function(x) unique(purrr::pluck(x, "SID"))
+
+  dates    <- unlist(purrr::map(.fcst, date_range), use.names = FALSE)
+  num_sids <- length(unique(unlist(purrr::map(.fcst, unique_sids), use.names = FALSE)))
 
   attr(.verif, "parameter")    <- rlang::quo_name(parameter)
   attr(.verif, "start_date")   <- harpIO::unixtime_to_str_datetime(min(dates), harpIO::YMDh)
   attr(.verif, "end_date")     <- harpIO::unixtime_to_str_datetime(max(dates), harpIO::YMDh)
-  attr(.verif, "num_stations") <- length(unique(SIDs))
+  attr(.verif, "num_stations") <- num_sids
 
   .verif
 }

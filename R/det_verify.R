@@ -75,33 +75,28 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     det_progress <- progress::progress_bar$new(format = "  Deterministic [:bar] :percent eta: :eta", total = progress_total)
   }
 
-  sd_function <- function(fcst_vector, obs_vector, prog_bar) {
-    res <- stats::sd(fcst_vector - obs_vector)
+  sd_function <- function(x, prog_bar) {
+    res <- stats::sd(x)
     if (prog_bar) {
       det_progress$tick()
     }
     res
   }
 
+
   compute_summary_scores <- function(compute_group, fcst_df) {
 
     fcst_df <- group_without_threshold(fcst_df, compute_group)
-    if (harpIO:::tidyr_new_interface()) {
-      fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(dplyr::group_vars(fcst_df))) %>%
-        dplyr::ungroup()
-    } else {
-      fcst_df <- tidyr::nest(fcst_df, .key = "grouped_fcst")
-    }
 
     fcst_df %>%
-      dplyr::mutate(
-        num_cases = purrr::map_int(.data$grouped_fcst, nrow),
-        bias      = purrr::map_dbl(.data$grouped_fcst, ~ mean(.x[[fcst_col]] - .x[[chr_param]])),
-        rmse      = purrr::map_dbl(.data$grouped_fcst, ~ sqrt(mean((.x[[fcst_col]] - .x[[chr_param]]) ^ 2))),
-        mae       = purrr::map_dbl(.data$grouped_fcst, ~ mean(abs(.x[[fcst_col]] - .x[[chr_param]]))),
-        stde      = purrr::map_dbl(.data$grouped_fcst, ~ sd_function(.x[[fcst_col]], .x[[chr_param]], prog_bar = show_progress))
-      ) %>%
-      dplyr::select(-.data[["grouped_fcst"]])
+      dplyr::mutate(fcst_minus_obs = .data[[fcst_col]] - .data[[chr_param]]) %>%
+      dplyr::summarise(
+        num_cases = dplyr::n(),
+        bias      = mean(.data[["fcst_minus_obs"]]),
+        rmse      = sqrt(mean(.data[["fcst_minus_obs"]] ^ 2)),
+        mae       = mean(abs(.data[["fcst_minus_obs"]])),
+        stde      = sd_function(.data[["fcst_minus_obs"]], prog_bar = show_progress)
+      )
 
   }
 
