@@ -11,7 +11,7 @@ harp_crps <- function (.fcst, .param) {
   # random number to the observations - here 1e-6 * std dev of obs
   # is used as the standard deviation in the random number generation
   # from a Gaussian distribution
-  obs <- obs + rnorm(length(obs), 0, 1e-6 * stats::sd(obs))
+  obs <- obs + stats::rnorm(length(obs), 0, 1e-6 * stats::sd(obs))
   eps <- .fcst %>%
     dplyr::select(dplyr::contains("_mbr")) %>%
     dplyr::select_if(~sum(!is.na(.)) > 0)
