@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // ecoval
 List ecoval(NumericVector obs, NumericVector pred, NumericVector costloss, NumericVector thresholds);
 RcppExport SEXP _harpPoint_ecoval(SEXP obsSEXP, SEXP predSEXP, SEXP costlossSEXP, SEXP thresholdsSEXP) {

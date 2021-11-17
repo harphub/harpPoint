@@ -90,7 +90,9 @@ ens_brier.default <- function(
 
   brier_function <- function(df, prog_bar) {
     if (is.element("bss_ref_climatology", names(df))) {
-      res <- verification::brier(df$obs_prob, df$fcst_prob, baseline = unique(df$bss_ref_climatology))
+      res <- verification::brier(
+        df$obs_prob, df$fcst_prob, baseline = mean(df$bss_ref_climatology)
+      )
     } else {
       res <- verification::brier(df$obs_prob, df$fcst_prob)
     }
