@@ -15,6 +15,11 @@
 #' @param num_ref_members For "fair" scores, the score is scaled to be valid for
 #'   this number of ensemble members. Set to NA (the default) to not modify the
 #'   score.
+#' @param spread_drop_member Which members to drop for the calculation of the
+#'   ensemble variance and standard deviation. For harp_fcst objects, this can
+#'   be a numeric scalar - in which case it is recycled for all forecast models;
+#'   a list or numeric vector of the same length as the harp_fcst object, or a
+#'   named list with the names corresponding to names in the harp_fcst object.
 #' @param jitter_fcst A function to perturb the forecast values by. This is used
 #'   to account for observation error in the rank histogram. For other
 #'   statistics it is likely to make little difference since it is expected that
@@ -35,13 +40,14 @@
 ens_verify <- function(
   .fcst,
   parameter,
-  verify_members  = TRUE,
-  thresholds      = NULL,
-  groupings       = "leadtime",
-  num_ref_members = NA,
-  jitter_fcst     = NULL,
-  climatology     = "sample",
-  show_progress   = TRUE
+  verify_members     = TRUE,
+  thresholds         = NULL,
+  groupings          = "leadtime",
+  num_ref_members    = NA,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  climatology        = "sample",
+  show_progress      = TRUE
 ) {
   UseMethod("ens_verify")
 }
@@ -50,13 +56,14 @@ ens_verify <- function(
 ens_verify.default <- function(
   .fcst,
   parameter,
-  verify_members  = TRUE,
-  thresholds      = NULL,
-  groupings       = "leadtime",
-  num_ref_members = NA,
-  jitter_fcst     = NULL,
-  climatology     = "sample",
-  show_progress   = TRUE
+  verify_members     = TRUE,
+  thresholds         = NULL,
+  groupings          = "leadtime",
+  num_ref_members    = NA,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  climatology        = "sample",
+  show_progress      = TRUE
 ) {
 
   col_names  <- colnames(.fcst)
@@ -92,11 +99,20 @@ ens_verify.default <- function(
 
   } else {
 
-    .fcst <- ens_mean_and_var(.fcst,mean_name = "ens_mean", var_name = "ens_var")
+    .fcst <- harpIO::ens_mean_and_var(.fcst,mean_name = "ens_mean", var_name = "ens_var")
 
-    ens_summary_scores <- ens_spread_and_skill(.fcst, !! parameter, groupings = groupings) %>%
-      dplyr::inner_join(ens_rank_histogram(.fcst, !! parameter, groupings = groupings)) %>%
-      dplyr::inner_join(ens_crps(.fcst, !! parameter, groupings = groupings, num_ref_members = num_ref_members, show_progress = show_progress))
+    ens_summary_scores <- ens_spread_and_skill(
+      .fcst, !!parameter, groupings = groupings, spread_drop_member = spread_drop_member
+    ) %>%
+      dplyr::inner_join(
+        ens_rank_histogram(.fcst, !! parameter, groupings = groupings)
+      ) %>%
+      dplyr::inner_join(
+        ens_crps(
+          .fcst, !! parameter, groupings = groupings,
+          num_ref_members = num_ref_members, show_progress = show_progress
+        )
+      )
 
   }
 
@@ -131,16 +147,17 @@ ens_verify.default <- function(
 }
 
 #' @export
-ens_verify.harp_fcst <- function (
+ens_verify.harp_fcst <- function(
   .fcst,
   parameter,
-  verify_members  = TRUE,
-  thresholds      = NULL,
-  groupings       = "leadtime",
-  num_ref_members = NA,
-  jitter_fcst     = NULL,
-  climatology     = "sample",
-  show_progress   = TRUE
+  verify_members     = TRUE,
+  thresholds         = NULL,
+  groupings          = "leadtime",
+  num_ref_members    = NA,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  climatology        = "sample",
+  show_progress      = TRUE
 ) {
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -149,17 +166,29 @@ ens_verify.harp_fcst <- function (
       parameter <- rlang::ensym(parameter)
     }
   }
+
+  spread_drop_member <- parse_member_drop(spread_drop_member, names(.fcst))
+
   if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
-  list_result <- purrr::map(.fcst, ens_verify, !! parameter, verify_members, thresholds, groupings, num_ref_members, jitter_fcst, climatology, show_progress)
+  list_result <- purrr::map2(.fcst, spread_drop_member,
+    ~ens_verify(
+      .x, !!parameter, verify_members, thresholds, groupings, num_ref_members,
+      .y, jitter_fcst, climatology, show_progress
+    )
+  )
+
   list(
+
     ens_summary_scores   = dplyr::bind_rows(
       purrr::map(list_result, "ens_summary_scores"),
       .id = "mname"
     ),
+
     ens_threshold_scores = dplyr::bind_rows(
       purrr::map(list_result, "ens_threshold_scores"),
       .id = "mname"
     ),
+
     det_summary_scores = dplyr::bind_rows(
       purrr::map(list_result, "det_summary_scores"),
       .id = "mname"
