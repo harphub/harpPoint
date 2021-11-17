@@ -49,6 +49,11 @@
 #' @param stations The stations to verify for. The default is to use all
 #'   stations from \link[harpIO]{station_list} that are common to all
 #'   \code{fcst_model} domains.
+#' @param spread_drop_member Which members to drop for the calculation of the
+#'   ensemble variance and standard deviation. For harp_fcst objects, this can
+#'   be a numeric scalar - in which case it is recycled for all forecast models;
+#'   a list or numeric vector of the same length as the harp_fcst object, or a
+#'   named list with the names corresponding to names in the harp_fcst object.
 #' @param jitter_fcst A function to perturb the forecast values by. This is used
 #'   to account for observation error in the rank histogram. For other
 #'   statistics it is likely to make little difference since it is expected that
@@ -119,6 +124,7 @@ ens_read_and_verify <- function(
   stations               = NULL,
   scale_fcst             = NULL,
   scale_obs              = NULL,
+  spread_drop_member     = NULL,
   jitter_fcst            = NULL,
   common_cases_only      = TRUE,
   common_cases_xtra_cols = NULL,
@@ -368,12 +374,13 @@ ens_read_and_verify <- function(
     verif_data[[i]] <- ens_verify(
       fcst_data,
       !! parameter_sym,
-      verify_members = verify_members,
-      thresholds     = thresholds,
-      groupings      = groupings,
-      jitter_fcst    = jitter_fcst,
-      climatology    = climatology,
-      show_progress  = show_progress
+      verify_members     = verify_members,
+      thresholds         = thresholds,
+      groupings          = groupings,
+      spread_drop_member = spread_drop_member,
+      jitter_fcst        = jitter_fcst,
+      climatology        = climatology,
+      show_progress      = show_progress
     )
 
   } # end loop over lead times
