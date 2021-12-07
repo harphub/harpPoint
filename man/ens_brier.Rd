@@ -10,6 +10,7 @@ ens_brier(
   thresholds,
   groupings = "leadtime",
   climatology = "sample",
+  rel_probs = NA,
   num_ref_members = NA,
   keep_score = c("both", "brier", "reliability"),
   show_progress = FALSE
@@ -33,6 +34,9 @@ works.}
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally leadtime.}
+
+\item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
+(the default) to select automatically.}
 
 \item{num_ref_members}{The number of members for which to compute the fair
 Brier score.}

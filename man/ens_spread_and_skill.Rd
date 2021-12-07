@@ -8,6 +8,7 @@ ens_spread_and_skill(
   .fcst,
   parameter,
   groupings = "leadtime",
+  spread_drop_member = NULL,
   jitter_fcst = NULL,
   ...
 )
@@ -21,6 +22,12 @@ observations, or a single forecast table.}
 \item{groupings}{The groups for which to compute the ensemble mean and
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
+
+\item{spread_drop_member}{Which members to drop for the calculation of the
+ensemble variance and standard deviation. For harp_fcst objects, this can
+be a numeric scalar - in which case it is recycled for all forecast models;
+a list or numeric vector of the same length as the harp_fcst object, or a
+named list with the names corresponding to names in the harp_fcst object.}
 
 \item{jitter_fcst}{A function to perturb the forecast values by. This is used
 to account for observation error in the spread. For other statistics it is
