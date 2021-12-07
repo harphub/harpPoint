@@ -13,6 +13,8 @@
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
 #'   threshold and climatology and also optionally leadtime.
+#' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
+#'   (the default) to select automatically.
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   a nested column for reliability. The column can be unnested with
@@ -24,8 +26,9 @@ ens_reliability <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  climatology = "sample",
+  groupings     = "leadtime",
+  climatology   = "sample",
+  rel_probs     = NA,
   show_progress = FALSE
 ) {
 
@@ -41,9 +44,10 @@ ens_reliability <- function(
     .fcst,
     !! parameter,
     thresholds,
-    groupings = groupings,
-    climatology = climatology,
-    keep_score = "reliability",
+    groupings     = groupings,
+    climatology   = climatology,
+    rel_probs     = rel_probs,
+    keep_score    = "reliability",
     show_progress = show_progress
   )
 }

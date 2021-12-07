@@ -10,6 +10,7 @@ ens_reliability(
   thresholds,
   groupings = "leadtime",
   climatology = "sample",
+  rel_probs = NA,
   show_progress = FALSE
 )
 }
@@ -31,6 +32,9 @@ works.}
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally leadtime.}
+
+\item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
+(the default) to select automatically.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and
