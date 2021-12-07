@@ -12,6 +12,8 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
+#'   (the default) to select automatically.
 #' @param num_ref_members For "fair" scores, the score is scaled to be valid for
 #'   this number of ensemble members. Set to NA (the default) to not modify the
 #'   score.
@@ -43,6 +45,7 @@ ens_verify <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "leadtime",
+  rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
@@ -59,6 +62,7 @@ ens_verify.default <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "leadtime",
+  rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
@@ -126,6 +130,7 @@ ens_verify.default <- function(
       .fcst,
       groupings       = groupings,
       climatology     = climatology,
+      rel_probs       = rel_probs,
       num_ref_members = num_ref_members,
       show_progress   = show_progress
     ) %>%
@@ -153,6 +158,7 @@ ens_verify.harp_fcst <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "leadtime",
+  rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
@@ -172,7 +178,7 @@ ens_verify.harp_fcst <- function(
   if (!is.null(thresholds)) climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
   list_result <- purrr::map2(.fcst, spread_drop_member,
     ~ens_verify(
-      .x, !!parameter, verify_members, thresholds, groupings, num_ref_members,
+      .x, !!parameter, verify_members, thresholds, groupings, rel_probs, num_ref_members,
       .y, jitter_fcst, climatology, show_progress
     )
   )

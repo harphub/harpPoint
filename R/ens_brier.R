@@ -13,6 +13,8 @@
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
 #'   threshold and climatology and also optionally leadtime.
+#' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
+#'   (the default) to select automatically.
 #' @param num_ref_members The number of members for which to compute the fair
 #'   Brier score.
 #' @param keep_score \code{ens_brier} computes the Brier Score and its
@@ -33,11 +35,12 @@ ens_brier <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  climatology = "sample",
+  groupings       = "leadtime",
+  climatology     = "sample",
+  rel_probs       = NA,
   num_ref_members = NA,
-  keep_score = c("both", "brier", "reliability"),
-  show_progress = FALSE
+  keep_score      = c("both", "brier", "reliability"),
+  show_progress   = FALSE
 ) {
   keep_score <- match.arg(keep_score)
   UseMethod("ens_brier")
@@ -48,11 +51,12 @@ ens_brier.default <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  climatology = "sample",
+  groupings       = "leadtime",
+  climatology     = "sample",
+  rel_probs       = NA,
   num_ref_members = NA,
-  keep_score = "both",
-  show_progress = FALSE
+  keep_score      = "both",
+  show_progress   = FALSE
 ) {
 
   if (!is.list(groupings)) {
@@ -88,13 +92,22 @@ ens_brier.default <- function(
       dplyr::rename(bss_ref_climatology = .data$climatology)
   }
 
-  brier_function <- function(df, prog_bar) {
+  brier_function <- function(df, prob_breaks, num_mem, prog_bar) {
+    if (any(is.na(prob_breaks))) {
+      if (num_mem > 10) {
+        num_mem <- 11
+      }
+      prob_breaks <- (seq_len(num_mem) - 1) / (num_mem - 1)
+    }
     if (is.element("bss_ref_climatology", names(df))) {
       res <- verification::brier(
-        df$obs_prob, df$fcst_prob, baseline = mean(df$bss_ref_climatology)
+        df$obs_prob, df$fcst_prob, baseline = mean(df$bss_ref_climatology),
+        thresholds = prob_breaks
       )
     } else {
-      res <- verification::brier(df$obs_prob, df$fcst_prob)
+      res <- verification::brier(
+        df$obs_prob, df$fcst_prob, thresholds = prob_breaks
+      )
     }
     if (prog_bar) {
       brier_progress$tick()
@@ -138,6 +151,8 @@ ens_brier.default <- function(
         brier_output = purrr::map(
           .data$grouped_fcst,
           brier_function,
+          rel_probs,
+          num_members,
           show_progress
         ),
         fair_brier_score = purrr::map_dbl(
@@ -184,11 +199,12 @@ ens_brier.harp_fcst <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  climatology = "sample",
+  groupings       = "leadtime",
+  climatology     = "sample",
+  rel_probs       = NA,
   num_ref_members = NA,
-  keep_score = "both",
-  show_progress = FALSE
+  keep_score      = "both",
+  show_progress   = FALSE
 ) {
 
   parameter   <- rlang::enquo(parameter)
@@ -224,6 +240,7 @@ ens_brier.harp_fcst <- function(
         thresholds      = thresholds,
         groupings       = groupings,
         climatology     = climatology,
+        rel_probs       = rel_probs,
         num_ref_members = num_ref_members,
         keep_score      = keep_score,
         show_progress   = show_progress

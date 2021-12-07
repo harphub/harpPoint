@@ -10,7 +10,9 @@ ens_verify(
   verify_members = TRUE,
   thresholds = NULL,
   groupings = "leadtime",
+  rel_probs = NA,
   num_ref_members = NA,
+  spread_drop_member = NULL,
   jitter_fcst = NULL,
   climatology = "sample",
   show_progress = TRUE
@@ -34,9 +36,18 @@ scores.}
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
 
+\item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
+(the default) to select automatically.}
+
 \item{num_ref_members}{For "fair" scores, the score is scaled to be valid for
 this number of ensemble members. Set to NA (the default) to not modify the
 score.}
+
+\item{spread_drop_member}{Which members to drop for the calculation of the
+ensemble variance and standard deviation. For harp_fcst objects, this can
+be a numeric scalar - in which case it is recycled for all forecast models;
+a list or numeric vector of the same length as the harp_fcst object, or a
+named list with the names corresponding to names in the harp_fcst object.}
 
 \item{jitter_fcst}{A function to perturb the forecast values by. This is used
 to account for observation error in the rank histogram. For other
