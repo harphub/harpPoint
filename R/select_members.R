@@ -1,9 +1,11 @@
-#' Title
+#' Select members from a harp_fcst object
 #'
-#' @param .fcst
-#' @param members
+#' @param .fcst A harp_fcst object
+#' @param members The members to select. Can be a numeric vector, or a named
+#'   list to select members from spcific forecast models in the harp_fcst
+#'   object.
 #'
-#' @return
+#' @return A harp_fcst object.
 #' @export
 #'
 #' @examples
@@ -40,8 +42,10 @@ select_members <- function(.fcst, members, include_lagged_members = TRUE) {
 
   } else {
 
-    message("Members only supplied for one forecast model. Recycling members for all forecast models.")
-    members <- rep(members, length(.fcst))
+    if (length(.fcst) > 1) {
+      message("Members only supplied for one forecast model. Recycling members for all forecast models.")
+    }
+    members <- lapply(seq_along(.fcst), function(x) members)
     names(members) <- names(.fcst)
   }
 
@@ -53,7 +57,15 @@ select_members <- function(.fcst, members, include_lagged_members = TRUE) {
 member_select <- function(df, members, lag_inc) {
   suffix    <- ifelse(lag_inc, "", "$")
   meta_cols <- grep("_mbr[[:digit:]]", colnames(df), invert = TRUE)
-  data_cols <- lapply(members, function(x) grep(paste0("_mbr", formatC(x, width = 3, flag = "0"), suffix), colnames(df)))
+  data_cols <- lapply(
+    members,
+    function(x) {
+      grep(
+        paste0("_mbr", formatC(x, width = 3, flag = "0"), suffix),
+        colnames(df)
+      )
+    }
+  )
   data_cols <- unlist(data_cols[sapply(data_cols, length) != 0])
   dplyr::select_at(df, c(meta_cols, data_cols))
 }

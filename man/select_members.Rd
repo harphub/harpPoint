@@ -2,16 +2,20 @@
 % Please edit documentation in R/select_members.R
 \name{select_members}
 \alias{select_members}
-\title{Title}
+\title{Select members from a harp_fcst object}
 \usage{
 select_members(.fcst, members, include_lagged_members = TRUE)
 }
 \arguments{
-\item{members}{}
+\item{.fcst}{A harp_fcst object}
+
+\item{members}{The members to select. Can be a numeric vector, or a named
+list to select members from spcific forecast models in the harp_fcst
+object.}
 }
 \value{
-
+A harp_fcst object.
 }
 \description{
-Title
+Select members from a harp_fcst object
 }
