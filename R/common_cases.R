@@ -17,6 +17,11 @@
 #'
 #' @examples
 common_cases <- function(.fcst, ...) {
+
+  if (length(.fcst) < 2) {
+    return(.fcst)
+  }
+
   common_rows <- lapply(
     .fcst,
     function(x) {
@@ -40,7 +45,7 @@ common_cases <- function(.fcst, ...) {
 
   all_identical <- all(
     purrr::map2_lgl(
-      1:(length(common_rows) -1),
+      1:(length(common_rows) - 1),
       2:length(common_rows),
       ~identical(common_rows[[.x]], common_rows[[.y]])
     )
