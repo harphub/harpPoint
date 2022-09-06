@@ -134,14 +134,14 @@ check_obs_against_fcst <- function(
       )
     )
 
-    tolerance <- tolerance %>%
-      dplyr::mutate(
-        min_diff = matrixStats::rowMins(
-          as.matrix(
-            dplyr::select(tolerance, dplyr::contains("_mbr"))
-          )
-        )
-      )
+    # tolerance <- tolerance %>%
+    #   dplyr::mutate(
+    #     min_diff = matrixStats::rowMins(
+    #       as.matrix(
+    #         dplyr::select(tolerance, dplyr::contains("_mbr"))
+    #       )
+    #     )
+    #   )
 
     good_obs <- tolerance %>%
       dplyr::filter(.data$min_diff <= .data$tolerance_allowed) %>%
