@@ -36,7 +36,7 @@ Imports:
     lubridate,
     cli
 Remotes:
-    andrew-met/harpIO@develop
+    harphub/harpIO
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
 Suggests: 
