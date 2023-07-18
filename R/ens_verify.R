@@ -74,6 +74,17 @@ ens_verify.default <- function(
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
 
+  if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
+  lead_time_col <- intersect(c("lead_time", "leadtime"), colnames(.fcst))
+
+  groupings <- lapply(
+    groupings,
+    function(x) gsub("lead_time|leadtime", lead_time_col, x)
+  )
+
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
   }

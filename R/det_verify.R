@@ -26,6 +26,13 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     groupings <- list(groupings)
   }
 
+  lead_time_col <- intersect(c("lead_time", "leadtime"), colnames(.fcst))
+
+  groupings <- lapply(
+    groupings,
+    function(x) gsub("lead_time|leadtime", lead_time_col, x)
+  )
+
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
   chr_param <- rlang::quo_name(parameter)
@@ -34,7 +41,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
-  fcst_col  <- col_names[grep("_det$", col_names)]
+  fcst_col  <- col_names[grep("_det$|^fcst$", col_names)]
 
   if (length(fcst_col) > 1) {
 
@@ -88,8 +95,10 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
     fcst_df <- group_without_threshold(fcst_df, compute_group)
 
+    local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
+
     fcst_df %>%
-      dplyr::mutate(fcst_minus_obs = .data[[fcst_col]] - .data[[chr_param]]) %>%
+      dplyr::mutate(fcst_minus_obs = .data[[local_fcst_col]] - .data[[chr_param]]) %>%
       dplyr::summarise(
         num_cases = dplyr::n(),
         bias      = mean(.data[["fcst_minus_obs"]]),
