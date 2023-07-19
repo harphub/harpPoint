@@ -16,9 +16,6 @@ join_models(.fcst, join_type = "inner", name = "joined_models", ...)
 
 \item{...}{Other arguments to \link[dplyr]{join}.}
 }
-\value{
-
-}
 \description{
 The function is most useful for finding common cases between models.
 }

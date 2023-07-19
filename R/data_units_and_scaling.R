@@ -1,53 +1,53 @@
-#' Set the units for meteorological point data.
-#'
-#' Note that the contents of the data are not changed in any way. Rather, if a
-#' column called 'units' exists, its contents are modified to be that passed in
-#' the units_name argument - if the 'units' column does not exist, it is added.
-#'
-#' @param point_data A harp_fcst object, or a data frame.
-#' @param units_name The name of the units of the data, e.g. "m/s", "kg/m\^2" etc.
-#'
-#' @return A An object of the same type as \code{point_data}, but with the units
-#'   column modified to contain \code{units_name}, or the units column added.
-#' @export
-#'
-#' @examples
-set_units <- function(point_data, units_name) {
-  UseMethod("set_units")
-}
-
-#' @export
-set_units.default <- function(point_data, units_name) {
-
-  # Check for data columns so that units is added between the metadata and the data
-
-  # Ensemble forecast data
-  data_cols <- grep("[[:graph:]]+mbr+[[:digit:]]+", colnames(point_data), perl = TRUE, value = TRUE)
-
-  # Deterministic forecast data
-  if (length(data_cols) < 1) {
-    data_cols <- grep("[[:graph:]]+det$", colnames(point_data), perl = TRUE, value = TRUE)
-  }
-
-  # Other (probably observations) data
-  if (length(data_cols) < 1) {
-    data_cols <- setdiff(colnames(point_data), c("SID" , "validdate", "lat", "lon", "units"))
-  }
-
-  # Mutate units column and return data frame with metadata columns followed by data columns
-  metadata_cols <- setdiff(colnames(point_data), data_cols)
-  if (!is.element("units", metadata_cols)) metadata_cols <- c(metadata_cols, "units")
-
-  point_data <- dplyr::mutate(point_data, units = units_name)
-
-  point_data[c(metadata_cols, data_cols)]
-
-}
-
-#' @export
-set_units.harp_fcst <- function(point_data, units_name) {
-  new_harp_fcst(purrr::map(point_data, set_units, units_name))
-}
+# # ' Set the units for meteorological point data.
+# # '
+# # ' Note that the contents of the data are not changed in any way. Rather, if a
+# # ' column called 'units' exists, its contents are modified to be that passed in
+# # ' the units_name argument - if the 'units' column does not exist, it is added.
+# # '
+# # ' @param point_data A harp_fcst object, or a data frame.
+# # ' @param units_name The name of the units of the data, e.g. "m/s", "kg/m\^2" etc.
+# # '
+# # ' @return A An object of the same type as \code{point_data}, but with the units
+# # '   column modified to contain \code{units_name}, or the units column added.
+# # ' @export
+# # '
+# # ' @examples
+# set_units <- function(point_data, units_name) {
+#   UseMethod("set_units")
+# }
+#
+# # ' @export
+# set_units.default <- function(point_data, units_name) {
+#
+#   # Check for data columns so that units is added between the metadata and the data
+#
+#   # Ensemble forecast data
+#   data_cols <- grep("[[:graph:]]+mbr+[[:digit:]]+", colnames(point_data), perl = TRUE, value = TRUE)
+#
+#   # Deterministic forecast data
+#   if (length(data_cols) < 1) {
+#     data_cols <- grep("[[:graph:]]+det$", colnames(point_data), perl = TRUE, value = TRUE)
+#   }
+#
+#   # Other (probably observations) data
+#   if (length(data_cols) < 1) {
+#     data_cols <- setdiff(colnames(point_data), c("SID" , "validdate", "lat", "lon", "units"))
+#   }
+#
+#   # Mutate units column and return data frame with metadata columns followed by data columns
+#   metadata_cols <- setdiff(colnames(point_data), data_cols)
+#   if (!is.element("units", metadata_cols)) metadata_cols <- c(metadata_cols, "units")
+#
+#   point_data <- dplyr::mutate(point_data, units = units_name)
+#
+#   point_data[c(metadata_cols, data_cols)]
+#
+# }
+#
+# # ' @export
+# set_units.harp_fcst <- function(point_data, units_name) {
+#   new_harp_fcst(purrr::map(point_data, set_units, units_name))
+# }
 
 
 #' Scale forecast data

@@ -21,9 +21,6 @@ pooled_bootstrap_score(
 \arguments{
 \item{...}{}
 }
-\value{
-
-}
 \description{
 Title
 }

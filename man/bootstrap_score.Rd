@@ -29,9 +29,6 @@ is leadtime.}
 
 \item{...}{Other arguments to the score function. e.g. thresholds.}
 }
-\value{
-
-}
 \description{
 Compute the confidence intervals of verification scores using a bootstrap
 method. If there is more than one forecast the confidence for the differences
