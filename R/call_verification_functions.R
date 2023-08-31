@@ -25,8 +25,8 @@ harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst
   # Separate out a matrix of member forecasts and call the fast fcprob
   # function from HARPrcpp. The columns then need naming
 
-  fcst_col_name   <- ifelse (fcst_type == "EPS", "_mbr", "_det")
-  eps             <- dplyr::select(.fcst, dplyr::contains(fcst_col_name))
+  fcst_col_name   <- ifelse (fcst_type == "EPS", "_mbr", "_det|^fcst$")
+  eps             <- dplyr::select(.fcst, dplyr::matches(fcst_col_name))
   probs           <- fcprob(as.matrix(eps), thresholds)
   colnames(probs) <- c(paste0("fcst_prob_", thresholds), "num_members", "ens_mean", "ens_var")
   probs           <- tibble::as_tibble(probs)

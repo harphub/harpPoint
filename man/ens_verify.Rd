@@ -9,13 +9,19 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
-  groupings = "leadtime",
+  groupings = "lead_time",
   rel_probs = NA,
   num_ref_members = NA,
   spread_drop_member = NULL,
   jitter_fcst = NULL,
   climatology = "sample",
-  show_progress = TRUE
+  rank_hist = TRUE,
+  crps = TRUE,
+  brier = TRUE,
+  roc = TRUE,
+  econ_val = TRUE,
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

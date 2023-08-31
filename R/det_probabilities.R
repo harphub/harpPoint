@@ -18,7 +18,7 @@ det_probabilities <- function(.fcst, parameter, thresholds, obs_probabilities = 
 }
 
 #' @export
-det_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
+det_probabilities.harp_det_point_df <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
 
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
@@ -35,7 +35,7 @@ det_probabilities.default <- function(.fcst, parameter, thresholds, obs_probabil
 }
 
 #' @export
-det_probabilities.harp_fcst <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
+det_probabilities.harp_list <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
     if (is.character(rlang::eval_tidy(parameter))) {

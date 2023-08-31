@@ -7,8 +7,10 @@
 ens_rank_histogram(
   .fcst,
   parameter,
-  groupings = "leadtime",
-  jitter_fcst = NULL
+  groupings = "lead_time",
+  jitter_fcst = NULL,
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

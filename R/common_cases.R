@@ -30,14 +30,14 @@ common_cases <- function(.fcst, ...) {
           dplyr::select(
             x,
             .data[["SID"]],
-            .data[["fcdate"]],
-            .data[["leadtime"]],
+            .data[["fcst_dttm"]],
+            .data[["lead_time"]],
             ...
           )
         ),
         .data[["SID"]],
-        .data[["fcdate"]],
-        .data[["leadtime"]],
+        .data[["fcst_dttm"]],
+        .data[["lead_time"]],
         ...
       )
     }
@@ -62,7 +62,7 @@ common_cases <- function(.fcst, ...) {
 
   suppressMessages(
     suppressWarnings(
-      join_to_fcst(.fcst, common_rows, force_join = TRUE)
+      harpCore::join_to_fcst(.fcst, common_rows, force = TRUE)
     )
   )
 

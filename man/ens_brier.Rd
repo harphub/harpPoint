@@ -8,12 +8,13 @@ ens_brier(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
+  groupings = "lead_time",
   climatology = "sample",
   rel_probs = NA,
   num_ref_members = NA,
   keep_score = c("both", "brier", "reliability"),
-  show_progress = FALSE
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

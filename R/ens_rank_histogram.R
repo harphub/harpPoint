@@ -22,16 +22,36 @@
 #' @export
 #'
 #' @examples
-ens_rank_histogram <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_rank_histogram <- function(
+  .fcst,
+  parameter,
+  groupings     = "lead_time",
+  jitter_fcst   = NULL,
+  show_progress = TRUE,
+  ...
+) {
   UseMethod("ens_rank_histogram")
 }
 
 #' @export
-ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_rank_histogram.harp_ens_point_df <- function(
+  .fcst,
+  parameter,
+  groupings     = "lead_time",
+  jitter_fcst   = NULL,
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
+) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
   }
+
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
+
+  fcst_model_err(fcst_model)
 
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
@@ -46,27 +66,64 @@ ens_rank_histogram.default <- function(.fcst, parameter, groupings = "leadtime",
 
   compute_rank_hist <- function(compute_group, fcst_df) {
     fcst_df <- group_without_threshold(fcst_df, compute_group)
+    group_vars <- dplyr::group_vars(fcst_df)
+    group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
+    score_text <- cli::col_blue(glue::glue("Rank histogram for {group_names}"))
+    if (show_progress) {
+      pb_name <- score_text
+    } else {
+      pb_name <- FALSE
+      cat(score_text)
+    }
     if (harpIO:::tidyr_new_interface()) {
       fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group)) %>%
         dplyr::ungroup()
     } else {
       fcst_df <- tidyr::nest(fcst_df, .key = "grouped_fcst")
     }
-    fcst_df %>%
+    fcst_df <- fcst_df %>%
       dplyr::mutate(
-        rank_count = purrr::map(.data$grouped_fcst, harp_rank_hist, !! parameter)
+        rank_count = purrr::map(
+          .data$grouped_fcst, harp_rank_hist, !! parameter, .progress = pb_name
+        )
       ) %>%
       dplyr::select(-.data[["grouped_fcst"]]) %>%
       sweep_rank_histogram()
+
+    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    fcst_df
   }
 
-  suppressWarnings(purrr::map_dfr(groupings, compute_rank_hist, .fcst)) %>%
-    fill_group_na(groupings)
+  res <- list()
+  res[["ens_summary_scores"]] <- purrr::map(
+    groupings, compute_rank_hist, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      !!parameter,
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime", jitter_fcst = NULL) {
+ens_rank_histogram.harp_list <- function(
+  .fcst,
+  parameter,
+  groupings     = "lead_time",
+  jitter_fcst   = NULL,
+  show_progress = TRUE,
+  ...
+) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -76,12 +133,15 @@ ens_rank_histogram.harp_fcst <- function(.fcst, parameter, groupings = "leadtime
     }
   }
 
-  list(
-    ens_summary_scores = purrr::map(.fcst, ens_rank_histogram, !! parameter, groupings, jitter_fcst) %>%
-      dplyr::bind_rows(.id = "mname"),
-    ens_threshold_scores = NULL
-  ) %>%
-    add_attributes(.fcst, !! parameter)
+  list_to_harp_verif(
+    purrr::imap(
+      .fcst,
+      ~ens_rank_histogram(
+        .x, !! parameter, groupings, jitter_fcst, show_progress, fcst_model = .y
+      )
+    )
+  )
+
 }
 
 # Internal function to return nicely formatted column for ens_rank_histogram.

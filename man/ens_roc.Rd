@@ -8,8 +8,9 @@ ens_roc(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  show_progress = FALSE
+  groupings = "lead_time",
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

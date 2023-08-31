@@ -28,21 +28,25 @@
 #'
 #' @examples
 ens_spread_and_skill <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  jitter_fcst = NULL, show_progress = TRUE, ...
 ) {
+
   UseMethod("ens_spread_and_skill")
 }
 
 #' @export
-ens_spread_and_skill.default <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+ens_spread_and_skill.harp_ens_point_df <- function(
+  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  jitter_fcst = NULL, show_progress = TRUE, fcst_model = NULL, ...
 ) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
   }
+
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
 
   if (!is.null(spread_drop_member)) {
     if (!is.numeric(spread_drop_member)) {
@@ -79,14 +83,12 @@ ens_spread_and_skill.default <- function(
       fcst_df[[paste0("dropped_members_", ens_var)]] <- fcst_df[[ens_var]]
     }
 
-    if (length(compute_group) == 1 && compute_group == "threshold") {
-      grouped_fcst <- fcst_df
-    } else {
-      compute_group <- rlang::syms(compute_group[compute_group != "threshold"])
-      grouped_fcst  <- dplyr::group_by(fcst_df, !!! compute_group)
-    }
+    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    group_vars <- dplyr::group_vars(fcst_df)
+    group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
+    cat(cli::col_blue(glue::glue("Spread; Skill for {group_names}")))
 
-    grouped_fcst %>%
+    res <- fcst_df %>%
       dplyr::summarise(
         num_cases              = dplyr::n(),
         mean_bias              = mean(.data[[ens_mean]] - !!parameter),
@@ -99,17 +101,37 @@ ens_spread_and_skill.default <- function(
         spread_skill_ratio                 = .data[["spread"]] / .data[["rmse"]],
         dropped_members_spread_skill_ratio = .data[["dropped_members_spread"]] / .data[["rmse"]]
       )
+
+    cat("", cli::col_green(cli::symbol[["tick"]]), "\n")
+
+    res
   }
 
-  purrr::map_dfr(groupings, compute_spread_skill, .fcst) %>%
-    fill_group_na(groupings)
+  res <- list()
+  res[["ens_summary_scores"]] <- purrr::map(
+    groupings, compute_spread_skill, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      !!parameter,
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-ens_spread_and_skill.harp_fcst <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+ens_spread_and_skill.harp_list <- function(
+  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  jitter_fcst = NULL, show_progress = TRUE, ...
 ) {
 
   parameter   <- rlang::enquo(parameter)
@@ -122,16 +144,14 @@ ens_spread_and_skill.harp_fcst <- function(
 
   spread_drop_member <- parse_member_drop(spread_drop_member, names(.fcst))
 
-  list(
-    ens_summary_scores = purrr::map2(
-      .fcst, spread_drop_member,
-      ~ens_spread_and_skill(.x, !! parameter, groupings, .y, jitter_fcst)
-    ) %>%
-      dplyr::bind_rows(.id = "mname"),
-    ens_threshold_scores = NULL
-  ) %>%
-    add_attributes(.fcst, !! parameter)
-
+  list_to_harp_verif(
+    purrr::pmap(
+      list(.fcst, names(.fcst), spread_drop_member),
+      function(x, y, z) ens_spread_and_skill(
+        x, !! parameter, groupings, z, jitter_fcst, fcst_model = y
+      )
+    )
+  )
 }
 
 parse_member_drop <- function(x, nm) {

@@ -35,28 +35,58 @@ ens_brier <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings       = "leadtime",
+  groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
   num_ref_members = NA,
   keep_score      = c("both", "brier", "reliability"),
-  show_progress   = FALSE
+  show_progress   = TRUE,
+  ...
 ) {
   keep_score <- match.arg(keep_score)
   UseMethod("ens_brier")
 }
 
 #' @export
-ens_brier.default <- function(
+ens_brier.harp_ens_point_df <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings       = "leadtime",
+  groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
   num_ref_members = NA,
   keep_score      = "both",
-  show_progress   = FALSE
+  show_progress   = TRUE,
+  fcst_model      = NULL,
+  ...
+) {
+
+  ens_brier(
+    ens_probabilities(.fcst, thresholds, {{parameter}}),
+    parameter       = {{parameter}},
+    groupings       = groupings,
+    climatology     = climatology,
+    rel_probs       = NA,
+    num_ref_members = NA,
+    keep_score      = keep_score,
+    show_progress   = show_progress,
+    fcst_model      = fcst_model
+  )
+}
+
+#' @export
+ens_brier.harp_ens_probs <- function(
+  .fcst,
+  parameter       = NA,
+  groupings       = "lead_time",
+  climatology     = "sample",
+  rel_probs       = NA,
+  num_ref_members = NA,
+  keep_score      = "both",
+  show_progress   = TRUE,
+  fcst_model      = NULL,
+  ...
 ) {
 
   if (!is.list(groupings)) {
@@ -65,34 +95,32 @@ ens_brier.default <- function(
 
   groupings <- purrr::map(groupings, union, "threshold")
 
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
+
   sweep_function <- get(paste0("sweep_brier_", keep_score))
-
-  if (!inherits(.fcst, "harp_ens_probs")) {
-
-    parameter  <- rlang::enquo(parameter)
-    if (rlang::quo_is_missing(parameter) | rlang::quo_is_null(parameter)) {
-      stop ("parameter must be passed as an argument if probabilities have not been derived.", call. = FALSE)
-    }
-    if (missing(thresholds) | is.null(thresholds)) {
-      stop ("thresholds must be passed as an argument if probabilities have not been derived.", call. = FALSE)
-    }
-    .fcst       <- ens_probabilities(.fcst, thresholds, !! parameter)
-
-  }
 
   num_members <- attr(.fcst, "num_members")
 
   if (inherits(climatology, "data.frame")) {
-    if (all(c("leadtime", "threshold") %in% names(climatology))) {
-      join_cols <- c("leadtime", "threshold")
-    } else {
-      join_cols <- "threshold"
+    mandatory_cols  <- c("threshold", "climatology")
+    check_clim_cols <- mandatory_cols %in% colnames(climatology)
+    missing_cols    <- mandatory_cols[!check_clim_cols]
+    if (length(missing_cols) > 0) {
+      cli::cli_abort(c(
+        "{.arg climatology} does not contain the correct columns:",
+        "x" = "{.arg climatology} is missing {missing_cols} column{?s}."
+      ))
     }
+    join_cols <- intersect(colnames(climatology), colnames(.fcst))
+    # cli::cli_inform(c(
+    #   "i" = "Climatology for Brier Skill Score uses column{?s}: {join_cols}"
+    # ))
     .fcst <- dplyr::inner_join(.fcst, climatology, by = join_cols) %>%
       dplyr::rename(bss_ref_climatology = .data$climatology)
   }
 
-  brier_function <- function(df, prob_breaks, num_mem, prog_bar) {
+  brier_function <- function(df, prob_breaks, num_mem) {
     if (any(is.na(prob_breaks))) {
       if (num_mem > 10) {
         num_mem <- 11
@@ -109,29 +137,12 @@ ens_brier.default <- function(
         df$obs_prob, df$fcst_prob, thresholds = prob_breaks
       )
     }
-    if (prog_bar) {
-      brier_progress$tick()
-    }
     res
   }
 
-  fair_brier_function <- function(f_prob, o_prob, num_mem, num_ref_mem, prog_bar) {
+  fair_brier_function <- function(f_prob, o_prob, num_mem, num_ref_mem) {
     res <- fair_brier_score(f_prob, o_prob, num_mem, num_ref_mem)
-    if (prog_bar) {
-      fair_brier_progress$tick()
-    }
     res
-  }
-
-  if (show_progress) {
-    progress_total <- sum(
-      sapply(
-        groupings,
-        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
-      )
-    )
-    brier_progress      <- progress::progress_bar$new(format = "  Brier [:bar] :percent eta: :eta", total = progress_total)
-    fair_brier_progress <- progress::progress_bar$new(format = "  Fair Brier [:bar] :percent eta: :eta", total = progress_total)
   }
 
 
@@ -145,7 +156,20 @@ ens_brier.default <- function(
       dplyr::group_by(!!! compute_group_sym) %>%
       tidyr::nest(.key = "grouped_fcst")
     }
-    fcst_df %>%
+    group_names <- glue::glue_collapse(compute_group, sep = ", ", last = " & ")
+    score_text <- glue::glue("Brier Score for {group_names}")
+    if (show_progress) {
+      pb_brier <- cli::col_blue(score_text)
+      pb_fair_brier <- cli::col_blue(glue::glue("Fair ", score_text))
+      score_text <- cli::col_blue(score_text)
+    } else {
+      pb_brier <- FALSE
+      pb_fair_brier <- FALSE
+      cat(cli::col_blue(score_text))
+      score_text <- ""
+    }
+
+    fcst_df <- fcst_df %>%
       dplyr::transmute(
         !!! compute_group_sym,
         brier_output = purrr::map(
@@ -153,7 +177,7 @@ ens_brier.default <- function(
           brier_function,
           rel_probs,
           num_members,
-          show_progress
+          .progress = pb_brier
         ),
         fair_brier_score = purrr::map_dbl(
           .data$grouped_fcst,
@@ -161,9 +185,9 @@ ens_brier.default <- function(
             .x$fcst_prob,
             .x$obs_prob,
             num_members,
-            num_ref_members,
-            show_progress
-          )
+            num_ref_members
+          ),
+          .progress = pb_fair_brier
         ),
         sample_climatology = purrr::map_dbl(
           .data$grouped_fcst,
@@ -171,7 +195,13 @@ ens_brier.default <- function(
         ),
         bss_ref_climatology = purrr::map_dbl(
           .data$grouped_fcst,
-          ~ mean(.x$bss_ref_climatology)
+          ~ {
+            if (is.element("bss_ref_climatology", colnames(.x))) {
+              mean(.x$bss_ref_climatology)
+            } else {
+              NA_real_
+            }
+          }
         ),
         num_cases_total = purrr::map_int(
           .data$grouped_fcst,
@@ -187,24 +217,45 @@ ens_brier.default <- function(
         )
       ) %>%
       sweep_function()
+
+    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    fcst_df
+
   }
 
-  suppressWarnings(purrr::map_dfr(groupings, compute_brier, .fcst)) %>%
-    fill_group_na(groupings)
+  res <- list()
+  res[["ens_threshold_scores"]] <- purrr::map(
+    groupings, compute_brier, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      {{parameter}},
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-ens_brier.harp_fcst <- function(
+ens_brier.harp_list <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings       = "leadtime",
+  groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
   num_ref_members = NA,
   keep_score      = "both",
-  show_progress   = FALSE
+  show_progress   = TRUE,
+  ...
 ) {
 
   parameter   <- rlang::enquo(parameter)
@@ -230,11 +281,10 @@ ens_brier.harp_fcst <- function(
 
   .fcst_num_members <- purrr::map(.fcst, get_num_members)
 
-  list(
-    ens_summary_scores   = NULL,
-    ens_threshold_scores = purrr::map(
+  list_to_harp_verif(
+    purrr::imap(
       .fcst,
-      ~ ens_brier(
+      ~ens_brier(
         .x,
         parameter       = !! parameter,
         thresholds      = thresholds,
@@ -243,12 +293,11 @@ ens_brier.harp_fcst <- function(
         rel_probs       = rel_probs,
         num_ref_members = num_ref_members,
         keep_score      = keep_score,
-        show_progress   = show_progress
+        show_progress   = show_progress,
+        fcst_model      = .y
       )
-    ) %>%
-      dplyr::bind_rows(.id = "mname")
-  ) %>%
-    add_attributes(.fcst, !! parameter)
+    )
+  )
 }
 
 

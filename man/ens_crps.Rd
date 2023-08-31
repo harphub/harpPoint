@@ -7,10 +7,11 @@
 ens_crps(
   .fcst,
   parameter,
-  groupings = "leadtime",
+  groupings = "lead_time",
   num_ref_members = NA,
   keep_full_output = FALSE,
-  show_progress = FALSE
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

@@ -8,8 +8,9 @@ det_verify(
   .fcst,
   parameter,
   thresholds = NULL,
-  groupings = "leadtime",
-  show_progress = TRUE
+  groupings = "lead_time",
+  show_progress = TRUE,
+  ...
 )
 }
 \arguments{

@@ -16,12 +16,48 @@
 #' @export
 #'
 #' @examples
-ens_roc <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
+ens_roc <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings     = "lead_time",
+  show_progress = TRUE,
+  ...
+) {
   UseMethod("ens_roc")
 }
 
 #' @export
-ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
+ens_roc.harp_ens_point_df <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings     = "lead_time",
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
+) {
+
+  ens_roc(
+    ens_probabilities(.fcst, thresholds, {{parameter}}),
+    parameter     = {{parameter}},
+    thresholds    = thresholds,
+    groupings     = groupings,
+    show_progress = show_progress,
+    fcst_model    = fcst_model
+  )
+}
+
+#' @export
+ens_roc.harp_ens_probs <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings     = "lead_time",
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
+) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
@@ -29,28 +65,13 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
 
   groupings <- purrr::map(groupings, union, "threshold")
 
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
+
   parameter  <- rlang::enquo(parameter)
 
   if (!inherits(.fcst, "harp_ens_probs")) {
-    .fcst   <- ens_probabilities(.fcst, thresholds, !! parameter)
-  }
-
-  if (show_progress) {
-    progress_total <- sum(
-      sapply(
-        groupings,
-        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
-      )
-    )
-    roc_progress <- progress::progress_bar$new(format = "  ROC [:bar] :percent eta: :eta", total = progress_total)
-  }
-
-  roc_function <- function(obs_vector, prob_vector, prog_bar) {
-    res <- harp_roc(obs_vector, prob_vector)
-    if (prog_bar) {
-      roc_progress$tick()
-    }
-    res
+    .fcst <- ens_probabilities(.fcst, thresholds, !! parameter)
   }
 
   compute_roc <- function(compute_group, fcst_df) {
@@ -63,24 +84,61 @@ ens_roc.default <- function(.fcst, parameter, thresholds, groupings = "leadtime"
       dplyr::group_by(!!! compute_group_sym) %>%
       tidyr::nest(.key = "grouped_fcst")
     }
-    fcst_df %>%
+    group_names <- glue::glue_collapse(compute_group, sep = ", ", last = " & ")
+    score_text <- cli::col_blue(glue::glue("ROC for {group_names}"))
+    if (show_progress) {
+      pb_name <- score_text
+    } else {
+      pb_name <- FALSE
+      cat(score_text)
+      score_text <- ""
+    }
+
+    fcst_df <- fcst_df %>%
       dplyr::transmute(
         !!! compute_group_sym,
         roc_output = purrr::map(
           .data$grouped_fcst,
-          ~ roc_function(.x$obs_prob, .x$fcst_prob, prog_bar = show_progress)
+          ~harp_roc(.x$obs_prob, .x$fcst_prob),
+          .progress = pb_name
         )
       ) %>%
       sweep_roc()
+
+    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    fcst_df
   }
 
-  purrr::map_dfr(groupings, compute_roc, .fcst) %>%
-    fill_group_na(groupings)
+  res <- list()
+  res[["ens_threshold_scores"]] <- purrr::map(
+    groupings, compute_roc, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      {{parameter}},
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-ens_roc.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtime", show_progress = FALSE) {
+ens_roc.harp_list <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings     = "lead_time",
+  show_progress = TRUE,
+  ...
+) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -90,12 +148,15 @@ ens_roc.harp_fcst <- function(.fcst, parameter, thresholds, groupings = "leadtim
     }
   }
 
-  list(
-    ens_summary_scores = NULL,
-    ens_threshold_scores = purrr::map(.fcst, ens_roc, !! parameter, thresholds, groupings, show_progress) %>%
-      dplyr::bind_rows(.id = "mname")
-  )%>%
-    add_attributes(.fcst, !! parameter)
+  list_to_harp_verif(
+    purrr::imap(
+      .fcst,
+      ~ens_roc(
+        .x, !!parameter, thresholds, groupings, show_progress, fcst_model = .y
+      )
+    )
+  )
+
 }
 
 sweep_roc <- function(roc_df) {

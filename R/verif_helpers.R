@@ -1,10 +1,17 @@
-group_without_threshold <- function(df, group_col) {
+group_without_threshold <- function(df, group_col, nest = FALSE) {
   if (length(group_col) == 1 && group_col == "threshold") {
-      df
-    } else {
-      group_col <- rlang::syms(group_col[group_col != "threshold"])
-      dplyr::group_by(df, !!! group_col)
-    }
+    return(df)
+  }
+  group_col <- group_col[group_col != "threshold"]
+  if (nest) {
+    return(
+      dplyr::group_nest(
+        df, dplyr::across(dplyr::all_of(group_col)),
+        .key = "grouped_data"
+      )
+    )
+  }
+  dplyr::group_by(df, dplyr::across(dplyr::all_of(group_col)))
 }
 
 fill_group_na <- function(df, groupings) {

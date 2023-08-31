@@ -1,6 +1,6 @@
 Package: harpPoint
 Title: Point verifition for NWP forecasts
-Version: 0.0.0.9105
+Version: 0.1.1
 Authors@R: as.person(c(
     "Andrew Singleton <andrewts@met.no> [aut, cre]", 
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut]"
@@ -8,6 +8,7 @@ Authors@R: as.person(c(
 Description: Functions for computing verification scores for NWP forecasts. 
     Part of the harp3 ecosystem. 
 Depends:
+    harpCore (>= 0.1.1),
     R (>= 3.3.1)
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -27,7 +28,7 @@ Imports:
     magrittr,
     rlang,
     stats,
-    harpIO,
+    harpIO (>= 0.1.1),
     modelr,
     stringr,
     progress,
@@ -36,6 +37,7 @@ Imports:
     lubridate,
     cli
 Remotes:
+    harphub/harpCore@develop
     harphub/harpIO@develop
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
