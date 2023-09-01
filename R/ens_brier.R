@@ -22,7 +22,9 @@
 #'   score and its decomposition set to "brier", to only keep the reliability
 #'   information set to "reliability". To keep both, set to "both". The default
 #'   behaviour is "both".
-#' @param ... Used internally depending on the class of the input.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#' `TRUE`
+#' @param ... Reserved for methods.
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   columns for \code{brier_score}, \code{brier_skill_score} and the
@@ -43,10 +45,20 @@ ens_brier <- function(
   show_progress   = TRUE,
   ...
 ) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
   keep_score <- match.arg(keep_score)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_brier")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_brier.harp_ens_point_df <- function(
   .fcst,

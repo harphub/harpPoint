@@ -10,6 +10,10 @@
 #' @param groupings The groups for which to compute the ensemble mean and
 #'   spread. See \link[dplyr]{group_by} for more information of how grouping
 #'   works.
+#' @param circle If set the parameter is assumed to be cyclic for bias
+#'   calculations. Should be this distance around a circle in the units of the
+#'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
+#'   for radians.
 #' @param spread_drop_member Which members to drop for the calculation of the
 #'   ensemble variance and standard deviation. For harp_fcst objects, this can
 #'   be a numeric scalar - in which case it is recycled for all forecast models;
@@ -19,6 +23,8 @@
 #'   to account for observation error in the spread. For other statistics it is
 #'   likely to make little difference since it is expected that the observations
 #'   will have a mean error of zero.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#' `TRUE`
 #' @param ... Not used.
 #'
 #' @return An object of the same format as the inputs but with data grouped for
@@ -28,16 +34,26 @@
 #'
 #' @examples
 ens_spread_and_skill <- function(
-  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
   jitter_fcst = NULL, show_progress = TRUE, ...
 ) {
-
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  check_circle(circle)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_spread_and_skill")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_spread_and_skill.harp_ens_point_df <- function(
-  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
   jitter_fcst = NULL, show_progress = TRUE, fcst_model = NULL, ...
 ) {
 
@@ -83,6 +99,11 @@ ens_spread_and_skill.harp_ens_point_df <- function(
       fcst_df[[paste0("dropped_members_", ens_var)]] <- fcst_df[[ens_var]]
     }
 
+    fcst_df <- dplyr::mutate(
+      fcst_df,
+      fcst_bias = bias(.data[[ens_mean]], !!parameter, circle)
+    )
+
     fcst_df <- group_without_threshold(fcst_df, compute_group)
     group_vars <- dplyr::group_vars(fcst_df)
     group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
@@ -91,9 +112,9 @@ ens_spread_and_skill.harp_ens_point_df <- function(
     res <- fcst_df %>%
       dplyr::summarise(
         num_cases              = dplyr::n(),
-        mean_bias              = mean(.data[[ens_mean]] - !!parameter),
-        stde                   = stats::sd(.data[[ens_mean]] - !!parameter),
-        rmse                   = sqrt(mean((.data[[ens_mean]] - !!parameter) ^ 2)),
+        mean_bias              = mean(.data[["fcst_bias"]]),
+        stde                   = stats::sd(.data[["fcst_bias"]]),
+        rmse                   = sqrt(mean(.data[["fcst_bias"]] ^ 2)),
         spread                 = sqrt(mean(.data[[ens_var]])),
         dropped_members_spread = sqrt(mean(.data[[paste0("dropped_members_", ens_var)]]))
       ) %>%
@@ -130,7 +151,7 @@ ens_spread_and_skill.harp_ens_point_df <- function(
 
 #' @export
 ens_spread_and_skill.harp_list <- function(
-  .fcst, parameter, groupings = "lead_time", spread_drop_member = NULL,
+  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
   jitter_fcst = NULL, show_progress = TRUE, ...
 ) {
 
@@ -148,7 +169,7 @@ ens_spread_and_skill.harp_list <- function(
     purrr::pmap(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_spread_and_skill(
-        x, !! parameter, groupings, z, jitter_fcst, fcst_model = y
+        x, !! parameter, groupings, circle, z, jitter_fcst, fcst_model = y
       )
     )
   )

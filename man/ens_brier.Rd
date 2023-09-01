@@ -48,7 +48,10 @@ score and its decomposition set to "brier", to only keep the reliability
 information set to "reliability". To keep both, set to "both". The default
 behaviour is "both".}
 
-\item{...}{Used internally depending on the class of the input.}
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+`TRUE`}
+
+\item{...}{Reserved for methods.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and

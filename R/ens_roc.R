@@ -7,6 +7,8 @@
 #'   ROC.
 #' @param groupings The groups for which to compute the ROC. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#' `TRUE`
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   a nested column for the ROC with each row containing a data frame with
@@ -24,9 +26,19 @@ ens_roc <- function(
   show_progress = TRUE,
   ...
 ) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_roc")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_roc.harp_ens_point_df <- function(
   .fcst,

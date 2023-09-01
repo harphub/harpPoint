@@ -27,6 +27,11 @@ works.}
 \item{num_ref_members}{The number of members for which to compute the fair
 CRPS.}
 
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+`TRUE`}
+
+\item{...}{Reserved for methods.}
+
 \item{keep_full_ouput}{Logical. Whether to keep the full output to computing
 CRPS for ungrouped data.}
 }

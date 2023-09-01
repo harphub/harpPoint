@@ -170,18 +170,22 @@ join_models <- function(.fcst, join_type = "inner", name = "joined_models", ...)
 }
 
 #' @export
-join_models.harp_fcst <- function(
+join_models.harp_list <- function(
   .fcst,
   join_type = "inner",
   name = "joined_models",
-  by = c("SID", "fcdate", "validdate", "leadtime"),
+  by = c("SID", "fcst_dttm", "valid_dttm", "lead_time"),
   ...
 ) {
   join_func <- get(paste0(join_type, "_join"), envir = asNamespace("dplyr"))
-  out <- list()
-  out[[name]] <- purrr::reduce(.fcst, join_func, by = by, ...) %>%
-    tibble::as_tibble()
-  new_harp_fcst(out)
+  purrr::reduce(.fcst, join_func, by = by, ...) %>%
+    tibble::as_tibble() %>%
+    harpCore::as_harp_df()
+}
+
+#' @export
+join_models.harp_df <- function(.fcst, ...) {
+  .fcst
 }
 
 #' @export

@@ -10,6 +10,7 @@ ens_verify(
   verify_members = TRUE,
   thresholds = NULL,
   groupings = "lead_time",
+  circle = NULL,
   rel_probs = NA,
   num_ref_members = NA,
   spread_drop_member = NULL,
@@ -42,6 +43,11 @@ scores.}
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
 
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or `2 * pi`
+for radians.}
+
 \item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
 (the default) to select automatically.}
 
@@ -64,10 +70,27 @@ the observations will have a mean error of zero.}
 "sample" for the sample climatology (the default), a named list with
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
-threshold and climatology and also optionally leadtime.}
+threshold and climatology and also optionally lead_time.}
+
+\item{rank_hist}{Logical. Whether to compute the rank histogram. Defaults to
+`TRUE`. Note that the computation of the rank histogram can be slow if
+there is a large number (> 1000) of groups.}
+
+\item{crps}{Logical. Whether to compute the CRPS. Defaults to `TRUE`.}
+
+\item{brier}{Logical. Whether to compute the Brier score. Defaults to
+`TRUE`. Will be ignored if no thresholds are set.}
+
+\item{roc}{Logical. Whether to compute the Relative Operating Characteristic
+(ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.}
+
+\item{econ_val}{Logical. Whether to compute the economic value. Defaults to
+`TRUE`. Will be ignored if no thresholds are set.}
 
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
-TRUE.}
+`TRUE`.}
+
+\item{...}{Reserved for methods.}
 }
 \value{
 A list containting three data frames: \code{ens_summary_scores},

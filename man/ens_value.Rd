@@ -24,6 +24,9 @@ economic value.}
 
 \item{groupings}{The groups for which to compute the economic value. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+`TRUE`}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and

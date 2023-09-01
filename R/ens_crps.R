@@ -14,6 +14,9 @@
 #'   CRPS.
 #' @param keep_full_ouput Logical. Whether to keep the full output to computing
 #' CRPS for ungrouped data.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#'   `TRUE`
+#' @param ... Reserved for methods.
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
@@ -30,9 +33,19 @@ ens_crps <- function(
   show_progress    = TRUE,
   ...
 ) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_crps")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_crps.harp_ens_point_df <- function(
   .fcst,

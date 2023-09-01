@@ -63,32 +63,32 @@ check_obs_against_fcst <- function(
           .fcst,
           function(x) {
             grep(
-              "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:digit:]]*$|_det$",
+              "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:digit:]]*$|_det$|fcst_model",
               colnames(x),
               value = TRUE, invert = TRUE
             )
           }
         )
       )
-    )[[1]]
+    )
 
     # Create extra columns for stratifying
     if (!is.element("valid_hour", colnames(tolerance))) {
 
-      if (!is.element("validdate", colnames(tolerance))) {
-        stop(".fcst must have `validdate` column.")
+      if (!is.element("valid_dttm", colnames(tolerance))) {
+        stop(".fcst must have `valid_dttm` column.")
       }
 
-      if (is.numeric(tolerance[["validdate"]])) {
-        tolerance <- expand_date(tolerance, .data[["validdate"]])
-      } else if (inherits(tolerance[["validdate"]], "POSIXct")) {
+      if (is.numeric(tolerance[["valid_dttm"]])) {
+        tolerance <- harpCore::expand_date(tolerance, .data[["valid_dttm"]])
+      } else if (inherits(tolerance[["valid_dttm"]], "POSIXct")) {
         tolerance <- dplyr::mutate(
           tolerance,
-          valid_hour = lubridate::hour(.data[["validdate"]]),
-          valid_month = lubridate::month(.data[["validdate"]])
+          valid_hour = lubridate::hour(.data[["valid_dttm"]]),
+          valid_month = lubridate::month(.data[["valid_dttm"]])
         )
       } else {
-        stop("Cannot convert validdate column to hour and months")
+        stop("Cannot convert valid_dttm column to hour and months")
       }
 
     }
@@ -110,11 +110,11 @@ check_obs_against_fcst <- function(
         num_cases         = dplyr::n()
       )
 
-    tolerance <- suppressWarnings(suppressMessages(join_to_fcst(
+    tolerance <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
       tolerance,
       tolerance_df,
       by = stratification,
-      force_join = TRUE
+      force = TRUE
     )))
 
     tolerance <- dplyr::mutate(
@@ -145,25 +145,25 @@ check_obs_against_fcst <- function(
 
     good_obs <- tolerance %>%
       dplyr::filter(.data$min_diff <= .data$tolerance_allowed) %>%
-      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
-      dplyr::group_by(.data$SID, .data$validdate) %>%
+      dplyr::select(.data$SID, .data$valid_dttm, !! parameter_quo) %>%
+      dplyr::group_by(.data$SID, .data$valid_dttm) %>%
       dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
       dplyr::ungroup()
 
     bad_obs  <- tolerance %>%
       dplyr::filter(.data$min_diff > .data$tolerance_allowed) %>%
-      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
-      dplyr::group_by(.data$SID, .data$validdate) %>%
+      dplyr::select(.data$SID, .data$valid_dttm, !! parameter_quo) %>%
+      dplyr::group_by(.data$SID, .data$valid_dttm) %>%
       dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
       dplyr::ungroup()
 
-    .fcst <- suppressWarnings(suppressMessages(join_to_fcst(
+    .fcst <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
       .fcst,
       dplyr::select(
-        good_obs, .data$SID, .data$validdate
+        good_obs, .data$SID, .data$valid_dttm
       ),
-      by = c("SID", "validdate"),
-      force_join = TRUE
+      by = c("SID", "valid_dttm"),
+      force = TRUE
     )))
 
     attr(.fcst, "removed_cases") <- bad_obs

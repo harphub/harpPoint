@@ -37,7 +37,7 @@ Imports:
     lubridate,
     cli
 Remotes:
-    harphub/harpCore@develop
+    harphub/harpCore@develop,
     harphub/harpIO@develop
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues

@@ -27,6 +27,11 @@ works.}
 to account for observation error in the rank histogram. For other
 statistics it is likely to make little difference since it is expected that
 the observations will have a mean error of zero.}
+
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+`TRUE`}
+
+\item{...}{Reserved for methods.}
 }
 \value{
 An object of the same format as the inputs but with data grouped for

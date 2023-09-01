@@ -9,6 +9,7 @@ det_verify(
   parameter,
   thresholds = NULL,
   groupings = "lead_time",
+  circle = NULL,
   show_progress = TRUE,
   ...
 )
@@ -26,8 +27,16 @@ scores.}
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
 
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or `2 * pi`
+for radians.}
+
 \item{show_progress}{Logical - whether to show a progress bar. The default is
-FALSE.}
+`TRUE`}
+
+\item{...}{Reserved for methods
+`TRUE`.}
 }
 \value{
 A list containting two data frames: \code{det_summary_scores} and

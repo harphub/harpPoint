@@ -21,9 +21,13 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
 
   is_multimodel    <- unlist(purrr::map(.fcst, inherits, "harp_fcst"))
   num_multimodel   <- length(which(is_multimodel))
+
+  if (num_multimodel < 1) {
+    return(.fcst)
+  }
+
   multimodel_names <- names(.fcst[which(is_multimodel)])
 
-  if (num_multimodel > 0) {
 
     rename_submodel <- function(submodel, hostmodel) {
       names(submodel) <- paste0(names(submodel), "(", hostmodel, ")")
@@ -35,7 +39,10 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
     merge_submodels <- function(x) {
       join_cols <- unique(unlist(lapply(x, colnames)))
       join_cols <- intersect(
-        c("SID", "fcdate", "leadtime", "validdate", "fcst_cycle", "lat", "lon", "units"),
+        c(
+          "SID", "fcdate", "leadtime", "validdate", "fcst_cycle", "lat", "lon",
+          "units", "fcst_dttm", "valid_dttm", "lead_time"
+        ),
         join_cols
       )
       purrr::reduce(
@@ -56,12 +63,6 @@ merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
       multimodel <- c(multimodel, .fcst[!is_multimodel])
     }
 
-    new_harp_fcst(multimodel)
-
-  } else {
-
-    .fcst
-
-  }
+    harpCore::as_harp_list(multimodel)
 
 }

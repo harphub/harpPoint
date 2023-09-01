@@ -16,7 +16,16 @@
 #' @export
 #'
 #' @examples
+#'
 common_cases <- function(.fcst, ...) {
+  UseMethod("common_cases")
+}
+
+common_cases.harp_df <- function(.fcst, ...) {
+  .fcst
+}
+
+common_cases.harp_list <- function(.fcst, ...) {
 
   if (length(.fcst) < 2) {
     return(.fcst)

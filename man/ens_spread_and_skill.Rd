@@ -8,6 +8,7 @@ ens_spread_and_skill(
   .fcst,
   parameter,
   groupings = "lead_time",
+  circle,
   spread_drop_member = NULL,
   jitter_fcst = NULL,
   show_progress = TRUE,
@@ -24,6 +25,11 @@ observations, or a single forecast table.}
 spread. See \link[dplyr]{group_by} for more information of how grouping
 works.}
 
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or `2 * pi`
+for radians.}
+
 \item{spread_drop_member}{Which members to drop for the calculation of the
 ensemble variance and standard deviation. For harp_fcst objects, this can
 be a numeric scalar - in which case it is recycled for all forecast models;
@@ -34,6 +40,9 @@ named list with the names corresponding to names in the harp_fcst object.}
 to account for observation error in the spread. For other statistics it is
 likely to make little difference since it is expected that the observations
 will have a mean error of zero.}
+
+\item{show_progress}{Logical - whether to show a progress bar. The default is
+`TRUE`}
 
 \item{...}{Not used.}
 }

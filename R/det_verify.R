@@ -8,8 +8,14 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #' \link[dplyr]{group_by} for more information of how grouping works.
+#' @param circle If set the parameter is assumed to be cyclic for bias
+#'   calculations. Should be this distance around a circle in the units of the
+#'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
+#'   for radians.
 #' @param show_progress Logical - whether to show a progress bar. The default is
-#'   FALSE.
+#' `TRUE`
+#' @param ... Reserved for methods
+#'   `TRUE`.
 #' @return A list containting two data frames: \code{det_summary_scores} and
 #'   \code{det_threshold_scores}.
 #' @export
@@ -20,6 +26,7 @@ det_verify <- function(
   parameter,
   thresholds    = NULL,
   groupings     = "lead_time",
+  circle        = NULL,
   show_progress = TRUE,
   ...
 ) {
@@ -28,6 +35,9 @@ det_verify <- function(
       "Argument {.arg parameter} is missing with no default."
     )
   }
+  check_circle(circle)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("det_verify")
 }
 
@@ -37,6 +47,7 @@ det_verify.harp_ens_point_df <- function(
   parameter,
   thresholds    = NULL,
   groupings     = "lead_time",
+  circle        = NULL,
   show_progress = TRUE,
   fcst_model    = NULL,
   ...
@@ -51,17 +62,22 @@ det_verify.harp_ens_point_df <- function(
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
   det_verify(
-    .fcst, {{parameter}}, thresholds, groupings, show_progress, fcst_model
+    .fcst, {{parameter}}, thresholds, groupings, circle,
+    show_progress, fcst_model
   )
 }
 
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 det_verify.harp_det_point_df <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
   groupings     = "lead_time",
+  circle        = NULL,
   show_progress = TRUE,
   fcst_model    = NULL,
   ...
@@ -123,10 +139,10 @@ det_verify.harp_det_point_df <- function(
   det_score_function <- function(x) {
     tibble::tibble(
       num_cases = nrow(x),
-      bias      = mean(x[["fcst_minus_obs"]]),
-      rmse      = sqrt(mean(x[["fcst_minus_obs"]] ^ 2)),
-      mae       = mean(abs(x[["fcst_minus_obs"]])),
-      stde      = stats::sd(x[["fcst_minus_obs"]])
+      bias      = mean(x[["fcst_bias"]]),
+      rmse      = sqrt(mean(x[["fcst_bias"]] ^ 2)),
+      mae       = mean(abs(x[["fcst_bias"]])),
+      stde      = stats::sd(x[["fcst_bias"]])
     )
   }
 
@@ -135,7 +151,8 @@ det_verify.harp_det_point_df <- function(
     local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
 
     fcst_df <- dplyr::mutate(
-      fcst_df, fcst_minus_obs = .data[[local_fcst_col]] - .data[[chr_param]]
+      fcst_df,
+      fcst_bias = bias(.data[[local_fcst_col]], .data[[chr_param]], circle)
     )
 
     fcst_df <- group_without_threshold(fcst_df, compute_group, nest = TRUE)
@@ -289,6 +306,7 @@ det_verify.harp_list <- function(
   parameter,
   thresholds    = NULL,
   groupings     = "lead_time",
+  circle        = NULL,
   show_progress = TRUE
 ) {
 
@@ -304,7 +322,8 @@ det_verify.harp_list <- function(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, groupings, show_progress, fcst_model = .y
+        .x, {{parameter}}, thresholds, groupings, circle,
+        show_progress, fcst_model = .y
       )
     )
   )
@@ -430,4 +449,15 @@ empty_det_threshold_scores <- function(fcst_df, groupings) {
       symmetric_edi_std_error            = NA_real_
     )
 
+}
+
+check_circle <- function(x) {
+  if (is.null(x)) return()
+  if (!x %in% c(360, 2 * pi)) {
+    cli::cli_warn(c(
+      "{.arg circle} has a value not equal to 360 or 2 * pi.",
+      "i" = "You have set {.arg circle} = {x}.",
+      "i" = "Are you sure this is the value you want?"
+    ))
+  }
 }

@@ -15,6 +15,12 @@
 #'   threshold and climatology and also optionally leadtime.
 #' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
 #'   (the default) to select automatically.
+#' @param show_progress Logical - whether to show a progress bar. The default is
+#' `TRUE`
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'   column of the output. If the function is dispatched on a `harp_list`
+#'   object, the names of the `harp_list` are automatically used.
+#' @param ... Passed to \link{ens_brier}.
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   a nested column for reliability. The column can be unnested with
@@ -29,26 +35,29 @@ ens_reliability <- function(
   groupings     = "leadtime",
   climatology   = "sample",
   rel_probs     = NA,
-  show_progress = FALSE
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
 ) {
 
-  parameter   <- rlang::enquo(parameter)
-  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    if (is.character(rlang::eval_tidy(parameter))) {
-      parameter <- rlang::eval_tidy(parameter)
-      parameter <- rlang::ensym(parameter)
-    }
-  }
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
 
+    if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
   ens_brier(
     .fcst,
-    !! parameter,
+    {{parameter}},
     thresholds,
     groupings     = groupings,
     climatology   = climatology,
     rel_probs     = rel_probs,
     keep_score    = "reliability",
-    show_progress = show_progress
+    show_progress = show_progress,
+    fcst_model    = fcst_model
   )
 }
 

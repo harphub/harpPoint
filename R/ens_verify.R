@@ -12,6 +12,10 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param circle If set the parameter is assumed to be cyclic for bias
+#'   calculations. Should be this distance around a circle in the units of the
+#'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
+#'   for radians.
 #' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
 #'   (the default) to select automatically.
 #' @param num_ref_members For "fair" scores, the score is scaled to be valid for
@@ -30,9 +34,20 @@
 #'   "sample" for the sample climatology (the default), a named list with
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
-#'   threshold and climatology and also optionally leadtime.
+#'   threshold and climatology and also optionally lead_time.
+#' @param rank_hist Logical. Whether to compute the rank histogram. Defaults to
+#'   `TRUE`. Note that the computation of the rank histogram can be slow if
+#'   there is a large number (> 1000) of groups.
+#' @param crps Logical. Whether to compute the CRPS. Defaults to `TRUE`.
+#' @param brier Logical. Whether to compute the Brier score. Defaults to
+#'   `TRUE`. Will be ignored if no thresholds are set.
+#' @param roc Logical. Whether to compute the Relative Operating Characteristic
+#'   (ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.
+#' @param econ_val Logical. Whether to compute the economic value. Defaults to
+#'   `TRUE`. Will be ignored if no thresholds are set.
 #' @param show_progress Logical - whether to show progress bars. Defaults to
-#'   TRUE.
+#'   `TRUE`.
+#' @param ... Reserved for methods.
 #'
 #' @return A list containting three data frames: \code{ens_summary_scores},
 #'   \code{ens_threshold_scores} and \code{det_summary_scores}.
@@ -45,6 +60,7 @@ ens_verify <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "lead_time",
+  circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
@@ -58,9 +74,20 @@ ens_verify <- function(
   show_progress      = TRUE,
   ...
 ) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  check_circle(circle)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_verify")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_verify.harp_ens_point_df <- function(
   .fcst,
@@ -68,6 +95,7 @@ ens_verify.harp_ens_point_df <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "lead_time",
+  circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
@@ -138,7 +166,7 @@ ens_verify.harp_ens_point_df <- function(
     ens_summary_scores <- list()
 
     ens_summary_scores[["ss"]] <- ens_spread_and_skill(
-      .fcst, !!parameter, groupings = groupings,
+      .fcst, !!parameter, groupings = groupings, circle = circle,
       spread_drop_member = spread_drop_member
     )[["ens_summary_scores"]]
 
@@ -250,6 +278,7 @@ ens_verify.harp_list <- function(
   verify_members     = TRUE,
   thresholds         = NULL,
   groupings          = "lead_time",
+  circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
   spread_drop_member = NULL,
@@ -281,8 +310,8 @@ ens_verify.harp_list <- function(
     purrr::pmap(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_verify(
-        x, !!parameter, verify_members, thresholds, groupings, rel_probs,
-        num_ref_members, z, jitter_fcst, climatology,
+        x, !!parameter, verify_members, thresholds, groupings, circle,
+        rel_probs, num_ref_members, z, jitter_fcst, climatology,
         rank_hist, crps, brier, roc, econ_val,
         show_progress, fcst_model = y
       )
@@ -503,8 +532,8 @@ fcst_model_err <- function(fcst_model, caller) {
       "No {.var fcst_model} column found in data frame.",
       "x" = "Data frame must have a {.var fcst_model} column.",
       "i" = paste(
-        "Use a `harpIO::read_*` function to ensure data",
-        "are in the correct form."
+        "You can use the {.arg fcst_model} argument to add a {.var fcst_model}",
+        "column"
       )
     ), call = caller)
 
