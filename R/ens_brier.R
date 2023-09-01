@@ -45,11 +45,6 @@ ens_brier <- function(
   show_progress   = TRUE,
   ...
 ) {
-  if (missing(parameter)) {
-    cli::cli_abort(
-      "Argument {.arg parameter} is missing with no default."
-    )
-  }
   keep_score <- match.arg(keep_score)
   # Set progress bar to false for batch running
   if (!interactive()) show_progress <- FALSE
@@ -73,6 +68,12 @@ ens_brier.harp_ens_point_df <- function(
   fcst_model      = NULL,
   ...
 ) {
+
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
 
   ens_brier(
     ens_probabilities(.fcst, thresholds, {{parameter}}),

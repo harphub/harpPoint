@@ -25,11 +25,6 @@ ens_value <- function(
   show_progress = TRUE,
   ...
 ) {
-  if (missing(parameter)) {
-    cli::cli_abort(
-      "Argument {.arg parameter} is missing with no default."
-    )
-  }
   # Set progress bar to false for batch running
   if (!interactive()) show_progress <- FALSE
   UseMethod("ens_value")
@@ -48,6 +43,12 @@ ens_value.harp_ens_point_df <- function(
   fcst_model    = NULL,
   ...
 ) {
+
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
 
   ens_value(
     ens_probabilities(.fcst, thresholds, {{parameter}}),
