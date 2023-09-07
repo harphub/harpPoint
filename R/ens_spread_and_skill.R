@@ -34,8 +34,14 @@
 #'
 #' @examples
 ens_spread_and_skill <- function(
-  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
-  jitter_fcst = NULL, show_progress = TRUE, ...
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  ...
 ) {
   if (missing(parameter)) {
     cli::cli_abort(
@@ -53,8 +59,15 @@ ens_spread_and_skill <- function(
 #'  object, the names of the `harp_list` are automatically used.
 #' @export
 ens_spread_and_skill.harp_ens_point_df <- function(
-  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
-  jitter_fcst = NULL, show_progress = TRUE, fcst_model = NULL, ...
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  fcst_model         = NULL,
+  ...
 ) {
 
   if (!is.list(groupings)) {
@@ -151,8 +164,14 @@ ens_spread_and_skill.harp_ens_point_df <- function(
 
 #' @export
 ens_spread_and_skill.harp_list <- function(
-  .fcst, parameter, groupings = "lead_time", circle, spread_drop_member = NULL,
-  jitter_fcst = NULL, show_progress = TRUE, ...
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  ...
 ) {
 
   parameter   <- rlang::enquo(parameter)
