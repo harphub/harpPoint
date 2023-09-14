@@ -99,7 +99,7 @@ bind_point_verif.harp_verif <- function(...) {
     res,
     dplyr::mutate,
     dplyr::across(
-      dplyr::all_of(groupings),
+      dplyr::any_of(groupings),
       ~dplyr::case_when(is.na(.x) ~ "All", TRUE ~ as.character(.x))
     )
   )
