@@ -16,6 +16,8 @@ ens_verify(
   spread_drop_member = NULL,
   jitter_fcst = NULL,
   climatology = "sample",
+  hexbin = TRUE,
+  num_bins = 30,
   rank_hist = TRUE,
   crps = TRUE,
   brier = TRUE,
@@ -26,8 +28,8 @@ ens_verify(
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A `harp_df` or `harp_list` object with tables that have a column
+for observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
 
@@ -72,14 +74,20 @@ elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally lead_time.}
 
+\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
+pairs. Defaults to `TRUE`. See \link{bin_fcst_obs} for more details.}
+
+\item{num_bins}{The number of bins into which to partition observations for
+the hexbin computation.}
+
 \item{rank_hist}{Logical. Whether to compute the rank histogram. Defaults to
 `TRUE`. Note that the computation of the rank histogram can be slow if
 there is a large number (> 1000) of groups.}
 
 \item{crps}{Logical. Whether to compute the CRPS. Defaults to `TRUE`.}
 
-\item{brier}{Logical. Whether to compute the Brier score. Defaults to
-`TRUE`. Will be ignored if no thresholds are set.}
+\item{brier}{Logical. Whether to compute the Brier score. Defaults to `TRUE`.
+Will be ignored if no thresholds are set.}
 
 \item{roc}{Logical. Whether to compute the Relative Operating Characteristic
 (ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.}

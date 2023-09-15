@@ -1,23 +1,6 @@
 #' Compute verification scores for deterministic forecasts.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param thresholds A numeric vector of thresholds for which to compute the
-#'   threshold based scores. Set to NULL (the default) to only compute summary
-#'   scores.
-#' @param groupings The groups for which to compute the scores. See
-#' \link[dplyr]{group_by} for more information of how grouping works.
-#' @param circle If set the parameter is assumed to be cyclic for bias
-#'   calculations. Should be this distance around a circle in the units of the
-#'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
-#'   for radians.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#' `TRUE`
-#' @param ... Reserved for methods
-#'   `TRUE`.
-#' @return A list containting two data frames: \code{det_summary_scores} and
-#'   \code{det_threshold_scores}.
+#' @inheritParams ens_verify
 #' @export
 #'
 #' @examples
@@ -27,6 +10,7 @@ det_verify <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  num_bins      = 30,
   show_progress = TRUE,
   ...
 ) {
@@ -48,6 +32,7 @@ det_verify.harp_ens_point_df <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  num_bins      = 30,
   show_progress = TRUE,
   fcst_model    = NULL,
   ...
@@ -62,15 +47,14 @@ det_verify.harp_ens_point_df <- function(
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
   det_verify(
-    .fcst, {{parameter}}, thresholds, groupings, circle,
+    .fcst, {{parameter}}, thresholds, groupings, circle, num_bins,
     show_progress, fcst_model
   )
 }
 
 
-#' @param fcst_model The name of the forecast model to use in the `fcst_model`
-#'  column of the output. If the function is dispatched on a `harp_list`
-#'  object, the names of the `harp_list` are automatically used.
+#' @rdname det_verify
+#' @inheritParams ens_verify.harp_ens_point_df
 #' @export
 det_verify.harp_det_point_df <- function(
   .fcst,
@@ -78,6 +62,7 @@ det_verify.harp_det_point_df <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  num_bins      = 30,
   show_progress = TRUE,
   fcst_model    = NULL,
   ...
@@ -184,14 +169,24 @@ det_verify.harp_det_point_df <- function(
     fcst_df
   }
 
-  res <- list()
-
-  res[["det_summary_scores"]] <- purrr::map(
+  det_summary_scores <- list()
+  det_summary_scores[["basic"]] <- purrr::map(
     groupings, compute_summary_scores, .fcst
   ) %>%
     purrr::list_rbind() %>%
     fill_group_na(groupings) %>%
     dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  det_summary_scores[["hexbin"]] <- bin_fcst_obs(
+    .fcst, !!parameter, groupings, num_bins, show_progress
+  )[["det_summary_scores"]]
+
+  res <- list()
+
+  res[["det_summary_scores"]] <- Reduce(
+    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+    det_summary_scores
+  )
 
   if (is.numeric(thresholds)) {
 
@@ -307,6 +302,7 @@ det_verify.harp_list <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  num_bins      = 30,
   show_progress = TRUE
 ) {
 
@@ -322,7 +318,7 @@ det_verify.harp_list <- function(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, groupings, circle,
+        .x, {{parameter}}, thresholds, groupings, circle, num_bins,
         show_progress, fcst_model = .y
       )
     )

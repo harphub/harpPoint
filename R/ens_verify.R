@@ -1,7 +1,7 @@
 #' Compute all verification scores for an ensemble.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
+#' @param .fcst A `harp_df` or `harp_list` object with tables that have a column
+#'   for observations, or a single forecast table.
 #' @param parameter The name of the column for the observed data.
 #' @param verify_members Whether to verify the individual members of the
 #'   ensemble. Even if thresholds are supplied, only summary scores are
@@ -35,12 +35,16 @@
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
 #'   threshold and climatology and also optionally lead_time.
+#' @param hexbin Logical. Whether to compute hexbins for forecast, observation
+#'   pairs. Defaults to `TRUE`. See \link{bin_fcst_obs} for more details.
+#' @param num_bins The number of bins into which to partition observations for
+#'   the hexbin computation.
 #' @param rank_hist Logical. Whether to compute the rank histogram. Defaults to
 #'   `TRUE`. Note that the computation of the rank histogram can be slow if
 #'   there is a large number (> 1000) of groups.
 #' @param crps Logical. Whether to compute the CRPS. Defaults to `TRUE`.
-#' @param brier Logical. Whether to compute the Brier score. Defaults to
-#'   `TRUE`. Will be ignored if no thresholds are set.
+#' @param brier Logical. Whether to compute the Brier score. Defaults to `TRUE`.
+#'   Will be ignored if no thresholds are set.
 #' @param roc Logical. Whether to compute the Relative Operating Characteristic
 #'   (ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.
 #' @param econ_val Logical. Whether to compute the economic value. Defaults to
@@ -66,6 +70,8 @@ ens_verify <- function(
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
   climatology        = "sample",
+  hexbin             = TRUE,
+  num_bins           = 30,
   rank_hist          = TRUE,
   crps               = TRUE,
   brier              = TRUE,
@@ -101,6 +107,8 @@ ens_verify.harp_ens_point_df <- function(
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
   climatology        = "sample",
+  hexbin             = TRUE,
+  num_bins           = 30,
   rank_hist          = TRUE,
   crps               = TRUE,
   show_progress      = TRUE,
@@ -170,9 +178,20 @@ ens_verify.harp_ens_point_df <- function(
       spread_drop_member = spread_drop_member
     )[["ens_summary_scores"]]
 
+    if (hexbin) {
+      ens_summary_scores[["hexbin"]] <- dplyr::select(
+        bin_fcst_obs(
+          .fcst, !!parameter, groupings = groupings, num_bins = num_bins,
+          show_progress = show_progress
+        )[["ens_summary_scores"]],
+        -dplyr::all_of("num_cases")
+      )
+    }
+
     if (rank_hist) {
       ens_summary_scores[["rh"]] <- ens_rank_histogram(
-        .fcst, !! parameter, groupings = groupings
+        .fcst, !! parameter, groupings = groupings,
+        show_progress = show_progress
       )[["ens_summary_scores"]]
     }
 
@@ -284,6 +303,8 @@ ens_verify.harp_list <- function(
   spread_drop_member = NULL,
   jitter_fcst        = NULL,
   climatology        = "sample",
+  hexbin             = TRUE,
+  num_bins           = 30,
   rank_hist          = TRUE,
   crps               = TRUE,
   brier              = TRUE,
@@ -312,7 +333,7 @@ ens_verify.harp_list <- function(
       function(x, y, z) ens_verify(
         x, !!parameter, verify_members, thresholds, groupings, circle,
         rel_probs, num_ref_members, z, jitter_fcst, climatology,
-        rank_hist, crps, brier, roc, econ_val,
+        hexbin, num_bins, rank_hist, crps, brier, roc, econ_val,
         show_progress, fcst_model = y
       )
     )

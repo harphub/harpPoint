@@ -2,6 +2,7 @@
 % Please edit documentation in R/det_verify.R
 \name{det_verify}
 \alias{det_verify}
+\alias{det_verify.harp_det_point_df}
 \title{Compute verification scores for deterministic forecasts.}
 \usage{
 det_verify(
@@ -10,13 +11,26 @@ det_verify(
   thresholds = NULL,
   groupings = "lead_time",
   circle = NULL,
+  num_bins = 30,
   show_progress = TRUE,
+  ...
+)
+
+\method{det_verify}{harp_det_point_df}(
+  .fcst,
+  parameter,
+  thresholds = NULL,
+  groupings = "lead_time",
+  circle = NULL,
+  num_bins = 30,
+  show_progress = TRUE,
+  fcst_model = NULL,
   ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A `harp_df` or `harp_list` object with tables that have a column
+for observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
 
@@ -32,15 +46,17 @@ calculations. Should be this distance around a circle in the units of the
 parameter, so would typically have a value of 360 for degrees or `2 * pi`
 for radians.}
 
-\item{show_progress}{Logical - whether to show a progress bar. The default is
-`TRUE`}
+\item{num_bins}{The number of bins into which to partition observations for
+the hexbin computation.}
 
-\item{...}{Reserved for methods
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
 `TRUE`.}
-}
-\value{
-A list containting two data frames: \code{det_summary_scores} and
-  \code{det_threshold_scores}.
+
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the `fcst_model`
+column of the output. If the function is dispatched on a `harp_list`
+object, the names of the `harp_list` are automatically used.}
 }
 \description{
 Compute verification scores for deterministic forecasts.

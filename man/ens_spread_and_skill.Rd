@@ -8,7 +8,7 @@ ens_spread_and_skill(
   .fcst,
   parameter,
   groupings = "lead_time",
-  circle,
+  circle = NULL,
   spread_drop_member = NULL,
   jitter_fcst = NULL,
   show_progress = TRUE,
