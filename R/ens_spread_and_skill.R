@@ -114,7 +114,7 @@ ens_spread_and_skill.harp_ens_point_df <- function(
 
     fcst_df <- dplyr::mutate(
       fcst_df,
-      fcst_bias = bias(.data[[ens_mean]], !!parameter, circle)
+      fcst_bias = bias(.data[[ens_mean]], .data[[chr_param]], circle)
     )
 
     fcst_df <- group_without_threshold(fcst_df, compute_group)
