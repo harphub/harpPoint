@@ -137,6 +137,13 @@ ens_crps.harp_ens_point_df <- function(
     fcst_df <- fcst_df %>%
       dplyr::mutate(
         num_cases       = purrr::map_int(.data$grouped_fcst, nrow),
+        num_stations = {
+          if (is.element("SID", group_vars)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_fcst"]], ~length(unique(.x[["SID"]])))
+          }
+        },
         !! crps_output := purrr::map(
           .data$grouped_fcst, crps_function, .progress = pb_name
         )

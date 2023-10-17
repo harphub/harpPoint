@@ -124,6 +124,13 @@ det_verify.harp_det_point_df <- function(
   det_score_function <- function(x) {
     tibble::tibble(
       num_cases = nrow(x),
+      num_stations = {
+        if (is.element("SID", colnames(x))) {
+          length(unique(x[["SID"]]))
+        } else {
+          1L
+        }
+      },
       bias      = mean(x[["fcst_bias"]]),
       rmse      = sqrt(mean(x[["fcst_bias"]] ^ 2)),
       mae       = mean(abs(x[["fcst_bias"]])),
@@ -254,6 +261,13 @@ det_verify.harp_det_point_df <- function(
       fcst_df <- dplyr::transmute(
         fcst_df,
         dplyr::across(dplyr::all_of(compute_group)),
+        num_stations = {
+          if (is.element("SID", compute_group)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_data"]], ~length(unique(.x[["SID"]])))
+          }
+        },
         verif = purrr::map(
           .data[["grouped_data"]],
           verif_func,
@@ -263,8 +277,6 @@ det_verify.harp_det_point_df <- function(
 
       cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
       fcst_df
-
-      #sweep_det_thresh(fcst_df, compute_group, thresh_col)
 
     }
 

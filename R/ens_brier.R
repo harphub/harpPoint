@@ -216,6 +216,13 @@ ens_brier.harp_ens_probs <- function(
             }
           }
         ),
+        num_stations = {
+          if (is.element("SID", compute_group)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_fcst"]], ~length(unique(.x[["SID"]])))
+          }
+        },
         num_cases_total = purrr::map_int(
           .data$grouped_fcst,
           ~ sum(as.integer(.x$obs_prob) | as.integer(ceiling(.x$fcst_prob)))

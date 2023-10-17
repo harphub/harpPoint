@@ -125,6 +125,13 @@ ens_spread_and_skill.harp_ens_point_df <- function(
     res <- fcst_df %>%
       dplyr::summarise(
         num_cases              = dplyr::n(),
+        num_stations           = {
+          if (is.element("SID", group_vars)) {
+            1L
+          } else {
+            length(unique(.data[["SID"]]))
+          }
+        },
         mean_bias              = mean(.data[["fcst_bias"]]),
         stde                   = stats::sd(.data[["fcst_bias"]]),
         rmse                   = sqrt(mean(.data[["fcst_bias"]] ^ 2)),

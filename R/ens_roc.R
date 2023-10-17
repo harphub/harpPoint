@@ -110,6 +110,13 @@ ens_roc.harp_ens_probs <- function(
     fcst_df <- fcst_df %>%
       dplyr::transmute(
         !!! compute_group_sym,
+        num_stations = {
+          if (is.element("SID", compute_group)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_fcst"]], ~length(unique(.x[["SID"]])))
+          }
+        },
         roc_output = purrr::map(
           .data$grouped_fcst,
           ~harp_roc(.x$obs_prob, .x$fcst_prob),

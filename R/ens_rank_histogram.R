@@ -96,6 +96,13 @@ ens_rank_histogram.harp_ens_point_df <- function(
     }
     fcst_df <- fcst_df %>%
       dplyr::mutate(
+        num_stations = {
+          if (is.element("SID", group_vars)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_fcst"]], ~length(unique(.x[["SID"]])))
+          }
+        },
         rank_count = purrr::map(
           .data$grouped_fcst, harp_rank_hist, !! parameter, .progress = pb_name
         )
