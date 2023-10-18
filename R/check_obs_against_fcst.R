@@ -53,6 +53,7 @@ check_obs_against_fcst <- function(
     )
   }
 
+  fcst_regex <- "_mbr[[:digit:]]{3}|_det$|^fcst$|^forecast$"
   if (num_sd_allowed > 0) {
 
     tolerance <- join_models(
@@ -63,7 +64,7 @@ check_obs_against_fcst <- function(
           .fcst,
           function(x) {
             grep(
-              "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:digit:]]*$|_det$|fcst_model",
+              paste0(fcst_regex, "|fcst_model"),
               colnames(x),
               value = TRUE, invert = TRUE
             )
@@ -102,7 +103,7 @@ check_obs_against_fcst <- function(
 
     tolerance_df <- tidyr::pivot_longer(
       tolerance,
-      tidyselect::matches("_mbr[[:digit:]]+$|_det$")
+      tidyselect::matches(fcst_regex)
     ) %>%
       dplyr::group_by(!!!rlang::syms(stratification)) %>%
       dplyr::summarise(
@@ -120,7 +121,7 @@ check_obs_against_fcst <- function(
     tolerance <- dplyr::mutate(
       tolerance,
       dplyr::across(
-        dplyr::matches("_mbr[[:digit:]]+$|_det$"),
+        dplyr::matches(fcst_regex),
         ~abs(. - !!parameter_quo)
       )
     )
@@ -129,7 +130,7 @@ check_obs_against_fcst <- function(
       tolerance,
       min_diff = matrixStats::rowMins(
         as.matrix(
-          dplyr::select(tolerance, dplyr::matches("_mbr[[:digit:]]+$|_det$"))
+          dplyr::select(tolerance, dplyr::matches(fcst_regex))
         )
       )
     )
@@ -152,9 +153,16 @@ check_obs_against_fcst <- function(
 
     bad_obs  <- tolerance %>%
       dplyr::filter(.data$min_diff > .data$tolerance_allowed) %>%
-      dplyr::select(.data$SID, .data$valid_dttm, !! parameter_quo) %>%
+      dplyr::select(
+        .data$SID, .data$valid_dttm, !!parameter_quo, .data$min_diff,
+        .data$tolerance_allowed
+      ) %>%
       dplyr::group_by(.data$SID, .data$valid_dttm) %>%
-      dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
+      dplyr::summarise(
+        !!rlang::sym(parameter_name) := unique(!!parameter_quo),
+        dist_to_fcst = min(.data$min_diff),
+        tolerance    = mean(.data$tolerance_allowed)
+      ) %>%
       dplyr::ungroup()
 
     .fcst <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
@@ -165,6 +173,14 @@ check_obs_against_fcst <- function(
       by = c("SID", "valid_dttm"),
       force = TRUE
     )))
+
+    num_bad_obs <- nrow(bad_obs)
+    if (num_bad_obs > 0) {
+      cli::cli_inform(c(
+        "!" = "{num_bad_obs} cases with more than {num_sd_allowed} std dev{?s} error.",
+        "i" = "Removed cases can be seen in the \"removed_cases\" attribute."
+      ))
+    }
 
     attr(.fcst, "removed_cases") <- bad_obs
 
