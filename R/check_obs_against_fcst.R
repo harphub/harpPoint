@@ -26,7 +26,7 @@
 #' @examples
 
 check_obs_against_fcst <- function(
-  .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
+    .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
 ) {
 
   parameter_quo  <- rlang::enquo(parameter)
@@ -36,8 +36,8 @@ check_obs_against_fcst <- function(
   }
   parameter_name <- rlang::quo_name(parameter_quo)
 
-    if (is.null(num_sd_allowed)) {
-    num_sd_allowed <- switch(
+  if (is.null(num_sd_allowed)) {
+    .num_sd_allowed <- switch(
       parameter_name,
       "T2m"       = 6,
       "RH2m"      = 6,
@@ -51,6 +51,8 @@ check_obs_against_fcst <- function(
       "AccPcp24h" = 8,
       0
     )
+  } else {
+    .num_sd_allowed <- num_sd_allowed
   }
 
   fcst_regex <- "_mbr[[:digit:]]{3}|_det$|^fcst$|^forecast$"
@@ -107,7 +109,7 @@ check_obs_against_fcst <- function(
     ) %>%
       dplyr::group_by(!!!rlang::syms(stratification)) %>%
       dplyr::summarise(
-        tolerance_allowed = stats::sd(.data[["value"]]) * .env[["num_sd_allowed"]],
+        tolerance_allowed = stats::sd(.data[["value"]]) * .num_sd_allowed,
         num_cases         = dplyr::n()
       )
 
