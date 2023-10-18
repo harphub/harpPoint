@@ -56,7 +56,7 @@ check_obs_against_fcst <- function(
   }
 
   fcst_regex <- "_mbr[[:digit:]]{3}|_det$|^fcst$|^forecast$"
-  if (num_sd_allowed > 0) {
+  if (.num_sd_allowed > 0) {
 
     tolerance <- join_models(
       .fcst,
@@ -154,18 +154,22 @@ check_obs_against_fcst <- function(
       dplyr::ungroup()
 
     bad_obs  <- tolerance %>%
-      dplyr::filter(.data$min_diff > .data$tolerance_allowed) %>%
-      dplyr::select(
-        .data$SID, .data$valid_dttm, !!parameter_quo, .data$min_diff,
-        .data$tolerance_allowed
-      ) %>%
-      dplyr::group_by(.data$SID, .data$valid_dttm) %>%
-      dplyr::summarise(
-        !!rlang::sym(parameter_name) := unique(!!parameter_quo),
-        dist_to_fcst = min(.data$min_diff),
-        tolerance    = mean(.data$tolerance_allowed)
-      ) %>%
-      dplyr::ungroup()
+      dplyr::filter(.data$min_diff > .data$tolerance_allowed)
+
+    if (nrow(bad_obs) > 0) {
+      bad_obs <- bad_obs %>%
+        dplyr::select(
+          .data$SID, .data$valid_dttm, !!parameter_quo, .data$min_diff,
+          .data$tolerance_allowed
+        ) %>%
+        dplyr::group_by(.data$SID, .data$valid_dttm) %>%
+        dplyr::summarise(
+          !!rlang::sym(parameter_name) := unique(!!parameter_quo),
+          dist_to_fcst = min(.data$min_diff),
+          tolerance    = mean(.data$tolerance_allowed)
+        ) %>%
+        dplyr::ungroup()
+    }
 
     .fcst <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
       .fcst,
