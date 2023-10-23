@@ -152,7 +152,7 @@ ens_brier.harp_ens_probs <- function(
     } else {
       pb_brier <- FALSE
       pb_fair_brier <- FALSE
-      cat(cli::col_blue(score_text))
+      message(cli::col_blue(score_text), appendLF = FALSE)
       score_text <- ""
     }
 
@@ -212,7 +212,7 @@ ens_brier.harp_ens_probs <- function(
       ) %>%
       sweep_function()
 
-    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
     fcst_df
 
   }

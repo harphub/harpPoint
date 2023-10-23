@@ -60,7 +60,7 @@ bootstrap_verify <- function(
   verif_func,
   obs_col,
   n,
-  groupings      = "leadtime",
+  groupings      = "lead_time",
   pool_by        = NULL,
   conf           = 0.95,
   min_cases      = 4,
@@ -76,11 +76,25 @@ bootstrap_verify <- function(
     stop("`verif_func` must be a function.")
   }
 
-  .fcst <- common_cases(.fcst)
+  # BODGE - make everything a harp_list rather than use more formal methods
+  if (inherits(.fcst, "harp_df")) {
+    fcst_model <- unique(.fcst[["fcst_model"]])
+    .fcst <- harpCore::as_harp_list(stats::setNames(list(.fcst), fcst_model))
+  }
+
+  if (!inherits(.fcst, "harp_list")) {
+    fcst_class <- class(.fcst)
+    cli::cli_abort(c(
+      "x" = "{.arg .fcst} must be a {.var harp_list} or {.var harp_df} object.",
+      "i" = "{.arg .fcst} has the following class{?es}: {fcst_class}."
+    ))
+  }
+
+  .fcst <- harpCore::common_cases(.fcst)
 
   q_lower <- (1 - conf) / 2
   q_upper <- conf + q_lower
-  grps    <- c("mname", groupings)
+  grps    <- c("fcst_model", groupings)
 
   # Set up parallel processing
   if (parallel) {
@@ -132,7 +146,7 @@ bootstrap_verify <- function(
 
   if (parallel) {
 
-    replicates <- bind_point_verif(
+    replicates <- list_to_harp_verif(
       parallel::mclapply(
         1:n, call_verif, .fcst, verif_func,
         !!rlang::enquo(obs_col), groupings, pool_by, min_cases, ...,
@@ -142,7 +156,7 @@ bootstrap_verify <- function(
 
   } else {
 
-    replicates <- bind_point_verif(
+    replicates <- list_to_harp_verif(
       lapply(
         1:n, call_verif, .fcst, verif_func,
         !!rlang::enquo(obs_col), groupings, pool_by, min_cases, ...
@@ -151,27 +165,28 @@ bootstrap_verify <- function(
   }
 
   # Compute confidences from replicates
+  list_names <- names(replicates)
+  list_attrs <- attributes(replicates)
+
   if (length(.fcst) == 1) {
 
-    lapply(replicates, calc_confidence, groupings, conf)
-
+    res <- lapply(replicates, calc_confidence, groupings, conf)
 
   } else {
-
-    list_names <- names(replicates)
-    list_attrs <- attributes(replicates)
 
     res <- lapply(
       replicates, calc_diff_confidence, names(.fcst),
       groupings, perfect_scores, conf
     )
 
-    names(res)      <- list_names
-    attributes(res) <- list_attrs
-
-    res
-
   }
+
+  names(res)      <- list_names
+  attributes(res) <- list_attrs
+
+  res
+
+
 
 }
 
@@ -179,7 +194,7 @@ bootstrap_verify <- function(
 # Function to select random rows / pools and compute scores
 # for one bootstrap replicate
 sample_verif <- function(
-  .fcst, obs_col, verif_func, grp, pool_by, min_cases, ...
+    .fcst, obs_col, verif_func, grp, pool_by, min_cases, ...
 ) {
 
   grp_sym <- rlang::syms(grp)
@@ -327,10 +342,10 @@ sample_verif <- function(
 
   } else {
 
-    res <- verif_func(
+    res <- suppressMessages(verif_func(
       .fcst, !!rlang::enquo(obs_col), groupings = grp,
       show_progress = FALSE, ...
-    )
+    ))
 
   }
 
@@ -377,7 +392,7 @@ calc_confidence <- function(replicates, grps, conf) {
 # Function to compute confidence intervals and confidence of differnces
 # between fcst_models when there is more than one fcst_model
 calc_diff_confidence <- function(
-  replicates, fcst_models, groupings, perfect_scores, conf
+    replicates, fcst_models, groupings, perfect_scores, conf
 ) {
 
   q_lower <- (1 - conf) / 2
@@ -406,12 +421,12 @@ calc_diff_confidence <- function(
 
     diff_df <- dplyr::inner_join(
       dplyr::rename(
-        dplyr::filter(replicates, .data[["mname"]] == fcst_models[i]),
-        ref_score = .data[["value"]], ref_model = .data[["mname"]]
+        dplyr::filter(replicates, .data[["fcst_model"]] == fcst_models[i]),
+        ref_score = .data[["value"]], ref_model = .data[["fcst_model"]]
       ),
       dplyr::rename(
-        dplyr::filter(replicates, .data[["mname"]] != fcst_models[i]),
-        fcst_score = .data[["value"]], fcst_model = .data[["mname"]]
+        dplyr::filter(replicates, .data[["fcst_model"]] != fcst_models[i]),
+        fcst_score = .data[["value"]], fcst_model = .data[["fcst_model"]]
       ),
       by = join_cols
     )

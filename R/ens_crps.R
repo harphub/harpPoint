@@ -111,7 +111,7 @@ ens_crps.harp_ens_point_df <- function(
       pb_name <- score_text
     } else {
       pb_name <- FALSE
-      cat(score_text)
+      message(score_text, appendLF = FALSE)
       score_text <- ""
     }
     if (harpIO:::tidyr_new_interface()) {
@@ -134,7 +134,7 @@ ens_crps.harp_ens_point_df <- function(
           .data$grouped_fcst, crps_function, .progress = pb_name
         )
       )
-    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
 
     if (!is.na(num_ref_members)) {
       score_text <- cli::col_blue(glue::glue("Fair CRPS for {group_names}"))
@@ -142,7 +142,7 @@ ens_crps.harp_ens_point_df <- function(
         pb_name <- score_text
       } else {
         pb_name <- FALSE
-        cat(score_text)
+        message(score_text, appendLF = FALSE)
         score_text <- ""
       }
       fcst_df <- dplyr::mutate(
@@ -152,7 +152,7 @@ ens_crps.harp_ens_point_df <- function(
           .progress = pb_name
         )
       )
-      cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+      message(score_text, cli::col_green(cli::symbol[["tick"]]))
     }
 
     fcst_df %>%
@@ -217,7 +217,7 @@ sweep_crps <- function(crps_df, crps_col, keep_full_output) {
       crps_reliability = purrr::map_dbl(!! crps_col, "Reli")
     )
   if (!keep_full_output) {
-    crps_df <- dplyr::select(crps_df, - !! crps_col)
+    crps_df <- dplyr::select(crps_df, -!!crps_col)
   }
   crps_df
 }
@@ -243,8 +243,8 @@ bind_crps_vars <- function(.fcst, parameter) {
 
   }
 
-  if (inherits(.fcst, "harp_fcst")) {
-    new_harp_fcst(lapply(.fcst, crps_func, !!parameter))
+  if (inherits(.fcst, "harp_list")) {
+    harpCore::as_harp_list(lapply(.fcst, crps_func, !!parameter))
   } else {
     crps_func(.fcst, !!parameter)
   }

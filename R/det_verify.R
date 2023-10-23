@@ -154,7 +154,7 @@ det_verify.harp_det_point_df <- function(
       pb_name <- score_text
     } else {
       pb_name <- FALSE
-      cat(score_text)
+      message(score_text, appendLF = FALSE)
       score_text <- ""
     }
 
@@ -169,7 +169,7 @@ det_verify.harp_det_point_df <- function(
     ) %>%
       tidyr::unnest(dplyr::all_of("det_score"))
 
-    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
     fcst_df
   }
 
@@ -251,7 +251,7 @@ det_verify.harp_det_point_df <- function(
         pb_name <- score_text
       } else {
         pb_name <- FALSE
-        cat(score_text)
+        message(score_text, appendLF = FALSE)
         score_text <- ""
       }
 
@@ -272,7 +272,7 @@ det_verify.harp_det_point_df <- function(
         )
       )
 
-      cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+      message(score_text, cli::col_green(cli::symbol[["tick"]]))
       fcst_df
 
     }

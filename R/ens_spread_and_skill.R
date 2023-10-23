@@ -98,7 +98,10 @@ ens_spread_and_skill.harp_ens_point_df <- function(
     fcst_df <- group_without_threshold(fcst_df, compute_group)
     group_vars <- dplyr::group_vars(fcst_df)
     group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
-    cat(cli::col_blue(glue::glue("Spread; Skill for {group_names}")))
+    message(
+      cli::col_blue(glue::glue("Spread; Skill for {group_names}")),
+      appendLF = FALSE
+    )
 
     res <- fcst_df %>%
       dplyr::summarise(
@@ -121,7 +124,7 @@ ens_spread_and_skill.harp_ens_point_df <- function(
         dropped_members_spread_skill_ratio = .data[["dropped_members_spread"]] / .data[["rmse"]]
       )
 
-    cat("", cli::col_green(cli::symbol[["tick"]]), "\n")
+    message("", cli::col_green(cli::symbol[["tick"]]))
 
     res
   }

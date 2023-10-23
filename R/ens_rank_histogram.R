@@ -72,7 +72,8 @@ ens_rank_histogram.harp_ens_point_df <- function(
       pb_name <- score_text
     } else {
       pb_name <- FALSE
-      cat(score_text)
+      message(score_text, appendLF = FALSE)
+      score_text <- ""
     }
     if (harpIO:::tidyr_new_interface()) {
       fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group)) %>%
@@ -96,7 +97,7 @@ ens_rank_histogram.harp_ens_point_df <- function(
       dplyr::select(-.data[["grouped_fcst"]]) %>%
       sweep_rank_histogram()
 
-    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
     fcst_df
   }
 

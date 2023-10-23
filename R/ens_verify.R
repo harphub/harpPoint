@@ -455,11 +455,10 @@ sort_attr <- function(x) {
 # Parse the fcst_model input
 parse_fcst_model <- function(.fcst, fcst_model, caller = rlang::caller_env()) {
   if (!is.null(fcst_model)) {
-    cat(
+    message(
       cli::col_green(
         glue::glue("::Computing verification for fcst_model `{fcst_model}`::")
-      ),
-      "\n"
+      )
     )
   } else {
     fcst_model <- unique(.fcst[["fcst_model"]])

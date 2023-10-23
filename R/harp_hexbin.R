@@ -196,7 +196,7 @@ compute_hexbin <- function(
     pb_name <- score_text
   } else {
     pb_name <- FALSE
-    cat(score_text)
+    message(score_text, appendLF = FALSE)
     score_text <- ""
   }
 
@@ -218,7 +218,7 @@ compute_hexbin <- function(
     )
   )
 
-  cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+  message(score_text, cli::col_green(cli::symbol[["tick"]]))
 
   res
 }

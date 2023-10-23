@@ -94,7 +94,7 @@ ens_roc.harp_ens_probs <- function(
       pb_name <- score_text
     } else {
       pb_name <- FALSE
-      cat(score_text)
+      message(score_text, appendLF = FALSE)
       score_text <- ""
     }
 
@@ -116,7 +116,7 @@ ens_roc.harp_ens_probs <- function(
       ) %>%
       sweep_roc()
 
-    cat(score_text, cli::col_green(cli::symbol[["tick"]]), "\n")
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
     fcst_df
   }
 
