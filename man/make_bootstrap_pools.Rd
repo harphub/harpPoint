@@ -39,3 +39,7 @@ then \code{pool_length} is assumed to be in hours, though the units can be
 set by adding a qualifier letter: "s" = seconds, "m" = minutes, "h" = hours,
 "d" = days.
 }
+\examples{
+make_bootstrap_pools(ens_point_df, lead_time, 2)
+make_bootstrap_pools(ens_point_df, lead_time, 2, overlap = TRUE)
+}

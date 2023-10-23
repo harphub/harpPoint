@@ -11,8 +11,6 @@
 #'   and combined in the new attributes.
 #' @export
 #'
-#' @examples
-#'
 bind_point_verif <- function(...) {
   UseMethod("bind_point_verif")
 }

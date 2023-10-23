@@ -15,6 +15,9 @@ ecoval(obs, pred, costloss, thresholds)
 
 \item{thresholds}{A vector of threshold probabilities}
 }
+\value{
+a list of cl, value, Vmax, Venv, H, F, s, n
+}
 \description{
 Compute economic value score
 }

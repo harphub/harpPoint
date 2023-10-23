@@ -21,11 +21,11 @@ bootstrap_verify(
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with a column for observations.}
+\item{.fcst}{A \code{harp_list} object with a column for observations.}
 
 \item{verif_func}{The \code{harpPoint} verification function to bootstrap.}
 
-\item{obs_col}{The observations column in the \code{harp_fcst} object. Must
+\item{obs_col}{The observations column in the \code{harp_list} object. Must
 be unquoted.}
 
 \item{n}{The number of bootstrap replicates.}
@@ -35,7 +35,7 @@ be unquoted.}
 
 \item{pool_by}{For a block bootstrap, the quoted column name to use to pool
 the data into blocks. For overlapping blocks this should be a data frame
-with a column that is common to the \code{harp_fcst} object input and a
+with a column that is common to the \code{harp_list} object input and a
 column named "pool" for which pool the data belong to. See Details.}
 
 \item{conf}{The confidence interval to compute.}
@@ -62,12 +62,12 @@ feature is not available if \code{parallel = TRUE}}
 A harp_point_verif object with extra columns for upper and lower
   confidence bounds of scores and the percent of replicates that are "better"
   where there are more than one \code{fcst_model}s in the input
-  \code{harp_fcst_object}
+  \code{harp_list_object}
 }
 \description{
 \code{bootstrap_verify} is used to compute verification scores with
 confidence intervals. if more than one \code{fcst_model} exists in the input
-\code{harp_fcst} object, the statistical significance of the differences in
+\code{harp_list} object, the statistical significance of the differences in
 verification scores between \code{fcst_model}s is computed. The statistical
 testing is done using the bootstrap method whereby the scores are computed
 repeatedly for random samples of the input data.
@@ -79,7 +79,7 @@ Rather than sampling individual data points randomly, pools of data points
 are sampled randomly. The pools are taken from the column passed to the
 \code{pool_by} argument. To use an overlapping block bootstrap a data frame
 should be passed to \code{pool_by}, with one column that is common to the
-\code{harp_fcst} object input and a column named "pool" that labels what
+\code{harp_list} object input and a column named "pool" that labels what
 pool a row is in. This ensures that the correct number of overlapping pools
 are used in each bootstrap replicate. \link{make_bootstrap_pools} can be used
 to get a data frame of overlapping pools.

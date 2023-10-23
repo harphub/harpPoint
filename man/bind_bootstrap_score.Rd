@@ -2,13 +2,17 @@
 % Please edit documentation in R/bind_bootstrap_score.R
 \name{bind_bootstrap_score}
 \alias{bind_bootstrap_score}
-\title{Title}
+\title{Bind output of bootstrap_score / pooled_bootstrap_score}
 \usage{
 bind_bootstrap_score(...)
 }
 \arguments{
-\item{...}{}
+\item{...}{A list of outputs from `bootstrap_score()` /
+`pooled_bootstrap_score()`}
+}
+\value{
+An object of class `harp_bootstrap`
 }
 \description{
-Title
+`r lifecycle::badge("deprecated")`
 }

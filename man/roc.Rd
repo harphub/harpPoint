@@ -13,6 +13,9 @@ roc(obs, pred, thresholds)
 
 \item{thresholds}{A vector of threshold probabilities}
 }
+\value{
+a list with area and vectors thresholds, H, F
+}
 \description{
 Compute ROC and area under ROC
 }

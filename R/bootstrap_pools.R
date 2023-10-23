@@ -28,25 +28,31 @@
 #' @export
 #'
 #' @examples
+#' make_bootstrap_pools(ens_point_df, lead_time, 2)
+#' make_bootstrap_pools(ens_point_df, lead_time, 2, overlap = TRUE)
 make_bootstrap_pools <- function(
   .fcst, pool_col, pool_length, overlap = FALSE
 ) {
 
-  pool_col_quo <- rlang::enquo(pool_col)
+  pool_col_sym <- rlang::ensym(pool_col)
 
-  pools_df <- dplyr::distinct(
-    dplyr::arrange(
-      purrr::map_dfr(
+  input_type <- strsplit(class(.fcst)[1], "_")[[1]][2]
+
+  pools_df <- switch(
+    input_type,
+    "ens"  = ,
+    "det"  = remove_harp_class(dplyr::select(.fcst, !!pool_col_sym)),
+    "list" = dplyr::bind_rows(
+      lapply(
         .fcst,
-        ~dplyr::select(.x, !!pool_col_quo)
-      ),
-      !!pool_col_quo
+        function(x) remove_harp_class(dplyr::select(x, !!pool_col_sym))
+      )
     )
   )
 
   pool_col_is_date <- FALSE
 
-  if (inherits(dplyr::pull(pools_df, !! pool_col_quo), "POSIXct")) {
+  if (inherits(dplyr::pull(pools_df, !!pool_col_sym), "POSIXct")) {
     pool_col_is_date <- TRUE
     pools_df         <- dplyr::mutate(
       pools_df, dplyr::across(dplyr::everything(), as.numeric)
@@ -67,15 +73,15 @@ make_bootstrap_pools <- function(
 
     last_pool_start <- min(
       which(
-        dplyr::pull(pools_df, !!pool_col_quo) >
-          max(dplyr::pull(pools_df, !!pool_col_quo)) - pool_length
+        dplyr::pull(pools_df, !!pool_col_sym) >
+          max(dplyr::pull(pools_df, !!pool_col_sym)) - pool_length
       )
     )
 
     pools_df <- purrr::map_dfr(
       seq(1, last_pool_start),
       ~dplyr::mutate(
-        overlapping_pool(pools_df, .x, !!pool_col_quo, pool_length),
+        overlapping_pool(pools_df, .x, !!pool_col_sym, pool_length),
         pool = .x
       )
     )
@@ -84,13 +90,13 @@ make_bootstrap_pools <- function(
 
   } else {
 
-    breaks = get_breaks(dplyr::pull(pools_df, !!pool_col_quo), pool_length)
+    breaks = get_breaks(dplyr::pull(pools_df, !!pool_col_sym), pool_length)
 
     pools_df <- dplyr::mutate(
       pools_df,
       pool = as.numeric(
         cut(
-          !!pool_col_quo, breaks = breaks,
+          !!pool_col_sym, breaks = breaks,
           include.lowest = TRUE, right = FALSE
         )
       )
@@ -100,7 +106,7 @@ make_bootstrap_pools <- function(
 
   if (pool_col_is_date) {
     pools_df <- dplyr::mutate(
-      pools_df, {{pool_col}} := harpIO::unix2datetime(!!pool_col_quo)
+      pools_df, {{pool_col}} := harpIO::unix2datetime(!!pool_col_sym)
     )
   }
 
@@ -129,4 +135,8 @@ overlapping_pool <- function(x, row_start, col, res) {
   max_val <- dplyr::pull(x, !!col)[1] + res
   dplyr::filter(x, !!col < max_val)
 
+}
+
+remove_harp_class <- function(x) {
+  structure(x, class = grep("harp", class(x), value = TRUE, invert = TRUE))
 }

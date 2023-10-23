@@ -22,9 +22,6 @@
 #'   attribute named \code{removed_cases} containing a data frame of the removed
 #'   cases.
 #' @export
-#'
-#' @examples
-
 check_obs_against_fcst <- function(
     .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
 ) {
