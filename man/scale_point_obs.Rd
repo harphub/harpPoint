@@ -25,7 +25,7 @@ changed.}
 
 \item{multiplicative}{If the scaling is to be done multiplicatively, i.e. the
 new forecast value is to be the old value * scale_factor, set
-multiplicative to TRUE. The defualt (multiplicative = FALSE) is to do the
+multiplicative to TRUE. The default (multiplicative = FALSE) is to do the
 scaling additively, i.e. the new forecast value is the old value +
 scale_factor.}
 }
@@ -34,6 +34,11 @@ The observations data frame with the parameter column scaled by
   \code{scale_factor}.
 }
 \description{
+`r lifecycle::badge("deprecated")`
+
+\code{\link[harpCore]{scale_param}} is now the preferred function since it
+works for both point and gridded data.
+
 If you wish to scale the observations values, for example when temperature
 data are in Kelvin and you want them in degrees C, this function can be used
 to scale the data.

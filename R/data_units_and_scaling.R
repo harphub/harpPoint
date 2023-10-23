@@ -52,6 +52,13 @@
 
 #' Scale forecast data
 #'
+#' @description
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' \code{\link[harpCore]{scale_param}} is now the preferred function since it
+#' works for both point and gridded data.
+#'
 #' If you wish to scale the forecast values, for example when temperature data
 #' are in Kelvin and you want them in degrees C, this function can be used to
 #' scale the data.
@@ -63,7 +70,7 @@
 #'   changed.
 #' @param multiplicative If the scaling is to be done multiplicatively, i.e. the
 #'   new forecast value is to be the old value * scale_factor, set
-#'   multiplicative to TRUE. The defualt (multiplicative = FALSE) is to do the
+#'   multiplicative to TRUE. The default (multiplicative = FALSE) is to do the
 #'   scaling additively, i.e. the new forecast value is the old value +
 #'   scale_factor.
 #'
@@ -71,8 +78,12 @@
 #'   \code{scale_factor}.
 #' @export
 #'
-#' @examples
 scale_point_forecast <- function(.fcst, scale_factor, new_units = NULL, multiplicative = FALSE) {
+  lifecycle::deprecate_warn(
+    "0.1.0",
+    "scale_point_forecast()",
+    "harpCore::scale_param()"
+  )
   UseMethod("scale_point_forecast")
 }
 
@@ -109,19 +120,32 @@ scale_point_forecast.default <- function(.fcst, scale_factor, new_units = NULL, 
 
   # Add or modify units if new_units is passed
   if (!is.null(new_units)) {
-    .fcst <- set_units(.fcst, new_units)
+    .fcst <- harpCore::set_units(.fcst, new_units)
   }
 
   .fcst
 }
 
 #' @export
-scale_point_forecast.harp_fcst <- function(.fcst, scale_factor, new_units = NULL, multiplicative = FALSE) {
-  new_harp_fcst(purrr::map(.fcst, scale_point_forecast, scale_factor, new_units, multiplicative))
+scale_point_forecast.harp_list <- function(
+    .fcst, scale_factor, new_units = NULL, multiplicative = FALSE
+) {
+  harpCore::as_harp_list(
+    purrr::map(
+      .fcst, scale_point_forecast, scale_factor, new_units, multiplicative
+    )
+  )
 }
 
 
 #' Scale observations data
+#'
+#' @description
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' \code{\link[harpCore]{scale_param}} is now the preferred function since it
+#' works for both point and gridded data.
 #'
 #' If you wish to scale the observations values, for example when temperature
 #' data are in Kelvin and you want them in degrees C, this function can be used
@@ -135,7 +159,7 @@ scale_point_forecast.harp_fcst <- function(.fcst, scale_factor, new_units = NULL
 #'   changed.
 #' @param multiplicative If the scaling is to be done multiplicatively, i.e. the
 #'   new forecast value is to be the old value * scale_factor, set
-#'   multiplicative to TRUE. The defualt (multiplicative = FALSE) is to do the
+#'   multiplicative to TRUE. The default (multiplicative = FALSE) is to do the
 #'   scaling additively, i.e. the new forecast value is the old value +
 #'   scale_factor.
 #'
@@ -143,8 +167,13 @@ scale_point_forecast.harp_fcst <- function(.fcst, scale_factor, new_units = NULL
 #'   \code{scale_factor}.
 #' @export
 #'
-#' @examples
 scale_point_obs <- function(.obs, parameter, scale_factor, new_units = NULL, multiplicative = FALSE) {
+
+  lifecycle::deprecate_warn(
+    "0.1.0",
+    "scale_point_forecast()",
+    "harpCore::scale_param()"
+  )
 
   parameter      <- rlang::enquo(parameter)
   parameter_name <- rlang::quo_name(parameter)
@@ -167,7 +196,7 @@ scale_point_obs <- function(.obs, parameter, scale_factor, new_units = NULL, mul
   .obs <- dplyr::mutate(.obs, !!parameter_name := scale_function(!!parameter_sym, scale_factor))
 
   if (!is.null(new_units)) {
-    .obs <- set_units(.obs, new_units)
+    .obs <- harpCore::set_units(.obs, new_units)
   }
 
   .obs
