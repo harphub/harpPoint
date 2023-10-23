@@ -1,18 +1,15 @@
 #' Compute binary probabilities for deterministic forecasts
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
+#' @param .fcst A \code{harp_list} object with `harp_det_point_df` deta frames,
+#'   or a `harp_det_point_df` data frame.
 #' @param parameter The name of the column for the observed data.
 #' @param thresholds A numeric vector of thresholds for which to compute
 #'   probabilities.
 #' @param obs_probabilities A logical indicating whether or not to compute the
 #'   binary probabilities for the observations.
 #'
-#' @return A \code{harp_fcst} object with each data frame having columns for threshold,
+#' @return An object of the same class as `.fcst` with columns for threshold,
 #' fcst_prob and optionally obs_prob instead of the raw forecast column.
-#' @export
-#'
-#' @examples
 det_probabilities <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
   UseMethod("det_probabilities")
 }

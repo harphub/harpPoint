@@ -1,14 +1,6 @@
 #' Relative Operating Characteristics for an ensemble.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param thresholds A numeric vector of thresholds for which to compute the
-#'   ROC.
-#' @param groupings The groups for which to compute the ROC. See
-#'   \link[dplyr]{group_by} for more information of how grouping works.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#' `TRUE`
+#' @inheritParams ens_verify
 #'
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   a nested column for the ROC with each row containing a data frame with
@@ -16,8 +8,6 @@
 #'   hit rate and \code{FAR} for the false alarm rate. Use \link[tidyr]{unnest}
 #'   to unnest to the nested column.
 #' @export
-#'
-#' @examples
 ens_roc <- function(
   .fcst,
   parameter,
@@ -34,6 +24,7 @@ ens_roc <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_roc
 #' @export
 ens_roc.harp_ens_point_df <- function(
   .fcst,

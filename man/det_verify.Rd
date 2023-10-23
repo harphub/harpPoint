@@ -29,7 +29,7 @@ det_verify(
 )
 }
 \arguments{
-\item{.fcst}{A `harp_df` or `harp_list` object with tables that have a column
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
 for observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
@@ -43,20 +43,20 @@ scores.}
 
 \item{circle}{If set the parameter is assumed to be cyclic for bias
 calculations. Should be this distance around a circle in the units of the
-parameter, so would typically have a value of 360 for degrees or `2 * pi`
+parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
 for radians.}
 
 \item{num_bins}{The number of bins into which to partition observations for
 the hexbin computation.}
 
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
-`TRUE`.}
+\code{TRUE}.}
 
 \item{...}{Reserved for methods.}
 
-\item{fcst_model}{The name of the forecast model to use in the `fcst_model`
-column of the output. If the function is dispatched on a `harp_list`
-object, the names of the `harp_list` are automatically used.}
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \description{
 Compute verification scores for deterministic forecasts.

@@ -1,30 +1,15 @@
 #' Rank histogram for an ensemble.
 #'
-#' The rank histogram is computed as columns in a \code{harp_fcst} object.
+#' The rank histogram is computed as columns in a \code{harp_list} object.
 #' Typically the scores are aggregated over lead time, but other grouping
 #' variables can be chosen.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#' @param jitter_fcst A function to perturb the forecast values by. This is used
-#'   to account for observation error in the rank histogram. For other
-#'   statistics it is likely to make little difference since it is expected that
-#'   the observations will have a mean error of zero.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#'   `TRUE`
-#' @param ... Reserved for methods.
-#'
+#' @inheritParams ens_verify
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rank} and
 #'   \code{rank_count} that are nested together in a column with the name
 #'   \code{rank_histogram}.
 #' @export
-#'
-#' @examples
 ens_rank_histogram <- function(
   .fcst,
   parameter,
@@ -46,6 +31,7 @@ ens_rank_histogram <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_rank_histogram
 #' @export
 ens_rank_histogram.harp_ens_point_df <- function(
   .fcst,

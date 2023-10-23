@@ -9,7 +9,7 @@ roc(obs, pred, thresholds)
 \arguments{
 \item{obs}{A vector observations (value 0,1)}
 
-\item{pred}{A vector of probabilities [0,1].}
+\item{pred}{A vector of probabilities \link{0,1}.}
 
 \item{thresholds}{A vector of threshold probabilities}
 }

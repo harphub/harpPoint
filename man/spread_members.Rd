@@ -14,6 +14,9 @@ spread_members(.fcst, ...)
 An EPS data frame in wide format.
 }
 \description{
-Convert EPS forecast data from long format data frame to wide format data
-frame.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{\link[harpCore]{pivot_members}} is now the preferred method for
+transforming between long and wide data frames since it supports classes
+that were introduced in version 0.1.0.
 }

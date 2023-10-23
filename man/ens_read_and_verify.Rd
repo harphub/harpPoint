@@ -82,10 +82,12 @@ the same members for all forecast models, this should be a numeric vector.
 For specific members from specific models a named list with each element
 having the name of the forecast model and containing a a numeric vector.
 e.g. \cr \code{members = list(eps_model1 = seq(0, 3), eps_model2 = c(2,
-3))}. \cr For multi model ensembles, each element of this named list should
+  3))}. \cr For multi model ensembles, each element of this named list should
 contain another named list with sub model name followed by the desired
 members, e.g. \cr \code{members = list(eps_model1 = list(sub_model1 =
-seq(0, 3), sub_model2 = c(2, 3)))}}
+  seq(0, 3), sub_model2 = c(2, 3)))}}
+
+\item{vertical_coordinate}{The vertical co-ordinate.}
 
 \item{fctable_file_template}{The template for the file names of the files to be read
 from. This would normally be one of the "fctable_*" templates that can be
@@ -103,7 +105,27 @@ common grouping might be \code{groupings = c("leadtime", "fcst_cycle")}.}
 
 \item{by}{The frequency of forecast cycles to verify.}
 
-\item{merge_lags_on_read}{}
+\item{lags}{For lagged forecasts, these are the lags that would be passed to
+\code{read_point_forecast()}.}
+
+\item{merge_lags_on_read}{Logical. Whether to merge lagged ensemble members
+into the ensemble. This is the default behaviour. If FALSE,
+\link{lag_forecast} will be used to do the lagging.}
+
+\item{lag_fcst_models}{If \code{merge_lags_on_read = FALSE}, the names of the
+fcst_models to which lags should be applied.}
+
+\item{parent_cycles}{If \code{merge_lags_on_read = FALSE}, the parent cycles of
+the lagged forecasts.}
+
+\item{lag_direction}{If \code{merge_lags_on_read = FALSE}, The direction of the
+lagging. 1 Lags backwards in time from the parent cycles on -1 lags
+forwards in time.}
+
+\item{fcst_shifts, keep_unshifted}{See \link{shift_forecast}.}
+
+\item{drop_neg_leadtimes}{Logical. Whether to drop negative lead times that
+may arise after shifting.}
 
 \item{climatology}{The climatology to use for the Brier Skill Score. Can be
 "sample" for the sample climatology (the default), a named list with
@@ -115,6 +137,10 @@ threshold and climatology and also optionally leadtime.}
 stations from \link[harpIO]{station_list} that are common to all
 \code{fcst_model} domains.}
 
+\item{scale_fcst}{A named list of arguments to \link{scale_point_forecast}.}
+
+\item{scale_obs}{A names list of arguments to \link{scale_point_obs}.}
+
 \item{spread_drop_member}{Which members to drop for the calculation of the
 ensemble variance and standard deviation. For harp_fcst objects, this can
 be a numeric scalar - in which case it is recycled for all forecast models;
@@ -125,6 +151,15 @@ named list with the names corresponding to names in the harp_fcst object.}
 to account for observation error in the rank histogram. For other
 statistics it is likely to make little difference since it is expected that
 the observations will have a mean error of zero.}
+
+\item{common_cases_only}{Logical. Whether to select only the common cases
+before computing verification scores. The default is TRUE.}
+
+\item{common_cases_xtra_cols}{Extra columns to use in the call to
+\code{\link[harpCore]{common_cases}}}
+
+\item{check_obs_fcst}{Logical. Whether to check for errors in observations
+by comparing with forecast values.}
 
 \item{gross_error_check}{Logical of whether to perform a gross error check.}
 
@@ -144,10 +179,16 @@ FALSE.}
 \item{verif_path}{If set, verification files will be saved to this path.}
 }
 \value{
-A list containting two data frames: \code{ens_summary_scores} and
-  \code{ens_threshold_scores}.
+A list containing two data frames: \code{ens_summary_scores} and
+\code{ens_threshold_scores}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#questioning}{\figure{lifecycle-questioning.svg}{options: alt='[Questioning]'}}}{\strong{[Questioning]}}
+
+This function will likely be replaced in future harp versions since it is
+rather cumbersome. Some thought still needs to go into finding a more usable
+API.
+
 This is a wrapper for the verification process. Forecasts and observations
 are read in, filtered down to common cases, errors checked, and a full
 verification is done for all scores. To minimise memory usage, the

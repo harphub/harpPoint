@@ -1,5 +1,13 @@
 #' Read forecast and observations and verify.
 #'
+#' @description
+#'
+#' `r lifecycle::badge("questioning")`
+#'
+#' This function will likely be replaced in future harp versions since it is
+#' rather cumbersome. Some thought still needs to go into finding a more usable
+#' API.
+#'
 #' This is a wrapper for the verification process. Forecasts and observations
 #' are read in, filtered down to common cases, errors checked, and a full
 #' verification is done for all scores. To minimise memory usage, the
@@ -76,25 +84,35 @@
 #'   named, the order of templates is assumed to be the same as in
 #'   \code{fcst_model}. If named, the names must match the entries in
 #'   \code{fcst_model}.
-#' @param lags
-#' @param lag_fcst_models
-#' @param parent_cycles
-#' @param lag_direction
-#' @param fcst_shifts
-#' @param keep_unshifted
-#' @param drop_neg_leadtimes
-#' @param scale_fcst
-#' @param scale_obs
-#' @param common_cases_only
-#' @param check_obs_fcst
-#' @param vertical_coordinate
-#' @param merge_lags_on_read
+#' @param lags For lagged forecasts, these are the lags that would be passed to
+#'   `read_point_forecast()`.
+#' @param lag_fcst_models If `merge_lags_on_read = FALSE`, the names of the
+#'   fcst_models to which lags should be applied.
+#' @param parent_cycles If `merge_lags_on_read = FALSE`, the parent cycles of
+#'   the lagged forecasts.
+#' @param lag_direction If `merge_lags_on_read = FALSE`, The direction of the
+#'   lagging. 1 Lags backwards in time from the parent cycles on -1 lags
+#'   forwards in time.
+#' @param drop_neg_leadtimes Logical. Whether to drop negative lead times that
+#'   may arise after shifting.
+#' @param scale_fcst A named list of arguments to \link{scale_point_forecast}.
+#' @param scale_obs A names list of arguments to \link{scale_point_obs}.
+#' @param common_cases_only Logical. Whether to select only the common cases
+#'   before computing verification scores. The default is TRUE.
+#' @param check_obs_fcst Logical. Whether to check for errors in observations
+#'   by comparing with forecast values.
+#' @param vertical_coordinate The vertical co-ordinate.
+#' @param merge_lags_on_read Logical. Whether to merge lagged ensemble members
+#'   into the ensemble. This is the default behaviour. If FALSE,
+#'   \link{lag_forecast} will be used to do the lagging.
+#' @param fcst_shifts,keep_unshifted See \link{shift_forecast}.
+#' @param common_cases_xtra_cols Extra columns to use in the call to
+#'   \code{\link[harpCore]{common_cases}}
 #'
-#' @return A list containting two data frames: \code{ens_summary_scores} and
+#' @return A list containing two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
 #' @export
 #'
-#' @examples
 ens_read_and_verify <- function(
   start_date,
   end_date,

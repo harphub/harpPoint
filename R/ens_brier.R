@@ -1,38 +1,11 @@
 #' Brier score and its decomposition for an ensemble.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param thresholds A numeric vector of thresholds for which to compute the
-#'   Brier Score.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#' @param climatology The climatology to use for the Brier Skill Score. Can be
-#'   "sample" for the sample climatology (the default), a named list with
-#'   elements eps_model and member to use a member of an eps model in the
-#'   harp_fcst object for the climatology, or a data frame with columns for
-#'   threshold and climatology and also optionally leadtime.
-#' @param rel_probs Probabilities to use for reliability diagrams. Set to NA
-#'   (the default) to select automatically.
-#' @param num_ref_members The number of members for which to compute the fair
-#'   Brier score.
-#' @param keep_score \code{ens_brier} computes the Brier Score and its
-#'   components, as well as reliability. If you only want to output the Brier
-#'   score and its decomposition set to "brier", to only keep the reliability
-#'   information set to "reliability". To keep both, set to "both". The default
-#'   behaviour is "both".
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#' `TRUE`
-#' @param ... Reserved for methods.
-#'
+#' @inheritParams ens_verify
 #' @return A data frame with data grouped for the \code{groupings} column(s) and
 #'   columns for \code{brier_score}, \code{brier_skill_score} and the
 #'   deomposition of the brier score - \code{brier_score_reliability},
 #'   \code{brier_score_resolution} and \code{brier_score_uncertainty}.
 #' @export
-#'
-#' @examples
 ens_brier <- function(
   .fcst,
   parameter,
@@ -54,6 +27,7 @@ ens_brier <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_brier
 #' @export
 ens_brier.harp_ens_point_df <- function(
   .fcst,

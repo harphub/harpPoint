@@ -2,7 +2,7 @@
 % Please edit documentation in R/pooled_bootstrap_score.R
 \name{pooled_bootstrap_score}
 \alias{pooled_bootstrap_score}
-\title{Title}
+\title{Bootstrapping by pools}
 \usage{
 pooled_bootstrap_score(
   .fcst,
@@ -18,9 +18,6 @@ pooled_bootstrap_score(
   ...
 )
 }
-\arguments{
-\item{...}{}
-}
 \description{
-Title
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }

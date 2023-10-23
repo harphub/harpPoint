@@ -1,13 +1,25 @@
 #' Convert EPS forecast data from long format data frame to wide format data
 #' frame.
 #'
+#' @description
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' \code{\link[harpCore]{pivot_members}} is now the preferred method for
+#' transforming between long and wide data frames since it supports classes
+#' that were introduced in version 0.1.0.
+
+#'
 #' @param .fcst An EPS forecast data frame in long format.
 #'
 #' @return An EPS data frame in wide format.
 #' @export
-#'
-#' @examples
 spread_members <- function(.fcst, ...) {
+  lifecycle::deprecate_warn(
+    "0.1.0",
+    "spread_members()",
+    "pivot_members()"
+  )
   UseMethod("spread_members")
 }
 

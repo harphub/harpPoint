@@ -16,7 +16,7 @@ mass / total air mass}
 }
 \value{
 rh relative humidity, ratio of actual water mixing ratio to
-  saturation mixing ratio
+saturation mixing ratio
 }
 \description{
 Convert specific humidity to relative humidity

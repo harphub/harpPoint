@@ -12,7 +12,7 @@ objects or a list.}
 }
 \value{
 A harp verification object with all attributes moved up to columns
-  and combined in the new attributes.
+and combined in the new attributes.
 }
 \description{
 For plotting it may be desirable to combine various differen verifications

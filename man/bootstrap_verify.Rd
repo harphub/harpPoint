@@ -60,9 +60,9 @@ feature is not available if \code{parallel = TRUE}}
 }
 \value{
 A harp_point_verif object with extra columns for upper and lower
-  confidence bounds of scores and the percent of replicates that are "better"
-  where there are more than one \code{fcst_model}s in the input
-  \code{harp_list_object}
+confidence bounds of scores and the percent of replicates that are "better"
+where there are more than one \code{fcst_model}s in the input
+\code{harp_list_object}
 }
 \description{
 \code{bootstrap_verify} is used to compute verification scores with

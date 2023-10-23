@@ -7,8 +7,8 @@
 det_probabilities(.fcst, parameter, thresholds, obs_probabilities = TRUE)
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_list} object with \code{harp_det_point_df} deta frames,
+or a \code{harp_det_point_df} data frame.}
 
 \item{parameter}{The name of the column for the observed data.}
 
@@ -19,7 +19,7 @@ probabilities.}
 binary probabilities for the observations.}
 }
 \value{
-A \code{harp_fcst} object with each data frame having columns for threshold,
+An object of the same class as \code{.fcst} with columns for threshold,
 fcst_prob and optionally obs_prob instead of the raw forecast column.
 }
 \description{

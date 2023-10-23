@@ -7,12 +7,12 @@
 bind_bootstrap_score(...)
 }
 \arguments{
-\item{...}{A list of outputs from `bootstrap_score()` /
-`pooled_bootstrap_score()`}
+\item{...}{A list of outputs from \code{bootstrap_score()} /
+\code{pooled_bootstrap_score()}}
 }
 \value{
-An object of class `harp_bootstrap`
+An object of class \code{harp_bootstrap}
 }
 \description{
-`r lifecycle::badge("deprecated")`
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 }

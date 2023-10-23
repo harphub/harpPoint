@@ -2,6 +2,7 @@
 % Please edit documentation in R/ens_crps.R
 \name{ens_crps}
 \alias{ens_crps}
+\alias{ens_crps.harp_ens_point_df}
 \title{Continuous Rank Probability Score (CRPS) for an ensemble.}
 \usage{
 ens_crps(
@@ -13,35 +14,47 @@ ens_crps(
   show_progress = TRUE,
   ...
 )
+
+\method{ens_crps}{harp_ens_point_df}(
+  .fcst,
+  parameter,
+  groupings = "lead_time",
+  num_ref_members = NA,
+  keep_full_output = FALSE,
+  show_progress = TRUE,
+  fcst_model = NULL,
+  ...
+)
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
 \item{parameter}{The name of the column for the observed data.}
 
-\item{groupings}{The groups for which to compute the ensemble mean and
-spread. See \link[dplyr]{group_by} for more information of how grouping
-works.}
+\item{groupings}{The groups for which to compute the scores. See
+\link[dplyr]{group_by} for more information of how grouping works.}
 
-\item{num_ref_members}{The number of members for which to compute the fair
-CRPS.}
+\item{num_ref_members}{For "fair" scores, the score is scaled to be valid for
+this number of ensemble members. Set to NA (the default) to not modify the
+score.}
 
-\item{show_progress}{Logical - whether to show a progress bar. The default is
-`TRUE`}
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
 
 \item{...}{Reserved for methods.}
 
-\item{keep_full_ouput}{Logical. Whether to keep the full output to computing
-CRPS for ungrouped data.}
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \value{
 An object of the same format as the inputs but with data grouped for
-  the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
-  and \code{crps_rel}.
+the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
+and \code{crps_rel}.
 }
 \description{
-The CRPS and its decomposition are computed as columns in a \code{harp_fcst}
-object. Typically the scores are aggregated over lead time, but other grouping
-variables cam be chosen.
+The CRPS and its decomposition are computed as columns in a \code{harp_list},
+or \code{harp_ens_grid_df} object. Typically the scores are aggregated over lead
+time, but other grouping variables cam be chosen.
 }

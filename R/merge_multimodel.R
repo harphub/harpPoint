@@ -16,7 +16,6 @@
 #'   forecast data for a model.
 #' @export
 #'
-#' @examples
 merge_multimodel <- function(.fcst, keep_sub_models = TRUE) {
 
   is_multimodel    <- unlist(purrr::map(.fcst, inherits, "harp_fcst"))

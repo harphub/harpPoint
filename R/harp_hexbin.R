@@ -16,10 +16,9 @@
 #' @param show_progress Logical. Whether to show a progress bar.
 #' @param ... Arguments for methods.
 #'
-#' @return
+#' @return A `harp_verif` list.
 #' @export
 #'
-#' @examples
 bin_fcst_obs <- function(
   .fcst,
   parameter,

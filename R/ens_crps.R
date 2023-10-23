@@ -1,29 +1,14 @@
 #' Continuous Rank Probability Score (CRPS) for an ensemble.
 #'
-#' The CRPS and its decomposition are computed as columns in a \code{harp_fcst}
-#' object. Typically the scores are aggregated over lead time, but other grouping
-#' variables cam be chosen.
+#' The CRPS and its decomposition are computed as columns in a \code{harp_list},
+#' or `harp_ens_grid_df` object. Typically the scores are aggregated over lead
+#' time, but other grouping variables cam be chosen.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#' @param num_ref_members The number of members for which to compute the fair
-#'   CRPS.
-#' @param keep_full_ouput Logical. Whether to keep the full output to computing
-#' CRPS for ungrouped data.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#'   `TRUE`
-#' @param ... Reserved for methods.
-#'
+#' @inheritParams ens_verify
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{crps}, \code{crps_pot}
 #'   and \code{crps_rel}.
 #' @export
-#'
-#' @examples
 ens_crps <- function(
   .fcst,
   parameter,
@@ -46,6 +31,7 @@ ens_crps <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_crps
 #' @export
 ens_crps.harp_ens_point_df <- function(
   .fcst,

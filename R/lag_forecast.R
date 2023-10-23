@@ -17,9 +17,6 @@
 #' @return A harp_fcst object with \code{fcst_model} now containing the lagged
 #'   forecast.
 #' @export
-#'
-#' @examples
-
 lag_forecast <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
   if (!direction %in% c(1, -1)) {
     stop("direction must be 1 to lag backwards in time, or -1 to lag forwards in time", call. = FALSE)
@@ -65,7 +62,7 @@ lag_forecast.default <- function(fcst_df, fcst_model, parent_cycles, direction =
 }
 
 #' @export
-lag_forecast.harp_fcst <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
+lag_forecast.harp_list <- function(.fcst, fcst_model, parent_cycles, direction = 1) {
 
   missing_fcst_models <- setdiff(fcst_model, names(.fcst))
   if (length(missing_fcst_models) > 0) {
@@ -82,7 +79,7 @@ lag_forecast.harp_fcst <- function(.fcst, fcst_model, parent_cycles, direction =
     dplyr::vars(dplyr::matches("_mbr[[:digit:]]+")),
     drop_function
   ) %>%
-    new_harp_fcst()
+    harpCore::as_harp_list()
 
 }
 

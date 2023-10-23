@@ -1,16 +1,27 @@
 #' Convert EPS forecast data from wide format data frame to long format data
 #' frame.
 #'
+#' @description
+#'
+#' `r lifecycle::badge("deprecated")`
+#'
+#' \code{\link[harpCore]{pivot_members}} is now the preferred method for
+#' transforming between long and wide data frames since it supports classes
+#' that were introduced in version 0.1.0.
+#'
 #' @param .fcst An EPS forecast data frame in wide format.
-#' @param member_prefix Prefix for column names that contain forcasts for a
-#'   single member. The default is "mbr". Note that the column name only has to
-#'   contain \code{member_prefix}.
+#' @param member_regex Regular expression for column names that contain forecasts for a
+#'   single member.
 #'
 #' @return An EPS data frame in long format.
 #' @export
 #'
-#' @examples
 gather_members <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:graph:]]*$") {
+  lifecycle::deprecate_warn(
+    "0.1.0",
+    "gather_members()",
+    "pivot_members()"
+  )
   UseMethod("gather_members")
 }
 
@@ -22,7 +33,7 @@ gather_members.default <- function(.fcst, member_regex = "_mbr[[:digit:]]+$|_mbr
   required_colnames <- member_regex
   if (ncol(dplyr::select(.fcst, dplyr::matches(member_regex))) < 1) {
     stop(
-      paste0("Input data frame must include columns with names containing: ", member_prefix)
+      "Input data frame must include columns with names containing regex: \"_mbr[[:digit:]]{3}\""
     )
   }
 

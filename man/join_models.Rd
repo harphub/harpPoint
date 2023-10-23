@@ -7,7 +7,7 @@
 join_models(.fcst, join_type = "inner", name = "joined_models", ...)
 }
 \arguments{
-\item{.fcst}{A harp_fcst object with any multimodel data merged with
+\item{.fcst}{A harp_list object with any multimodel data merged with
 \link{merge_multimodel}.}
 
 \item{join_type}{The type of join to perform. See \link[dplyr]{join}.}
@@ -15,6 +15,9 @@ join_models(.fcst, join_type = "inner", name = "joined_models", ...)
 \item{name}{The name of the resulting model.}
 
 \item{...}{Other arguments to \link[dplyr]{join}.}
+}
+\value{
+A \code{harp_df} data frame.
 }
 \description{
 The function is most useful for finding common cases between models.

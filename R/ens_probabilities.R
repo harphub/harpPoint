@@ -1,15 +1,9 @@
 #' Compute probabilities of threshold exceedence for ensemble forecasts
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param thresholds A numeric vector of thresholds for which to compute
-#'   probabilities.
-#' @return A \code{harp_fcst} object with each data frame having columns for threshold,
+#' @inheritParams ens_verify
+#' @return A \code{harp_list} object with each data frame having columns for threshold,
 #' fcst_prob and obs_prob instead of the columns for each member forecast.
 #' @export
-#'
-#' @examples
 ens_probabilities <- function(.fcst, thresholds, parameter = NULL) {
   UseMethod("ens_probabilities")
 }
@@ -72,7 +66,7 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 }
 
 #' @export
-ens_probabilities.harp_fcst <- function(.fcst, thresholds, parameter = NULL) {
+ens_probabilities.harp_list <- function(.fcst, thresholds, parameter = NULL) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -83,6 +77,6 @@ ens_probabilities.harp_fcst <- function(.fcst, thresholds, parameter = NULL) {
   }
 
   purrr::map(.fcst, ens_probabilities, thresholds, !! parameter) %>%
-    new_harp_fcst()
+    as_harp_list()
 }
 

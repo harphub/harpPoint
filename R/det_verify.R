@@ -3,7 +3,6 @@
 #' @inheritParams ens_verify
 #' @export
 #'
-#' @examples
 det_verify <- function(
   .fcst,
   parameter,
@@ -109,10 +108,8 @@ det_verify.harp_det_point_df <- function(
 
       message("This looks like an ensemble - will compute deterministic scores for each member.")
 
-      attr(.fcst, "dataframe_format") <- "wide"
-
-      .fcst     <- gather_members(.fcst) %>%
-        dplyr::rename(forecast_det = .data$forecast)
+      .fcst     <- harpCore::pivot_members(.fcst) %>%
+        dplyr::rename(forecast_det = .data$fcst)
 
       groupings <- purrr::map(groupings, union, c("member", "sub_model"))
       fcst_col  <- "forecast_det"

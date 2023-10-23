@@ -7,16 +7,17 @@
 ens_probabilities(.fcst, thresholds, parameter = NULL)
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{thresholds}{A numeric vector of thresholds for which to compute
-probabilities.}
+\item{thresholds}{A numeric vector of thresholds for which to compute the
+threshold based scores. Set to NULL (the default) to only compute summary
+scores.}
 
 \item{parameter}{The name of the column for the observed data.}
 }
 \value{
-A \code{harp_fcst} object with each data frame having columns for threshold,
+A \code{harp_list} object with each data frame having columns for threshold,
 fcst_prob and obs_prob instead of the columns for each member forecast.
 }
 \description{

@@ -25,8 +25,8 @@ amounts. Negative values will do the opposite.}
 }
 \value{
 An object of the same class as '.fcst' with the forecast start times
-  and lead times shifted for the forecast models and number hours given in
-  'fcst_shifts'.
+and lead times shifted for the forecast models and number hours given in
+'fcst_shifts'.
 }
 \description{
 This function is used to shift the start times and lead times of forecasts to

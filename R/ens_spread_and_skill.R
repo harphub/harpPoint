@@ -1,38 +1,15 @@
 #' Compute the skill (RMSE) and spread of an ensemble forecast
 #'
-#' The ensemble mean and spread are computed as columns in a \code{harp_fcst}
+#' The ensemble mean and spread are computed as columns in a \code{harp_list}
 #' object. Typically the scores are aggregated over lead time by other grouping
 #' variables cam be chosen. The mean bias is also computed.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#' @param circle If set the parameter is assumed to be cyclic for bias
-#'   calculations. Should be this distance around a circle in the units of the
-#'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
-#'   for radians.
-#' @param spread_drop_member Which members to drop for the calculation of the
-#'   ensemble variance and standard deviation. For harp_fcst objects, this can
-#'   be a numeric scalar - in which case it is recycled for all forecast models;
-#'   a list or numeric vector of the same length as the harp_fcst object, or a
-#'   named list with the names corresponding to names in the harp_fcst object.
-#' @param jitter_fcst A function to perturb the forecast values by. This is used
-#'   to account for observation error in the spread. For other statistics it is
-#'   likely to make little difference since it is expected that the observations
-#'   will have a mean error of zero.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#' `TRUE`
-#' @param ... Not used.
+#' @inheritParams ens_verify
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
 #'   and \code{mean_bias}.
 #' @export
-#'
-#' @examples
 ens_spread_and_skill <- function(
   .fcst,
   parameter,
@@ -57,6 +34,7 @@ ens_spread_and_skill <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_spread_and_skill
 #' @export
 ens_spread_and_skill.harp_ens_point_df <- function(
   .fcst,

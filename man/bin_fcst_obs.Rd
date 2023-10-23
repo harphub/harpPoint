@@ -36,7 +36,7 @@ bin_fcst_obs(
 )
 }
 \arguments{
-\item{.fcst}{A `harp_df` data frame or a `harp_list`.}
+\item{.fcst}{A \code{harp_df} data frame or a \code{harp_list}.}
 
 \item{parameter}{The column containing the parameter. Can be unquoted, a
 quoted string, or an embraced variable name (i.e {{var}}).}
@@ -50,10 +50,13 @@ Must be a vector of strings, or a list of vectors of strings.}
 
 \item{...}{Arguments for methods.}
 
-\item{fcst_model}{The name of the forecast model. If `.fcst` does not
-contain a `fcst_model`, a new column is created and populated with this
-value. If a `fcst_model` column exists, the value in the column is replaced
+\item{fcst_model}{The name of the forecast model. If \code{.fcst} does not
+contain a \code{fcst_model}, a new column is created and populated with this
+value. If a \code{fcst_model} column exists, the value in the column is replaced
 with this value.}
+}
+\value{
+A \code{harp_verif} list.
 }
 \description{
 Values of forecasts and observations are binned into bands whereby the

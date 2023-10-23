@@ -28,8 +28,8 @@ is to stratify by station ("SID") and "quarter_day".}
 }
 \value{
 A data frame of class \code{harp_point_forecast_obs} with an
-  attribute named \code{removed_cases} containing a data frame of the removed
-  cases.
+attribute named \code{removed_cases} containing a data frame of the removed
+cases.
 }
 \description{
 For each stratification the standard deviation of the forecast over all

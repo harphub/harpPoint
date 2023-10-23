@@ -56,8 +56,6 @@
 #' @return A list containting three data frames: \code{ens_summary_scores},
 #'   \code{ens_threshold_scores} and \code{det_summary_scores}.
 #' @export
-#'
-#' @examples
 ens_verify <- function(
   .fcst,
   parameter,
@@ -94,6 +92,7 @@ ens_verify <- function(
 #' @param fcst_model The name of the forecast model to use in the `fcst_model`
 #'  column of the output. If the function is dispatched on a `harp_list`
 #'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_verify
 #' @export
 ens_verify.harp_ens_point_df <- function(
   .fcst,

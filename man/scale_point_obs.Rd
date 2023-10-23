@@ -31,10 +31,10 @@ scale_factor.}
 }
 \value{
 The observations data frame with the parameter column scaled by
-  \code{scale_factor}.
+\code{scale_factor}.
 }
 \description{
-`r lifecycle::badge("deprecated")`
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
 \code{\link[harpCore]{scale_param}} is now the preferred function since it
 works for both point and gridded data.

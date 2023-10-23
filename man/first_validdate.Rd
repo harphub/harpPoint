@@ -2,9 +2,12 @@
 % Please edit documentation in R/get_validdate.R
 \name{first_validdate}
 \alias{first_validdate}
+\alias{last_validdate}
 \title{Return the first valid date in a forecast}
 \usage{
 first_validdate(.fcst)
+
+last_validdate(.fcst)
 }
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object or a table containing a column named
@@ -14,6 +17,13 @@ validdate with the data in unix time format.}
 The first valid time in YYYYMMDDhhmm format for the input object.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+As of version 0.1.0 reading data is no longer done with a start date and
+end date, but rather a vector of date-time strings making these functions
+obsolete. \code{\link[harpCore]{unique_valid_dttm}} is now the more
+appropriate function to use.
+
 The function is intended to be used to find the first date for which to fetch
 observations against which to verify.
 }
