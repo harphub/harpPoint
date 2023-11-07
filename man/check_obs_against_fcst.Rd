@@ -12,7 +12,8 @@ check_obs_against_fcst(
 )
 }
 \arguments{
-\item{.fcst}{A data frame of class \code{harp_point_forecast_obs}.}
+\item{.fcst}{A \code{harp_df} data frame, or a \code{harp_list}, with an observations
+column.}
 
 \item{parameter}{The observations column. Can be the column name, quoted, or
 unquoted. If a variable it should be embraced - i.e. wrapped in \code{{{}}}.}
@@ -28,7 +29,7 @@ but "quarter_day" can be passed to divide the observations into classes of
 is to stratify by station ("SID") and "quarter_day".}
 }
 \value{
-A data frame of class \code{harp_point_forecast_obs} with an
+with an
 attribute named \code{removed_cases} containing a data frame of the removed
 cases.
 }

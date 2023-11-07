@@ -14,9 +14,11 @@ jitter_fcst(.fcst, jitter_func, obs_col = NULL, ...)
 \item{obs_col}{The observations column if it is to be used in the jitter
 function. Can be the column name, quoted, or unquoted. If a variable it
 should be embraced - i.e. wrapped in \code{{{}}}.}
+
+\item{...}{Other arguments to \code{jitter_func}.}
 }
 \value{
-An object of class harp_fcst with jittered forecast values.
+An object of the same class as \code{.fcst} with jittered forecast values.
 }
 \description{
 To account for observation errors in ensemble verification the forecast

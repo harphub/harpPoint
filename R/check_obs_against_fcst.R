@@ -7,7 +7,8 @@
 #' deviation. The number of multiples of the standard deviation can be supplied
 #' or a default value used depending on the parameter.
 #'
-#' @param .fcst A data frame of class \code{harp_point_forecast_obs}.
+#' @param .fcst A `harp_df` data frame, or a `harp_list`, with an observations
+#'   column.
 #' @param parameter The observations column. Can be the column name, quoted, or
 #'   unquoted. If a variable it should be embraced - i.e. wrapped in `{{}}`.
 #' @param num_sd_allowed The number of standard deviations of the forecast that
@@ -19,7 +20,7 @@
 #'   [0, 6), [6, 12), [12, 18) and [18, 24) hour of day. The default behaviour
 #'   is to stratify by station ("SID") and "quarter_day".
 #'
-#' @return A data frame of class \code{harp_point_forecast_obs} with an
+#' @return  with an
 #'   attribute named \code{removed_cases} containing a data frame of the removed
 #'   cases.
 #' @export
