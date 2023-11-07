@@ -29,9 +29,8 @@ but "quarter_day" can be passed to divide the observations into classes of
 is to stratify by station ("SID") and "quarter_day".}
 }
 \value{
-with an
-attribute named \code{removed_cases} containing a data frame of the removed
-cases.
+An object of the sames class as \code{.fcst} with an attribute named
+\code{removed_cases} containing a data frame of the removed cases.
 }
 \description{
 For each stratification the standard deviation of the forecast over all

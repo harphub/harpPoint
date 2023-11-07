@@ -20,9 +20,8 @@
 #'   [0, 6), [6, 12), [12, 18) and [18, 24) hour of day. The default behaviour
 #'   is to stratify by station ("SID") and "quarter_day".
 #'
-#' @return  with an
-#'   attribute named \code{removed_cases} containing a data frame of the removed
-#'   cases.
+#' @return An object of the sames class as `.fcst` with an attribute named
+#'   \code{removed_cases} containing a data frame of the removed cases.
 #' @export
 check_obs_against_fcst <- function(
     .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
