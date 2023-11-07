@@ -14,7 +14,8 @@ check_obs_against_fcst(
 \arguments{
 \item{.fcst}{A data frame of class \code{harp_point_forecast_obs}.}
 
-\item{parameter}{The forecast parameter.}
+\item{parameter}{The observations column. Can be the column name, quoted, or
+unquoted. If a variable it should be embraced - i.e. wrapped in \code{{{}}}.}
 
 \item{num_sd_allowed}{The number of standard deviations of the forecast that
 the difference between the forecast and the observation must be smaller

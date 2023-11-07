@@ -56,7 +56,9 @@ ens_verify(
 \item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
 for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{verify_members}{Whether to verify the individual members of the
 ensemble. Even if thresholds are supplied, only summary scores are

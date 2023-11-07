@@ -2,7 +2,9 @@
 #'
 #' @param .fcst A `harp_df` or `harp_list` object with tables that have a column
 #'   for observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
+#' @param parameter The name of the column for the observations data. Can be the
+#'   column name, quoted, or unquoted. If a variable it should be embraced -
+#'   i.e. wrapped in `{{}}`.
 #' @param verify_members Whether to verify the individual members of the
 #'   ensemble. Even if thresholds are supplied, only summary scores are
 #'   computed. If you wish to compute categorical scores, the separate

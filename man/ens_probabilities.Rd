@@ -14,7 +14,9 @@ for observations, or a single forecast table.}
 threshold based scores. Set to NULL (the default) to only compute summary
 scores.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 }
 \value{
 A \code{harp_list} object with each data frame having columns for threshold,

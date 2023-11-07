@@ -36,7 +36,9 @@ ens_brier(
 \item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
 for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
 threshold based scores. Set to NULL (the default) to only compute summary

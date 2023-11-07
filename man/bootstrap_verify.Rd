@@ -9,7 +9,7 @@ bootstrap_verify(
   verif_func,
   obs_col,
   n,
-  groupings = "leadtime",
+  groupings = "lead_time",
   pool_by = NULL,
   conf = 0.95,
   min_cases = 4,
@@ -25,8 +25,9 @@ bootstrap_verify(
 
 \item{verif_func}{The \code{harpPoint} verification function to bootstrap.}
 
-\item{obs_col}{The observations column in the \code{harp_list} object. Must
-be unquoted.}
+\item{obs_col}{The observations column in the \code{harp_list} object. Can be
+the column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}}
 
 \item{n}{The number of bootstrap replicates.}
 
@@ -79,10 +80,10 @@ Rather than sampling individual data points randomly, pools of data points
 are sampled randomly. The pools are taken from the column passed to the
 \code{pool_by} argument. To use an overlapping block bootstrap a data frame
 should be passed to \code{pool_by}, with one column that is common to the
-\code{harp_list} object input and a column named "pool" that labels what
-pool a row is in. This ensures that the correct number of overlapping pools
-are used in each bootstrap replicate. \link{make_bootstrap_pools} can be used
-to get a data frame of overlapping pools.
+\code{harp_list} object input and a column named "pool" that labels what pool
+a row is in. This ensures that the correct number of overlapping pools are
+used in each bootstrap replicate. \link{make_bootstrap_pools} can be used to
+get a data frame of overlapping pools.
 
 Bootstrapping can be quite slow since many replicates are computed. In order
 to speed the process up, \code{bootstrap_verify} also works in parallel

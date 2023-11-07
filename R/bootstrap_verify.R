@@ -13,10 +13,10 @@
 #' are sampled randomly. The pools are taken from the column passed to the
 #' \code{pool_by} argument. To use an overlapping block bootstrap a data frame
 #' should be passed to \code{pool_by}, with one column that is common to the
-#' \code{harp_list} object input and a column named "pool" that labels what
-#' pool a row is in. This ensures that the correct number of overlapping pools
-#' are used in each bootstrap replicate. \link{make_bootstrap_pools} can be used
-#' to get a data frame of overlapping pools.
+#' \code{harp_list} object input and a column named "pool" that labels what pool
+#' a row is in. This ensures that the correct number of overlapping pools are
+#' used in each bootstrap replicate. \link{make_bootstrap_pools} can be used to
+#' get a data frame of overlapping pools.
 #'
 #' Bootstrapping can be quite slow since many replicates are computed. In order
 #' to speed the process up, \code{bootstrap_verify} also works in parallel
@@ -27,8 +27,9 @@
 #'
 #' @param .fcst A \code{harp_list} object with a column for observations.
 #' @param verif_func The \code{harpPoint} verification function to bootstrap.
-#' @param obs_col The observations column in the \code{harp_list} object. Must
-#'   be unquoted.
+#' @param obs_col The observations column in the \code{harp_list} object. Can be
+#'   the column name, quoted, or unquoted. If a variable it should be embraced -
+#'   i.e. wrapped in `{{}}`
 #' @param n The number of bootstrap replicates.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
@@ -131,7 +132,7 @@ bootstrap_verify <- function(
 
   # Add coefficient columns for CRPS
   if (grepl("ens_verify|ens_crps", suppressWarnings(methods(verif_func)[1]))) {
-    .fcst <- bind_crps_vars(.fcst, !!rlang::enquo(obs_col))
+    .fcst <- bind_crps_vars(.fcst, !!rlang::ensym(obs_col))
   }
 
   # Initialize progress bar
@@ -149,7 +150,7 @@ bootstrap_verify <- function(
     replicates <- list_to_harp_verif(
       parallel::mclapply(
         1:n, call_verif, .fcst, verif_func,
-        !!rlang::enquo(obs_col), groupings, pool_by, min_cases, ...,
+        !!rlang::ensym(obs_col), groupings, pool_by, min_cases, ...,
         mc.cores = num_cores
       )
     )
@@ -159,7 +160,7 @@ bootstrap_verify <- function(
     replicates <- list_to_harp_verif(
       lapply(
         1:n, call_verif, .fcst, verif_func,
-        !!rlang::enquo(obs_col), groupings, pool_by, min_cases, ...
+        !!rlang::ensym(obs_col), groupings, pool_by, min_cases, ...
       )
     )
   }

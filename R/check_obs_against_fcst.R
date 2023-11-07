@@ -8,7 +8,8 @@
 #' or a default value used depending on the parameter.
 #'
 #' @param .fcst A data frame of class \code{harp_point_forecast_obs}.
-#' @param parameter The forecast parameter.
+#' @param parameter The observations column. Can be the column name, quoted, or
+#'   unquoted. If a variable it should be embraced - i.e. wrapped in `{{}}`.
 #' @param num_sd_allowed The number of standard deviations of the forecast that
 #'   the difference between the forecast and the observation must be smaller
 #'   than.

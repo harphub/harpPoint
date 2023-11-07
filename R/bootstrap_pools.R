@@ -18,7 +18,9 @@
 #' "d" = days.
 #'
 #' @param .fcst A \code{harp_fcst} object
-#' @param pool_col The column used to define the pools. Must be unquoted.
+#' @param pool_col The column used to define the pools. Can be the column name,
+#'   quoted, or unquoted. If a variable it should be embraced - i.e. wrapped in
+#'   `{{}}`
 #' @param pool_length The length of a pool. Numeric or a character with a unit
 #'   qualifier if \code{pool_col} is in date-time format. The unit qualifier can
 #'   be : "s" = seconds, "m" = minutes, "h" = hours, "d" = days.
@@ -30,6 +32,10 @@
 #' @examples
 #' make_bootstrap_pools(ens_point_df, lead_time, 2)
 #' make_bootstrap_pools(ens_point_df, lead_time, 2, overlap = TRUE)
+#'
+#' # pool_col as a variable
+#' my_col <- "lead_time"
+#' make_bootstrap_pools(ens_point_df, {{my_col}}, 2)
 make_bootstrap_pools <- function(
   .fcst, pool_col, pool_length, overlap = FALSE
 ) {

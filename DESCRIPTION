@@ -30,13 +30,15 @@ Imports:
     stats,
     harpIO (>= 0.1.1),
     modelr,
-    stringr,
     progress,
     matrixStats,
     SpecsVerification,
     lubridate,
     cli,
-    lifecycle
+    lifecycle,
+    glue,
+    hexbin,
+    tidyselect
 Remotes:
     harphub/harpCore@develop,
     harphub/harpIO@develop
