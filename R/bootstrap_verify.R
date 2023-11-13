@@ -328,7 +328,10 @@ sample_verif <- function(
 
   if (!is.null(pool_by) && !is.data.frame(pool_by)) {
     # Unnest pooled data when pools passed as a column
-    .fcst <- lapply(.fcst, tidyr::unnest, .data[["data"]])
+    .fcst <- lapply(
+      .fcst,
+      function(d) harpCore::as_harp_df(tidyr::unnest(d, .data[["data"]]))
+    )
   }
 
   # Make sure we have a harp_list object and call verification
