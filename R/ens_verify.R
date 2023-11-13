@@ -124,7 +124,6 @@ ens_verify.harp_ens_point_df <- function(
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
 
-
   if (!is.list(groupings)) {
     groupings <- list(groupings)
   }

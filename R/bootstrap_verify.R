@@ -338,7 +338,8 @@ sample_verif <- function(
 
     res <- suppressMessages(ens_verify(
       .fcst, !!rlang::enquo(obs_col), groupings = grp,
-      verify_members = FALSE, show_progress = FALSE, ...
+      verify_members = FALSE, hexbin = FALSE, rank_hist = FALSE,
+      show_progress = FALSE, ...
     ))
 
   } else {
