@@ -54,7 +54,8 @@ make_bootstrap_pools <- function(
         function(x) remove_harp_class(dplyr::select(x, !!pool_col_sym))
       )
     )
-  )
+  ) %>%
+    dplyr::distinct()
 
   pool_col_is_date <- FALSE
 
@@ -68,10 +69,7 @@ make_bootstrap_pools <- function(
       pool_length <- paste0(pool_length, "h")
     }
 
-    pool_length <- as.numeric(
-      gsub("[[:alpha:]]|[[:punct:]]", "", pool_length)
-    ) *
-      harpIO:::units_multiplier(pool_length)
+    pool_length <- harpCore::to_seconds(pool_length)
 
   }
 
