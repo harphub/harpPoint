@@ -228,12 +228,20 @@ hexbin_df <- function(x, y, nbins, prm) {
   xrange <- range(x)
   yrange <- range(y)
   if (diff(xrange) == 0) {
-    xrange[1] <- xrange[1] - abs(xrange[1]) * 0.01
-    xrange[2] <- xrange[2] + abs(xrange[2]) * 0.01
+    if (all(x == 0)) {
+      xrange <- c(-0.01, 0.01)
+    } else {
+      xrange[1] <- xrange[1] - abs(xrange[1]) * 0.01
+      xrange[2] <- xrange[2] + abs(xrange[2]) * 0.01
+    }
   }
   if (diff(yrange) == 0) {
-    yrange[1] <- yrange[1] - abs(yrange[1]) * 0.01
-    yrange[2] <- yrange[2] + abs(yrange[2]) * 0.01
+    if (all(y == 0)) {
+      yrange <- c(-0.01, 0.01)
+    } else {
+      yrange[1] <- yrange[1] - abs(yrange[1]) * 0.01
+      yrange[2] <- yrange[2] + abs(yrange[2]) * 0.01
+    }
   }
   hexes <- hexbin::hexbin(x, y, xbins = nbins, xbnds = xrange, ybnds = yrange)
   dplyr::rename(
