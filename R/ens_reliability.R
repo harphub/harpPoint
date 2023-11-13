@@ -6,7 +6,7 @@ ens_reliability <- function(
   .fcst,
   parameter,
   thresholds,
-  groupings     = "leadtime",
+  groupings     = "lead_time",
   climatology   = "sample",
   rel_probs     = NA,
   show_progress = TRUE,
