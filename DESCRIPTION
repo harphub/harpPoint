@@ -29,7 +29,6 @@ Imports:
     rlang,
     stats,
     harpIO (>= 0.2.0),
-    modelr,
     progress,
     matrixStats,
     SpecsVerification,

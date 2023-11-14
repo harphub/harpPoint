@@ -6,7 +6,7 @@
 \alias{harpPoint-package}
 \title{harpPoint: Point verifition for NWP forecasts}
 \description{
-Functions for computing verification scores for NWP forecasts. Part of the harp3 ecosystem.
+Functions for computing verification scores for NWP forecasts. Part of the harp ecosystem.
 }
 \seealso{
 Useful links:
