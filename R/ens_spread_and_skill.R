@@ -79,7 +79,7 @@ ens_spread_and_skill.harp_ens_point_df <- function(
   ens_mean <- "ss_mean"
   ens_var  <- "ss_var"
 
-  .fcst <- harpIO::ens_mean_and_var(
+  .fcst <- harpCore::ens_mean_and_var(
     .fcst, mean_name = ens_mean, var_name = ens_var,
     var_drop_member = spread_drop_member
   )
