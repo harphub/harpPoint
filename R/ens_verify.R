@@ -147,7 +147,10 @@ ens_verify.harp_ens_point_df <- function(
   }
 
   if (verify_members) {
-    det_summary_scores <- det_verify(.fcst, !! parameter, groupings = groupings, show_progress = show_progress) %>%
+    det_summary_scores <- det_verify(
+      .fcst, !! parameter, groupings = groupings, circle = circle,
+      hexbin = hexbin, num_bins = num_bins, show_progress = show_progress
+    ) %>%
       purrr::pluck("det_summary_scores")
   } else {
     det_summary_scores <- tibble::tibble()

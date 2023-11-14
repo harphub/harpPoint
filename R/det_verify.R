@@ -9,6 +9,7 @@ det_verify <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
   ...
@@ -31,6 +32,7 @@ det_verify.harp_ens_point_df <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
   fcst_model    = NULL,
@@ -46,7 +48,7 @@ det_verify.harp_ens_point_df <- function(
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
   det_verify(
-    .fcst, {{parameter}}, thresholds, groupings, circle, num_bins,
+    .fcst, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
     show_progress, fcst_model
   )
 }
@@ -61,6 +63,7 @@ det_verify.harp_det_point_df <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
   fcst_model    = NULL,
@@ -181,9 +184,11 @@ det_verify.harp_det_point_df <- function(
     fill_group_na(groupings) %>%
     dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
 
-  det_summary_scores[["hexbin"]] <- bin_fcst_obs(
-    .fcst, !!parameter, groupings, num_bins, show_progress
-  )[["det_summary_scores"]]
+  if (hexbin) {
+    det_summary_scores[["hexbin"]] <- bin_fcst_obs(
+      .fcst, !!parameter, groupings, num_bins, show_progress
+    )[["det_summary_scores"]]
+  }
 
   res <- list()
 
@@ -311,6 +316,7 @@ det_verify.harp_list <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE
 ) {
@@ -327,7 +333,7 @@ det_verify.harp_list <- function(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, groupings, circle, num_bins,
+        .x, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
         show_progress, fcst_model = .y
       )
     )

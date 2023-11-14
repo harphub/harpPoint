@@ -11,6 +11,7 @@ det_verify(
   thresholds = NULL,
   groupings = "lead_time",
   circle = NULL,
+  hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
   ...
@@ -22,6 +23,7 @@ det_verify(
   thresholds = NULL,
   groupings = "lead_time",
   circle = NULL,
+  hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
   fcst_model = NULL,
@@ -47,6 +49,9 @@ scores.}
 calculations. Should be this distance around a circle in the units of the
 parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
 for radians.}
+
+\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
+pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
 
 \item{num_bins}{The number of bins into which to partition observations for
 the hexbin computation.}
