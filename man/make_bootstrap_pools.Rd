@@ -9,7 +9,9 @@ make_bootstrap_pools(.fcst, pool_col, pool_length, overlap = FALSE)
 \arguments{
 \item{.fcst}{A \code{harp_fcst} object}
 
-\item{pool_col}{The column used to define the pools. Must be unquoted.}
+\item{pool_col}{The column used to define the pools. Can be the column name,
+quoted, or unquoted. If a variable it should be embraced - i.e. wrapped in
+\code{{{}}}}
 
 \item{pool_length}{The length of a pool. Numeric or a character with a unit
 qualifier if \code{pool_col} is in date-time format. The unit qualifier can
@@ -38,4 +40,12 @@ units used in \code{pool_col} - if \code{pool_col} is a date-time column,
 then \code{pool_length} is assumed to be in hours, though the units can be
 set by adding a qualifier letter: "s" = seconds, "m" = minutes, "h" = hours,
 "d" = days.
+}
+\examples{
+make_bootstrap_pools(ens_point_df, lead_time, 2)
+make_bootstrap_pools(ens_point_df, lead_time, 2, overlap = TRUE)
+
+# pool_col as a variable
+my_col <- "lead_time"
+make_bootstrap_pools(ens_point_df, {{my_col}}, 2)
 }

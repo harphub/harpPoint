@@ -132,16 +132,15 @@ transmute.harp_fcst <- function(.fcst, ...) {
 #'
 #' The function is most useful for finding common cases between models.
 #'
-#' @param .fcst A harp_fcst object with any multimodel data merged with
+#' @param .fcst A harp_list object with any multimodel data merged with
 #'   \link{merge_multimodel}.
 #' @param join_type The type of join to perform. See \link[dplyr]{join}.
 #' @param name The name of the resulting model.
 #' @param ... Other arguments to \link[dplyr]{join}.
 #'
-#' @return
+#' @return A `harp_df` data frame.
 #' @export
 #'
-#' @examples
 join_models <- function(.fcst, join_type = "inner", name = "joined_models", ...) {
 
   valid_joins <- c("inner", "left", "right", "full", "semi", "anti")
@@ -170,18 +169,22 @@ join_models <- function(.fcst, join_type = "inner", name = "joined_models", ...)
 }
 
 #' @export
-join_models.harp_fcst <- function(
+join_models.harp_list <- function(
   .fcst,
   join_type = "inner",
   name = "joined_models",
-  by = c("SID", "fcdate", "validdate", "leadtime"),
+  by = c("SID", "fcst_dttm", "valid_dttm", "lead_time"),
   ...
 ) {
   join_func <- get(paste0(join_type, "_join"), envir = asNamespace("dplyr"))
-  out <- list()
-  out[[name]] <- purrr::reduce(.fcst, join_func, by = by, ...) %>%
-    tibble::as_tibble()
-  new_harp_fcst(out)
+  purrr::reduce(.fcst, join_func, by = by, ...) %>%
+    tibble::as_tibble() %>%
+    harpCore::as_harp_df()
+}
+
+#' @export
+join_models.harp_df <- function(.fcst, ...) {
+  .fcst
 }
 
 #' @export
@@ -194,12 +197,13 @@ bind_rows.harp_fcst <- function(..., .id = NULL) {
 #' When you have a list of data frames, such as the output to a verification
 #' function, you may want to wrangle data in those data frames at the same time.
 #' This can be achieved using the dplyr verb followed by _list. For data frames
-#' where the function is applicaple the modified data frame is returned. If the
+#' where the function is applicable the modified data frame is returned. If the
 #' verb fails (e.g. because the specified columns don't exist), the data frame
 #' is silently returned unmodified
 #'
 #' @param .list A list of data frames
 #' @param ... Other arguments to the dplyr verb
+#' @return A list with the same attrbutes as the input `.list`
 #' @seealso /link[dplyr]{mutate}, /link[dplyr]{filter}, /link[dplyr]{select}
 #' @name dplyr_list
 NULL

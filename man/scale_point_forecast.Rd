@@ -22,15 +22,20 @@ changed.}
 
 \item{multiplicative}{If the scaling is to be done multiplicatively, i.e. the
 new forecast value is to be the old value * scale_factor, set
-multiplicative to TRUE. The defualt (multiplicative = FALSE) is to do the
+multiplicative to TRUE. The default (multiplicative = FALSE) is to do the
 scaling additively, i.e. the new forecast value is the old value +
 scale_factor.}
 }
 \value{
 A \code{harp_fcst} object with forecast values scaled by
-  \code{scale_factor}.
+\code{scale_factor}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{\link[harpCore]{scale_param}} is now the preferred function since it
+works for both point and gridded data.
+
 If you wish to scale the forecast values, for example when temperature data
 are in Kelvin and you want them in degrees C, this function can be used to
 scale the data.

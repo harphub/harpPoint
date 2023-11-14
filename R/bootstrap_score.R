@@ -1,5 +1,8 @@
 #' Bootstrap a score
 #'
+#' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' Compute the confidence intervals of verification scores using a bootstrap
 #' method. If there is more than one forecast the confidence for the differences
 #' between forecasts is also computed.
@@ -13,13 +16,14 @@
 #'   is leadtime.
 #' @param ... Other arguments to the score function. e.g. thresholds.
 #'
-#' @return
 #' @export
-#'
-#' @examples
 bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "leadtime", confidence_interval = 0.95, ...) {
 
-  warning("boostrap_score is DEPRECATED. Use `bootstrap_verify()` instead.")
+  lifecycle::deprecate_stop(
+    "0.1.0",
+    "bootstrap_score()",
+    "bootstrap_verify()"
+  )
 
   parameter <- rlang::enquo(parameter)
 
@@ -44,17 +48,25 @@ bootstrap_score <- function(.fcst, score_function, parameter, n, groupings = "le
     groupings_sym <- rlang::syms(unique(unlist(groupings)))
     res <- score_func(.fcst$data[.fcst$idx, ], !! parameter, groupings = groupings, ...) %>%
       dplyr::arrange(!!! groupings_sym)
-    pb$tick()
+    #pb$tick()
     res
   }
 
   map_replicants <- function(.fcst, score_func, parameter, groupings, ...){
     parameter <- rlang::enquo(parameter)
-    purrr::map(.fcst$strap, map_strap, score_func, !! parameter, groupings = groupings, ...)
+    purrr::map(
+      .fcst$strap,
+      map_strap,
+      score_func,
+      !!parameter,
+      groupings = groupings,
+      .progress = "Bootstrapping",
+      ...
+    )
   }
 
   num_calls_to_score_func <- sum(purrr::map_int(replicants, nrow))
-  pb <- progress::progress_bar$new(format = "  Bootstrapping [:bar] :percent eta: :eta", total = num_calls_to_score_func)
+  #pb <- progress::progress_bar$new(format = "  Bootstrapping [:bar] :percent eta: :eta", total = num_calls_to_score_func)
   replicants <- purrr::map(replicants, map_replicants, score_function, !! parameter, groupings = groupings, ...)
 
   # Compute the confidence limits

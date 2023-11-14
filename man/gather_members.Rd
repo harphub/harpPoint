@@ -13,14 +13,16 @@ gather_members(
 \arguments{
 \item{.fcst}{An EPS forecast data frame in wide format.}
 
-\item{member_prefix}{Prefix for column names that contain forcasts for a
-single member. The default is "mbr". Note that the column name only has to
-contain \code{member_prefix}.}
+\item{member_regex}{Regular expression for column names that contain forecasts for a
+single member.}
 }
 \value{
 An EPS data frame in long format.
 }
 \description{
-Convert EPS forecast data from wide format data frame to long format data
-frame.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+\code{\link[harpCore]{pivot_members}} is now the preferred method for
+transforming between long and wide data frames since it supports classes
+that were introduced in version 0.1.0.
 }

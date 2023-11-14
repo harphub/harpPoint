@@ -1,12 +1,20 @@
-#' Title
+#' Bind output of bootstrap_score / pooled_bootstrap_score
 #'
-#' @param ...
+#' `r lifecycle::badge("deprecated")`
 #'
-#' @return
+#' @param ... A list of outputs from `bootstrap_score()` /
+#'   `pooled_bootstrap_score()`
+#'
+#' @return An object of class `harp_bootstrap`
 #' @export
 #'
-#' @examples
 bind_bootstrap_score <- function(...) {
+
+  lifecycle::deprecate_stop(
+    "0.1.0",
+    "bind_bootstrap_score()",
+    "bind_point_verif()"
+  )
 
   check_class <- function(x) {
     inherits(x, "harp_bootstrap")

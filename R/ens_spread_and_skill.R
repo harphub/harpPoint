@@ -1,48 +1,59 @@
 #' Compute the skill (RMSE) and spread of an ensemble forecast
 #'
-#' The ensemble mean and spread are computed as columns in a \code{harp_fcst}
+#' The ensemble mean and spread are computed as columns in a \code{harp_list}
 #' object. Typically the scores are aggregated over lead time by other grouping
 #' variables cam be chosen. The mean bias is also computed.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param groupings The groups for which to compute the ensemble mean and
-#'   spread. See \link[dplyr]{group_by} for more information of how grouping
-#'   works.
-#' @param spread_drop_member Which members to drop for the calculation of the
-#'   ensemble variance and standard deviation. For harp_fcst objects, this can
-#'   be a numeric scalar - in which case it is recycled for all forecast models;
-#'   a list or numeric vector of the same length as the harp_fcst object, or a
-#'   named list with the names corresponding to names in the harp_fcst object.
-#' @param jitter_fcst A function to perturb the forecast values by. This is used
-#'   to account for observation error in the spread. For other statistics it is
-#'   likely to make little difference since it is expected that the observations
-#'   will have a mean error of zero.
-#' @param ... Not used.
+#' @inheritParams ens_verify
 #'
 #' @return An object of the same format as the inputs but with data grouped for
 #'   the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
 #'   and \code{mean_bias}.
 #' @export
-#'
-#' @examples
 ens_spread_and_skill <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  ...
 ) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  check_circle(circle)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("ens_spread_and_skill")
 }
 
+#' @param fcst_model The name of the forecast model to use in the `fcst_model`
+#'  column of the output. If the function is dispatched on a `harp_list`
+#'  object, the names of the `harp_list` are automatically used.
+#' @rdname ens_spread_and_skill
 #' @export
-ens_spread_and_skill.default <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+ens_spread_and_skill.harp_ens_point_df <- function(
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  fcst_model         = NULL,
+  ...
 ) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
   }
+
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
 
   if (!is.null(spread_drop_member)) {
     if (!is.numeric(spread_drop_member)) {
@@ -68,7 +79,7 @@ ens_spread_and_skill.default <- function(
   ens_mean <- "ss_mean"
   ens_var  <- "ss_var"
 
-  .fcst <- harpIO::ens_mean_and_var(
+  .fcst <- harpCore::ens_mean_and_var(
     .fcst, mean_name = ens_mean, var_name = ens_var,
     var_drop_member = spread_drop_member
   )
@@ -79,19 +90,32 @@ ens_spread_and_skill.default <- function(
       fcst_df[[paste0("dropped_members_", ens_var)]] <- fcst_df[[ens_var]]
     }
 
-    if (length(compute_group) == 1 && compute_group == "threshold") {
-      grouped_fcst <- fcst_df
-    } else {
-      compute_group <- rlang::syms(compute_group[compute_group != "threshold"])
-      grouped_fcst  <- dplyr::group_by(fcst_df, !!! compute_group)
-    }
+    fcst_df <- dplyr::mutate(
+      fcst_df,
+      fcst_bias = bias(.data[[ens_mean]], .data[[chr_param]], circle)
+    )
 
-    grouped_fcst %>%
+    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    group_vars <- dplyr::group_vars(fcst_df)
+    group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
+    message(
+      cli::col_blue(glue::glue("Spread; Skill for {group_names}")),
+      appendLF = FALSE
+    )
+
+    res <- fcst_df %>%
       dplyr::summarise(
         num_cases              = dplyr::n(),
-        mean_bias              = mean(.data[[ens_mean]] - !!parameter),
-        stde                   = stats::sd(.data[[ens_mean]] - !!parameter),
-        rmse                   = sqrt(mean((.data[[ens_mean]] - !!parameter) ^ 2)),
+        num_stations           = {
+          if (is.element("SID", group_vars)) {
+            1L
+          } else {
+            length(unique(.data[["SID"]]))
+          }
+        },
+        mean_bias              = mean(.data[["fcst_bias"]]),
+        stde                   = stats::sd(.data[["fcst_bias"]]),
+        rmse                   = sqrt(mean(.data[["fcst_bias"]] ^ 2)),
         spread                 = sqrt(mean(.data[[ens_var]])),
         dropped_members_spread = sqrt(mean(.data[[paste0("dropped_members_", ens_var)]]))
       ) %>%
@@ -99,17 +123,43 @@ ens_spread_and_skill.default <- function(
         spread_skill_ratio                 = .data[["spread"]] / .data[["rmse"]],
         dropped_members_spread_skill_ratio = .data[["dropped_members_spread"]] / .data[["rmse"]]
       )
+
+    message("", cli::col_green(cli::symbol[["tick"]]))
+
+    res
   }
 
-  purrr::map_dfr(groupings, compute_spread_skill, .fcst) %>%
-    fill_group_na(groupings)
+  res <- list()
+  res[["ens_summary_scores"]] <- purrr::map(
+    groupings, compute_spread_skill, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      !!parameter,
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-ens_spread_and_skill.harp_fcst <- function(
-  .fcst, parameter, groupings = "leadtime", spread_drop_member = NULL,
-  jitter_fcst = NULL, ...
+ens_spread_and_skill.harp_list <- function(
+  .fcst,
+  parameter,
+  groupings          = "lead_time",
+  circle             = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst        = NULL,
+  show_progress      = TRUE,
+  ...
 ) {
 
   parameter   <- rlang::enquo(parameter)
@@ -122,16 +172,14 @@ ens_spread_and_skill.harp_fcst <- function(
 
   spread_drop_member <- parse_member_drop(spread_drop_member, names(.fcst))
 
-  list(
-    ens_summary_scores = purrr::map2(
-      .fcst, spread_drop_member,
-      ~ens_spread_and_skill(.x, !! parameter, groupings, .y, jitter_fcst)
-    ) %>%
-      dplyr::bind_rows(.id = "mname"),
-    ens_threshold_scores = NULL
-  ) %>%
-    add_attributes(.fcst, !! parameter)
-
+  list_to_harp_verif(
+    purrr::pmap(
+      list(.fcst, names(.fcst), spread_drop_member),
+      function(x, y, z) ens_spread_and_skill(
+        x, !! parameter, groupings, circle, z, jitter_fcst, fcst_model = y
+      )
+    )
+  )
 }
 
 parse_member_drop <- function(x, nm) {

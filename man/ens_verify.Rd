@@ -2,6 +2,7 @@
 % Please edit documentation in R/ens_verify.R
 \name{ens_verify}
 \alias{ens_verify}
+\alias{ens_verify.harp_ens_point_df}
 \title{Compute all verification scores for an ensemble.}
 \usage{
 ens_verify(
@@ -9,20 +10,55 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
-  groupings = "leadtime",
+  groupings = "lead_time",
+  circle = NULL,
   rel_probs = NA,
   num_ref_members = NA,
   spread_drop_member = NULL,
   jitter_fcst = NULL,
   climatology = "sample",
-  show_progress = TRUE
+  hexbin = TRUE,
+  num_bins = 30,
+  rank_hist = TRUE,
+  crps = TRUE,
+  brier = TRUE,
+  roc = TRUE,
+  econ_val = TRUE,
+  show_progress = TRUE,
+  ...
+)
+
+\method{ens_verify}{harp_ens_point_df}(
+  .fcst,
+  parameter,
+  verify_members = TRUE,
+  thresholds = NULL,
+  groupings = "lead_time",
+  circle = NULL,
+  rel_probs = NA,
+  num_ref_members = NA,
+  spread_drop_member = NULL,
+  jitter_fcst = NULL,
+  climatology = "sample",
+  hexbin = TRUE,
+  num_bins = 30,
+  rank_hist = TRUE,
+  crps = TRUE,
+  show_progress = TRUE,
+  brier = TRUE,
+  roc = TRUE,
+  econ_val = TRUE,
+  fcst_model = NULL,
+  ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{verify_members}{Whether to verify the individual members of the
 ensemble. Even if thresholds are supplied, only summary scores are
@@ -35,6 +71,11 @@ scores.}
 
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
+for radians.}
 
 \item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
 (the default) to select automatically.}
@@ -58,14 +99,41 @@ the observations will have a mean error of zero.}
 "sample" for the sample climatology (the default), a named list with
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
-threshold and climatology and also optionally leadtime.}
+threshold and climatology and also optionally lead_time.}
+
+\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
+pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
+
+\item{num_bins}{The number of bins into which to partition observations for
+the hexbin computation.}
+
+\item{rank_hist}{Logical. Whether to compute the rank histogram. Defaults to
+\code{TRUE}. Note that the computation of the rank histogram can be slow if
+there is a large number (> 1000) of groups.}
+
+\item{crps}{Logical. Whether to compute the CRPS. Defaults to \code{TRUE}.}
+
+\item{brier}{Logical. Whether to compute the Brier score. Defaults to \code{TRUE}.
+Will be ignored if no thresholds are set.}
+
+\item{roc}{Logical. Whether to compute the Relative Operating Characteristic
+(ROC). Defaults to \code{TRUE}. Will be ignored if no thresholds are set.}
+
+\item{econ_val}{Logical. Whether to compute the economic value. Defaults to
+\code{TRUE}. Will be ignored if no thresholds are set.}
 
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
-TRUE.}
+\code{TRUE}.}
+
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \value{
 A list containting three data frames: \code{ens_summary_scores},
-  \code{ens_threshold_scores} and \code{det_summary_scores}.
+\code{ens_threshold_scores} and \code{det_summary_scores}.
 }
 \description{
 Compute all verification scores for an ensemble.

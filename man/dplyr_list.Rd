@@ -18,11 +18,14 @@ select_list(.list, ...)
 
 \item{...}{Other arguments to the dplyr verb}
 }
+\value{
+A list with the same attrbutes as the input \code{.list}
+}
 \description{
 When you have a list of data frames, such as the output to a verification
 function, you may want to wrangle data in those data frames at the same time.
 This can be achieved using the dplyr verb followed by _list. For data frames
-where the function is applicaple the modified data frame is returned. If the
+where the function is applicable the modified data frame is returned. If the
 verb fails (e.g. because the specified columns don't exist), the data frame
 is silently returned unmodified
 }

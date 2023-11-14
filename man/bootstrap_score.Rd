@@ -29,10 +29,9 @@ is leadtime.}
 
 \item{...}{Other arguments to the score function. e.g. thresholds.}
 }
-\value{
-
-}
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
 Compute the confidence intervals of verification scores using a bootstrap
 method. If there is more than one forecast the confidence for the differences
 between forecasts is also computed.

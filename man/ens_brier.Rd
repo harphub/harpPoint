@@ -2,58 +2,78 @@
 % Please edit documentation in R/ens_brier.R
 \name{ens_brier}
 \alias{ens_brier}
+\alias{ens_brier.harp_ens_point_df}
 \title{Brier score and its decomposition for an ensemble.}
 \usage{
 ens_brier(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
+  groupings = "lead_time",
   climatology = "sample",
   rel_probs = NA,
   num_ref_members = NA,
   keep_score = c("both", "brier", "reliability"),
-  show_progress = FALSE
+  show_progress = TRUE,
+  ...
+)
+
+\method{ens_brier}{harp_ens_point_df}(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings = "lead_time",
+  climatology = "sample",
+  rel_probs = NA,
+  num_ref_members = NA,
+  keep_score = "both",
+  show_progress = TRUE,
+  fcst_model = NULL,
+  ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
-Brier Score.}
+threshold based scores. Set to NULL (the default) to only compute summary
+scores.}
 
-\item{groupings}{The groups for which to compute the ensemble mean and
-spread. See \link[dplyr]{group_by} for more information of how grouping
-works.}
+\item{groupings}{The groups for which to compute the scores. See
+\link[dplyr]{group_by} for more information of how grouping works.}
 
 \item{climatology}{The climatology to use for the Brier Skill Score. Can be
 "sample" for the sample climatology (the default), a named list with
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
-threshold and climatology and also optionally leadtime.}
+threshold and climatology and also optionally lead_time.}
 
 \item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
 (the default) to select automatically.}
 
-\item{num_ref_members}{The number of members for which to compute the fair
-Brier score.}
+\item{num_ref_members}{For "fair" scores, the score is scaled to be valid for
+this number of ensemble members. Set to NA (the default) to not modify the
+score.}
 
-\item{keep_score}{\code{ens_brier} computes the Brier Score and its
-components, as well as reliability. If you only want to output the Brier
-score and its decomposition set to "brier", to only keep the reliability
-information set to "reliability". To keep both, set to "both". The default
-behaviour is "both".}
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
 
-\item{...}{Used internally depending on the class of the input.}
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and
-  columns for \code{brier_score}, \code{brier_skill_score} and the
-  deomposition of the brier score - \code{brier_score_reliability},
-  \code{brier_score_resolution} and \code{brier_score_uncertainty}.
+columns for \code{brier_score}, \code{brier_skill_score} and the
+deomposition of the brier score - \code{brier_score_reliability},
+\code{brier_score_resolution} and \code{brier_score_uncertainty}.
 }
 \description{
 Brier score and its decomposition for an ensemble.

@@ -9,11 +9,14 @@ ecoval(obs, pred, costloss, thresholds)
 \arguments{
 \item{obs}{A vector observations (value 0,1)}
 
-\item{pred}{A vector of probabilities [0,1].}
+\item{pred}{A vector of probabilities \link{0,1}.}
 
 \item{costloss}{A vector of cost/loss ratios}
 
 \item{thresholds}{A vector of threshold probabilities}
+}
+\value{
+a list of cl, value, Vmax, Venv, H, F, s, n
 }
 \description{
 Compute economic value score

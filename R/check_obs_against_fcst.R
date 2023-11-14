@@ -7,8 +7,10 @@
 #' deviation. The number of multiples of the standard deviation can be supplied
 #' or a default value used depending on the parameter.
 #'
-#' @param .fcst A data frame of class \code{harp_point_forecast_obs}.
-#' @param parameter The forecast parameter.
+#' @param .fcst A `harp_df` data frame, or a `harp_list`, with an observations
+#'   column.
+#' @param parameter The observations column. Can be the column name, quoted, or
+#'   unquoted. If a variable it should be embraced - i.e. wrapped in `{{}}`.
 #' @param num_sd_allowed The number of standard deviations of the forecast that
 #'   the difference between the forecast and the observation must be smaller
 #'   than.
@@ -18,15 +20,11 @@
 #'   [0, 6), [6, 12), [12, 18) and [18, 24) hour of day. The default behaviour
 #'   is to stratify by station ("SID") and "quarter_day".
 #'
-#' @return A data frame of class \code{harp_point_forecast_obs} with an
-#'   attribute named \code{removed_cases} containing a data frame of the removed
-#'   cases.
+#' @return An object of the sames class as `.fcst` with an attribute named
+#'   \code{removed_cases} containing a data frame of the removed cases.
 #' @export
-#'
-#' @examples
-
 check_obs_against_fcst <- function(
-  .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
+    .fcst, parameter, num_sd_allowed = NULL, stratification = c("SID", "quarter_day")
 ) {
 
   parameter_quo  <- rlang::enquo(parameter)
@@ -36,8 +34,8 @@ check_obs_against_fcst <- function(
   }
   parameter_name <- rlang::quo_name(parameter_quo)
 
-    if (is.null(num_sd_allowed)) {
-    num_sd_allowed <- switch(
+  if (is.null(num_sd_allowed)) {
+    .num_sd_allowed <- switch(
       parameter_name,
       "T2m"       = 6,
       "RH2m"      = 6,
@@ -51,9 +49,12 @@ check_obs_against_fcst <- function(
       "AccPcp24h" = 8,
       0
     )
+  } else {
+    .num_sd_allowed <- num_sd_allowed
   }
 
-  if (num_sd_allowed > 0) {
+  fcst_regex <- "_mbr[[:digit:]]{3}|_det$|^fcst$|^forecast$"
+  if (.num_sd_allowed > 0) {
 
     tolerance <- join_models(
       .fcst,
@@ -63,32 +64,32 @@ check_obs_against_fcst <- function(
           .fcst,
           function(x) {
             grep(
-              "_mbr[[:digit:]]+$|_mbr[[:digit:]]+_lag[[:digit:]]*$|_det$",
+              paste0(fcst_regex, "|fcst_model"),
               colnames(x),
               value = TRUE, invert = TRUE
             )
           }
         )
       )
-    )[[1]]
+    )
 
     # Create extra columns for stratifying
     if (!is.element("valid_hour", colnames(tolerance))) {
 
-      if (!is.element("validdate", colnames(tolerance))) {
-        stop(".fcst must have `validdate` column.")
+      if (!is.element("valid_dttm", colnames(tolerance))) {
+        stop(".fcst must have `valid_dttm` column.")
       }
 
-      if (is.numeric(tolerance[["validdate"]])) {
-        tolerance <- expand_date(tolerance, .data[["validdate"]])
-      } else if (inherits(tolerance[["validdate"]], "POSIXct")) {
+      if (is.numeric(tolerance[["valid_dttm"]])) {
+        tolerance <- harpCore::expand_date(tolerance, .data[["valid_dttm"]])
+      } else if (inherits(tolerance[["valid_dttm"]], "POSIXct")) {
         tolerance <- dplyr::mutate(
           tolerance,
-          valid_hour = lubridate::hour(.data[["validdate"]]),
-          valid_month = lubridate::month(.data[["validdate"]])
+          valid_hour = lubridate::hour(.data[["valid_dttm"]]),
+          valid_month = lubridate::month(.data[["valid_dttm"]])
         )
       } else {
-        stop("Cannot convert validdate column to hour and months")
+        stop("Cannot convert valid_dttm column to hour and months")
       }
 
     }
@@ -102,25 +103,25 @@ check_obs_against_fcst <- function(
 
     tolerance_df <- tidyr::pivot_longer(
       tolerance,
-      tidyselect::matches("_mbr[[:digit:]]+$|_det$")
+      tidyselect::matches(fcst_regex)
     ) %>%
       dplyr::group_by(!!!rlang::syms(stratification)) %>%
       dplyr::summarise(
-        tolerance_allowed = stats::sd(.data[["value"]]) * .env[["num_sd_allowed"]],
+        tolerance_allowed = stats::sd(.data[["value"]]) * .num_sd_allowed,
         num_cases         = dplyr::n()
       )
 
-    tolerance <- suppressWarnings(suppressMessages(join_to_fcst(
+    tolerance <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
       tolerance,
       tolerance_df,
       by = stratification,
-      force_join = TRUE
+      force = TRUE
     )))
 
     tolerance <- dplyr::mutate(
       tolerance,
       dplyr::across(
-        dplyr::matches("_mbr[[:digit:]]+$|_det$"),
+        dplyr::matches(fcst_regex),
         ~abs(. - !!parameter_quo)
       )
     )
@@ -129,7 +130,7 @@ check_obs_against_fcst <- function(
       tolerance,
       min_diff = matrixStats::rowMins(
         as.matrix(
-          dplyr::select(tolerance, dplyr::matches("_mbr[[:digit:]]+$|_det$"))
+          dplyr::select(tolerance, dplyr::matches(fcst_regex))
         )
       )
     )
@@ -145,26 +146,45 @@ check_obs_against_fcst <- function(
 
     good_obs <- tolerance %>%
       dplyr::filter(.data$min_diff <= .data$tolerance_allowed) %>%
-      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
-      dplyr::group_by(.data$SID, .data$validdate) %>%
+      dplyr::select(.data$SID, .data$valid_dttm, !! parameter_quo) %>%
+      dplyr::group_by(.data$SID, .data$valid_dttm) %>%
       dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
       dplyr::ungroup()
 
     bad_obs  <- tolerance %>%
-      dplyr::filter(.data$min_diff > .data$tolerance_allowed) %>%
-      dplyr::select(.data$SID, .data$validdate, !! parameter_quo) %>%
-      dplyr::group_by(.data$SID, .data$validdate) %>%
-      dplyr::summarise(!! rlang::sym(parameter_name) := unique(!! parameter_quo)) %>%
-      dplyr::ungroup()
+      dplyr::filter(.data$min_diff > .data$tolerance_allowed)
 
-    .fcst <- suppressWarnings(suppressMessages(join_to_fcst(
+    if (nrow(bad_obs) > 0) {
+      bad_obs <- bad_obs %>%
+        dplyr::select(
+          .data$SID, .data$valid_dttm, !!parameter_quo, .data$min_diff,
+          .data$tolerance_allowed
+        ) %>%
+        dplyr::group_by(.data$SID, .data$valid_dttm) %>%
+        dplyr::summarise(
+          !!rlang::sym(parameter_name) := unique(!!parameter_quo),
+          dist_to_fcst = min(.data$min_diff),
+          tolerance    = mean(.data$tolerance_allowed)
+        ) %>%
+        dplyr::ungroup()
+    }
+
+    .fcst <- suppressWarnings(suppressMessages(harpCore::join_to_fcst(
       .fcst,
       dplyr::select(
-        good_obs, .data$SID, .data$validdate
+        good_obs, .data$SID, .data$valid_dttm
       ),
-      by = c("SID", "validdate"),
-      force_join = TRUE
+      by = c("SID", "valid_dttm"),
+      force = TRUE
     )))
+
+    num_bad_obs <- nrow(bad_obs)
+    if (num_bad_obs > 0) {
+      cli::cli_inform(c(
+        "!" = "{num_bad_obs} cases with more than {num_sd_allowed} std dev{?s} error.",
+        "i" = "Removed cases can be seen in the \"removed_cases\" attribute."
+      ))
+    }
 
     attr(.fcst, "removed_cases") <- bad_obs
 

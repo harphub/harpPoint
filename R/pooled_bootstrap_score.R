@@ -1,19 +1,9 @@
-#' Title
+#' Bootstrapping by pools
 #'
-#' @param .fcst
-#' @param score_function
-#' @param parameter
-#' @param n
-#' @param pooled_by
-#' @param groupings
-#' @param confidence_interval
-#' @param show_progress
-#' @param ...
+#' `r lifecycle::badge("deprecated")`
 #'
-#' @return
-#' @export
+##' @export
 #'
-#' @examples
 pooled_bootstrap_score <- function(
   .fcst,
   score_function,
@@ -28,9 +18,11 @@ pooled_bootstrap_score <- function(
   ...
 ) {
 
-  warning(
-    "pooled_boostrap_score is DEPRECATED.",
-    " Use `bootstrap_verify()` with `pool_by = x` instead."
+
+  lifecycle::deprecate_stop(
+    "0.1.0",
+    "pooled_bootstrap_score()",
+    "bootstrap_verify()"
   )
 
   if (!is.function(score_function)) {

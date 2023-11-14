@@ -16,7 +16,7 @@ them.}
 }
 \value{
 A \code{harp_fcst} object with one layer - each element is a table of
-  forecast data for a model.
+forecast data for a model.
 }
 \description{
 When multimodel ensembles are read in only the sub models are stored. If the

@@ -11,8 +11,12 @@
 #'   and combined in the new attributes.
 #' @export
 #'
-#' @examples
 bind_point_verif <- function(...) {
+  UseMethod("bind_point_verif")
+}
+
+#' @export
+bind_point_verif.list <- function(...) {
 
   # Check attributes
   expected_attributes <- c("parameter", "start_date", "end_date", "num_stations")
@@ -42,7 +46,12 @@ bind_point_verif <- function(...) {
   parameter    <- paste(unique(purrr::map_chr(dots, attr, "parameter")), collapse = ", ")
   start_date   <- as.character(min(as.numeric(purrr::map_chr(dots, attr, "start_date"))))
   end_date     <- as.character(max(as.numeric(purrr::map_chr(dots, attr, "end_date"))))
-  num_stations <- paste(unique(purrr::map_chr(dots, attr, "num_stations")), collapse = ", ")
+  num_stations <- paste(
+    unique(
+      purrr::map_chr(dots, ~as.character(attr(.x, "num_stations")))
+    ),
+    collapse = ", "
+  )
 
   # Bring attributes up to columns
   verif <- purrr::map(
@@ -76,4 +85,22 @@ bind_point_verif <- function(...) {
 
   verif
 
+}
+
+#' @export
+bind_point_verif.harp_verif <- function(...) {
+  dots <- list(...)
+  res <- list_to_harp_verif(dots)
+  attrs <- attributes(res)
+  groupings <- unlist(purrr::list_flatten(attrs[["group_vars"]]))
+  res <- lapply(
+    res,
+    dplyr::mutate,
+    dplyr::across(
+      dplyr::any_of(groupings),
+      ~dplyr::case_when(is.na(.x) ~ "All", TRUE ~ as.character(.x))
+    )
+  )
+  attributes(res) <- attrs
+  structure(res, class = "harp_verif")
 }

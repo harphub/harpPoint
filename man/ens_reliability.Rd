@@ -8,38 +8,46 @@ ens_reliability(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
+  groupings = "lead_time",
   climatology = "sample",
   rel_probs = NA,
-  show_progress = FALSE
+  show_progress = TRUE,
+  fcst_model = NULL,
+  ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
-reliability.}
+threshold based scores. Set to NULL (the default) to only compute summary
+scores.}
 
-\item{groupings}{The groups for which to compute the ensemble mean and
-spread. See \link[dplyr]{group_by} for more information of how grouping
-works.}
+\item{groupings}{The groups for which to compute the scores. See
+\link[dplyr]{group_by} for more information of how grouping works.}
 
 \item{climatology}{The climatology to use for the Brier Skill Score. Can be
 "sample" for the sample climatology (the default), a named list with
 elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
-threshold and climatology and also optionally leadtime.}
+threshold and climatology and also optionally lead_time.}
 
 \item{rel_probs}{Probabilities to use for reliability diagrams. Set to NA
 (the default) to select automatically.}
-}
-\value{
-A data frame with data grouped for the \code{groupings} column(s) and
-  a nested column for reliability. The column can be unnested with
-  \link[tidyr]{unnest}.
+
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
+
+\item{...}{Reserved for methods.}
 }
 \description{
 Reliability for an ensemble.

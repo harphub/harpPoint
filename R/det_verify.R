@@ -1,30 +1,88 @@
 #' Compute verification scores for deterministic forecasts.
 #'
-#' @param .fcst A \code{harp_fcst} object with tables that have a column for
-#'   observations, or a single forecast table.
-#' @param parameter The name of the column for the observed data.
-#' @param thresholds A numeric vector of thresholds for which to compute the
-#'   threshold based scores. Set to NULL (the default) to only compute summary
-#'   scores.
-#' @param groupings The groups for which to compute the scores. See
-#' \link[dplyr]{group_by} for more information of how grouping works.
-#' @param show_progress Logical - whether to show a progress bar. The default is
-#'   FALSE.
-#' @return A list containting two data frames: \code{det_summary_scores} and
-#'   \code{det_threshold_scores}.
+#' @inheritParams ens_verify
 #' @export
 #'
-#' @examples
-det_verify <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
+det_verify <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "lead_time",
+  circle        = NULL,
+  hexbin        = TRUE,
+  num_bins      = 30,
+  show_progress = TRUE,
+  ...
+) {
+  if (missing(parameter)) {
+    cli::cli_abort(
+      "Argument {.arg parameter} is missing with no default."
+    )
+  }
+  check_circle(circle)
+  # Set progress bar to false for batch running
+  if (!interactive()) show_progress <- FALSE
   UseMethod("det_verify")
 }
 
 #' @export
-det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
+det_verify.harp_ens_point_df <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "lead_time",
+  circle        = NULL,
+  hexbin        = TRUE,
+  num_bins      = 30,
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
+) {
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
   }
+
+  .fcst <- harpCore::as_harp_df(harpCore::pivot_members(.fcst))
+
+  groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
+
+  det_verify(
+    .fcst, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
+    show_progress, fcst_model
+  )
+}
+
+
+#' @rdname det_verify
+#' @inheritParams ens_verify.harp_ens_point_df
+#' @export
+det_verify.harp_det_point_df <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "lead_time",
+  circle        = NULL,
+  hexbin        = TRUE,
+  num_bins      = 30,
+  show_progress = TRUE,
+  fcst_model    = NULL,
+  ...
+) {
+
+ if (!is.list(groupings)) {
+    groupings <- list(groupings)
+  }
+
+  fcst_model <- parse_fcst_model(.fcst, fcst_model)
+  .fcst[["fcst_model"]] <- fcst_model
+
+  lead_time_col <- intersect(c("lead_time", "leadtime"), colnames(.fcst))
+
+  groupings <- lapply(
+    groupings,
+    function(x) gsub("lead_time|leadtime", lead_time_col, x)
+  )
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -34,7 +92,7 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
-  fcst_col  <- col_names[grep("_det$", col_names)]
+  fcst_col  <- col_names[grep("_det$|^fcst$", col_names)]
 
   if (length(fcst_col) > 1) {
 
@@ -53,10 +111,8 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
       message("This looks like an ensemble - will compute deterministic scores for each member.")
 
-      attr(.fcst, "dataframe_format") <- "wide"
-
-      .fcst     <- gather_members(.fcst) %>%
-        dplyr::rename(forecast_det = .data$forecast)
+      .fcst     <- harpCore::pivot_members(.fcst) %>%
+        dplyr::rename(forecast_det = .data$fcst)
 
       groupings <- purrr::map(groupings, union, c("member", "sub_model"))
       fcst_col  <- "forecast_det"
@@ -65,47 +121,87 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
   }
 
-  if (show_progress) {
-    progress_total <- sum(
-      sapply(
-        groupings,
-        function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
-      )
+  det_score_function <- function(x) {
+    tibble::tibble(
+      num_cases = nrow(x),
+      num_stations = {
+        if (is.element("SID", colnames(x))) {
+          length(unique(x[["SID"]]))
+        } else {
+          1L
+        }
+      },
+      bias      = mean(x[["fcst_bias"]]),
+      rmse      = sqrt(mean(x[["fcst_bias"]] ^ 2)),
+      mae       = mean(abs(x[["fcst_bias"]])),
+      stde      = stats::sd(x[["fcst_bias"]])
     )
-    det_progress <- progress::progress_bar$new(format = "  Deterministic [:bar] :percent eta: :eta", total = progress_total)
   }
-
-  sd_function <- function(x, prog_bar) {
-    res <- stats::sd(x)
-    if (prog_bar) {
-      det_progress$tick()
-    }
-    res
-  }
-
 
   compute_summary_scores <- function(compute_group, fcst_df) {
 
-    fcst_df <- group_without_threshold(fcst_df, compute_group)
+    local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
 
-    fcst_df %>%
-      dplyr::mutate(fcst_minus_obs = .data[[fcst_col]] - .data[[chr_param]]) %>%
-      dplyr::summarise(
-        num_cases = dplyr::n(),
-        bias      = mean(.data[["fcst_minus_obs"]]),
-        rmse      = sqrt(mean(.data[["fcst_minus_obs"]] ^ 2)),
-        mae       = mean(abs(.data[["fcst_minus_obs"]])),
-        stde      = sd_function(.data[["fcst_minus_obs"]], prog_bar = show_progress)
+    fcst_df <- dplyr::mutate(
+      fcst_df,
+      fcst_bias = bias(.data[[local_fcst_col]], .data[[chr_param]], circle)
+    )
+
+    fcst_df <- group_without_threshold(fcst_df, compute_group, nest = TRUE)
+
+    group_vars  <- compute_group[compute_group != "threshold"]
+    group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
+    score_text  <- cli::col_blue(glue::glue("Det summary for {group_names}"))
+
+    if (show_progress) {
+      pb_name <- score_text
+    } else {
+      pb_name <- FALSE
+      message(score_text, appendLF = FALSE)
+      score_text <- ""
+    }
+
+    fcst_df <- dplyr::transmute(
+      fcst_df,
+      dplyr::across(
+        dplyr::all_of(colnames(fcst_df)[colnames(fcst_df) %in% group_vars])
+      ),
+      det_score = purrr::map(
+        .data[["grouped_data"]], det_score_function, .progress = pb_name
       )
+    ) %>%
+      tidyr::unnest(dplyr::all_of("det_score"))
 
+    message(score_text, cli::col_green(cli::symbol[["tick"]]))
+    fcst_df
   }
 
-  det_summary_scores <- purrr::map_dfr(groupings, compute_summary_scores, .fcst) %>%
-    fill_group_na(groupings)
+  det_summary_scores <- list()
+  det_summary_scores[["basic"]] <- purrr::map(
+    groupings, compute_summary_scores, .fcst
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(groupings) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+  if (hexbin) {
+    det_summary_scores[["hexbin"]] <- bin_fcst_obs(
+      .fcst, !!parameter, groupings, num_bins, show_progress
+    )[["det_summary_scores"]]
+  }
+
+  res <- list()
+
+  res[["det_summary_scores"]] <- Reduce(
+    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+    det_summary_scores
+  )
 
   if (is.numeric(thresholds)) {
 
-    meta_cols     <- grep("_mbr[[:digit:]]+", colnames(.fcst), value = TRUE, invert = TRUE)
+    meta_cols     <- grep(
+      "_mbr[[:digit:]]+", colnames(.fcst), value = TRUE, invert = TRUE
+    )
     meta_cols_sym <- rlang::syms(meta_cols)
     thresh_col    <- rlang::sym("threshold")
 
@@ -113,72 +209,117 @@ det_verify.default <- function(.fcst, parameter, thresholds = NULL, groupings = 
 
     fcst_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
-      tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
+      tidyr::pivot_longer(
+        dplyr::contains("fcst_prob"),
+        names_to  = "threshold",
+        values_to = "fcst_prob"
+      ) %>%
       dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
     obs_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
-      tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
+      tidyr::pivot_longer(
+        dplyr::contains("obs_prob"),
+        names_to  = "threshold",
+        values_to = "obs_prob"
+      ) %>%
       dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
 
     .fcst <- dplyr::mutate(fcst_thresh, obs_prob = obs_thresh[["obs_prob"]])
 
-    verif_func <- function(.df, show_progress) {
-      res <- harp_verify(.df$obs_prob, .df$fcst_prob, frcst.type = "binary", obs.type = "binary")
-      if (show_progress) {
-        thresh_progress$tick()
-      }
-      res
+    verif_func <- function(x) {
+      res <- harp_verify(
+        x[["obs_prob"]], x[["fcst_prob"]],
+        frcst.type = "binary", obs.type = "binary"
+      )
+      sweep_det_thresh(res)
     }
 
     groupings <- purrr::map(groupings, union, "threshold")
 
-    if (show_progress) {
-      progress_total <- sum(
-        sapply(
-          groupings,
-          function(x) length(dplyr::group_rows(dplyr::group_by(.fcst, !!! rlang::syms(intersect(x, names(.fcst))))))
+    compute_threshold_scores <- function(compute_group, fcst_df) {
+
+      fcst_df <- dplyr::group_nest(
+        fcst_df, dplyr::across(dplyr::all_of(compute_group)),
+        .key = "grouped_data"
+      )
+
+      group_names <- glue::glue_collapse(
+        compute_group, sep = ", ", last = " & "
+      )
+
+      score_text <- cli::col_blue(
+        glue::glue("Det categorical for {group_names}")
+      )
+
+      if (show_progress) {
+        pb_name <- score_text
+      } else {
+        pb_name <- FALSE
+        message(score_text, appendLF = FALSE)
+        score_text <- ""
+      }
+
+      fcst_df <- dplyr::transmute(
+        fcst_df,
+        dplyr::across(dplyr::all_of(compute_group)),
+        num_stations = {
+          if (is.element("SID", compute_group)) {
+            1L
+          } else {
+            purrr::map_int(.data[["grouped_data"]], ~length(unique(.x[["SID"]])))
+          }
+        },
+        verif = purrr::map(
+          .data[["grouped_data"]],
+          verif_func,
+          .progress = pb_name
         )
       )
-      thresh_progress <- progress::progress_bar$new(format = "  Deterministic thresholds [:bar] :percent eta: :eta", total = progress_total)
+
+      message(score_text, cli::col_green(cli::symbol[["tick"]]))
+      fcst_df
+
     }
 
-    compute_threshold_scores <- function(compute_group, fcst_df) {
-      compute_group_sym <- rlang::syms(compute_group)
-      if (harpIO:::tidyr_new_interface()) {
-        fcst_df <- tidyr::nest(fcst_df, grouped_fcst = -tidyr::one_of(compute_group))
-      } else {
-        fcst_df <- fcst_df %>%
-          dplyr::group_by(!!! compute_group_sym) %>%
-          tidyr::nest(.key = "grouped_fcst")
-      }
-      fcst_df %>%
-        dplyr::transmute(
-          !!! compute_group_sym,
-          verif = purrr::map(
-            .data$grouped_fcst,
-            verif_func,
-            show_progress
-          )
-        ) %>%
-        sweep_det_thresh(compute_group_sym, thresh_col)
-    }
-
-    det_threshold_scores <- purrr::map_dfr(groupings, compute_threshold_scores, .fcst) %>%
-      fill_group_na(groupings)
+    res[["det_threshold_scores"]] <- purrr::map(
+      groupings, compute_threshold_scores, .fcst
+    ) %>%
+      purrr::list_rbind() %>%
+      fill_group_na(groupings) %>%
+      tidyr::unnest(dplyr::all_of("verif")) %>%
+      dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
 
   } else {
 
-    det_threshold_scores <- NULL
+    res[["det_threshold_scores"]] <- tibble::tibble()
 
   }
 
-  list(det_summary_scores = det_summary_scores, det_threshold_scores = det_threshold_scores)
+  structure(
+    add_attributes(
+      res[which(vapply(res, nrow, numeric(1)) > 0)],
+      harpCore::unique_fcst_dttm(.fcst),
+      !!parameter,
+      harpCore::unique_stations(.fcst),
+      groupings
+    ),
+    class = "harp_verif"
+  )
 
 }
 
 #' @export
-det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings = "leadtime", show_progress = TRUE) {
+det_verify.harp_list <- function(
+  .fcst,
+  parameter,
+  thresholds    = NULL,
+  groupings     = "lead_time",
+  circle        = NULL,
+  hexbin        = TRUE,
+  num_bins      = 30,
+  show_progress = TRUE
+) {
 
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -188,23 +329,30 @@ det_verify.harp_fcst <- function(.fcst, parameter, thresholds = NULL, groupings 
     }
   }
 
-  list_result <- purrr::map(.fcst, det_verify, !! parameter, thresholds, groupings, show_progress)
-  list(
-    det_summary_scores   = dplyr::bind_rows(
-      purrr::map(list_result, "det_summary_scores"),
-      .id = "mname"
-    ),
-    det_threshold_scores = dplyr::bind_rows(
-      purrr::map(list_result, "det_threshold_scores"),
-      .id = "mname"
+  list_to_harp_verif(
+    purrr::imap(
+      .fcst,
+      ~det_verify(
+        .x, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
+        show_progress, fcst_model = .y
+      )
     )
-  ) %>% add_attributes(.fcst, !! parameter)
+  )
+
 }
 
-sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
+sweep_det_thresh <- function(x) {
 
   sweep_cont_tab <- function(.cont_tab) {
-    .cont_tab           <- as.data.frame(.cont_tab)
+    if (length(.cont_tab) != 4) {
+      return(tibble::tibble(
+        correct_rejection = NA,
+        miss = NA,
+        false_alarm = NA,
+        hit = NA
+      ))
+    }
+    .cont_tab <- as.data.frame(.cont_tab)
     colnames(.cont_tab) <- c("observed", "forecasted", "count")
     .cont_tab %>%
       tibble::as_tibble() %>%
@@ -218,48 +366,45 @@ sweep_det_thresh <- function(det_threshold_df, groupings, thresh_col) {
       ) %>% dplyr::select(.data$type, .data$count)
   }
 
-  det_threshold_df %>%
-    dplyr::transmute(
-      !!! groupings,
-      !! thresh_col,
-      num_cases_for_threshold_total      = purrr::map_dbl(.data$verif, ~ sum(.x$obs | .x$pred)),
-      num_cases_for_threshold_observed   = purrr::map_dbl(.data$verif, ~ sum(.x$obs)),
-      num_cases_for_threshold_forecast   = purrr::map_dbl(.data$verif, ~ sum(.x$pred)),
-      cont_tab                           = purrr::map(.data$verif, ~ sweep_cont_tab(.x$tab)),
-      threat_score                       = purrr::map_dbl(.data$verif, "TS"),
-      hit_rate                           = purrr::map_dbl(.data$verif, "POD"),
-      miss_rate                          = purrr::map_dbl(.data$verif, "M"),
-      false_alarm_rate                   = purrr::map_dbl(.data$verif, "F"),
-      false_alarm_ratio                  = purrr::map_dbl(.data$verif, "FAR"),
-      heidke_skill_score                 = purrr::map_dbl(.data$verif, "HSS"),
-      pierce_skill_score                 = purrr::map_dbl(.data$verif, "PSS"),
-      kuiper_skill_score                 = purrr::map_dbl(.data$verif, "KSS"),
-      percent_correct                    = purrr::map_dbl(.data$verif, "PC"),
-      frequency_bias                     = purrr::map_dbl(.data$verif, "BIAS"),
-      equitable_threat_score             = purrr::map_dbl(.data$verif, "ETS"),
-      odds_ratio                         = purrr::map_dbl(.data$verif, "theta"),
-      log_odds_ratio                     = purrr::map_dbl(.data$verif, "log.theta"),
-      odds_ratio_skill_score             = purrr::map_dbl(.data$verif, "orss"),
-      extreme_dependency_score           = purrr::map_dbl(.data$verif, "eds"),
-      symmetric_eds                      = purrr::map_dbl(.data$verif, "seds"),
-      extreme_dependency_index           = purrr::map_dbl(.data$verif, "EDI"),
-      symmetric_edi                      = purrr::map_dbl(.data$verif, "SEDI"),
-      threat_score_std_error             = purrr::map_dbl(.data$verif, "TS.se"),
-      hit_rate_std_error                 = purrr::map_dbl(.data$verif, "POD.se"),
-      false_alarm_rate_std_error         = purrr::map_dbl(.data$verif, "F.se"),
-      false_alarm_ratio_std_error        = purrr::map_dbl(.data$verif, "FAR.se"),
-      heidke_skill_score_std_error       = purrr::map_dbl(.data$verif, "HSS.se"),
-      pierce_skill_score_std_error       = purrr::map_dbl(.data$verif, "PSS.se"),
-      percent_correct_std_error          = purrr::map_dbl(.data$verif, "PC.se"),
-      equitable_threat_score_std_error   = purrr::map_dbl(.data$verif, "ETS.se"),
-      log_odds_ratio_std_error           = purrr::map_dbl(.data$verif, "LOR.se"),
-      log_odds_ratio_degrees_of_freedom  = purrr::map_dbl(.data$verif, "n.h"),
-      odds_ratio_skill_score_std_error   = purrr::map_dbl(.data$verif, "orss.se"),
-      extreme_dependency_score_std_error = purrr::map_dbl(.data$verif, "eds.se"),
-      symmetric_eds_std_error            = purrr::map_dbl(.data$verif, "seds.se"),
-      extreme_dependency_index_std_error = purrr::map_dbl(.data$verif, "EDI.se"),
-      symmetric_edi_std_error            = purrr::map_dbl(.data$verif, "SEDI.se")
-    )
+  tibble::tibble(
+    num_cases_for_threshold_total      = sum(x$obs | x$pred),
+    num_cases_for_threshold_observed   = sum(x$obs),
+    num_cases_for_threshold_forecast   = sum(x$pred),
+    cont_tab                           = list(sweep_cont_tab(x$tab)),
+    threat_score                       = x[["TS"]],
+    hit_rate                           = x[["POD"]],
+    miss_rate                          = x[["M"]],
+    false_alarm_rate                   = x[["F"]],
+    false_alarm_ratio                  = x[["FAR"]],
+    heidke_skill_score                 = x[["HSS"]],
+    pierce_skill_score                 = x[["PSS"]],
+    kuiper_skill_score                 = x[["KSS"]],
+    percent_correct                    = x[["PC"]],
+    frequency_bias                     = x[["BIAS"]],
+    equitable_threat_score             = x[["ETS"]],
+    odds_ratio                         = x[["theta"]],
+    log_odds_ratio                     = x[["log.theta"]],
+    odds_ratio_skill_score             = x[["orss"]],
+    extreme_dependency_score           = x[["eds"]],
+    symmetric_eds                      = x[["seds"]],
+    extreme_dependency_index           = x[["EDI"]],
+    symmetric_edi                      = x[["SEDI"]],
+    threat_score_std_error             = x[["TS.se"]],
+    hit_rate_std_error                 = x[["POD.se"]],
+    false_alarm_rate_std_error         = x[["F.se"]],
+    false_alarm_ratio_std_error        = x[["FAR.se"]],
+    heidke_skill_score_std_error       = x[["HSS.se"]],
+    pierce_skill_score_std_error       = x[["PSS.se"]],
+    percent_correct_std_error          = x[["PC.se"]],
+    equitable_threat_score_std_error   = x[["ETS.se"]],
+    log_odds_ratio_std_error           = x[["LOR.se"]],
+    log_odds_ratio_degrees_of_freedom  = x[["n.h"]],
+    odds_ratio_skill_score_std_error   = x[["orss.se"]],
+    extreme_dependency_score_std_error = x[["eds.se"]],
+    symmetric_eds_std_error            = x[["seds.se"]],
+    extreme_dependency_index_std_error = x[["EDI.se"]],
+    symmetric_edi_std_error            = x[["SEDI.se"]]
+  )
 
 }
 
@@ -315,4 +460,15 @@ empty_det_threshold_scores <- function(fcst_df, groupings) {
       symmetric_edi_std_error            = NA_real_
     )
 
+}
+
+check_circle <- function(x) {
+  if (is.null(x)) return()
+  if (!x %in% c(360, 2 * pi)) {
+    cli::cli_warn(c(
+      "{.arg circle} has a value not equal to 360 or 2 * pi.",
+      "i" = "You have set {.arg circle} = {x}.",
+      "i" = "Are you sure this is the value you want?"
+    ))
+  }
 }

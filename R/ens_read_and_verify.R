@@ -1,5 +1,13 @@
 #' Read forecast and observations and verify.
 #'
+#' @description
+#'
+#' `r lifecycle::badge("questioning")`
+#'
+#' This function will likely be replaced in future harp versions since it is
+#' rather cumbersome. Some thought still needs to go into finding a more usable
+#' API.
+#'
 #' This is a wrapper for the verification process. Forecasts and observations
 #' are read in, filtered down to common cases, errors checked, and a full
 #' verification is done for all scores. To minimise memory usage, the
@@ -76,25 +84,35 @@
 #'   named, the order of templates is assumed to be the same as in
 #'   \code{fcst_model}. If named, the names must match the entries in
 #'   \code{fcst_model}.
-#' @param lags
-#' @param lag_fcst_models
-#' @param parent_cycles
-#' @param lag_direction
-#' @param fcst_shifts
-#' @param keep_unshifted
-#' @param drop_neg_leadtimes
-#' @param scale_fcst
-#' @param scale_obs
-#' @param common_cases_only
-#' @param check_obs_fcst
-#' @param vertical_coordinate
-#' @param merge_lags_on_read
+#' @param lags For lagged forecasts, these are the lags that would be passed to
+#'   `read_point_forecast()`.
+#' @param lag_fcst_models If `merge_lags_on_read = FALSE`, the names of the
+#'   fcst_models to which lags should be applied.
+#' @param parent_cycles If `merge_lags_on_read = FALSE`, the parent cycles of
+#'   the lagged forecasts.
+#' @param lag_direction If `merge_lags_on_read = FALSE`, The direction of the
+#'   lagging. 1 Lags backwards in time from the parent cycles on -1 lags
+#'   forwards in time.
+#' @param drop_neg_leadtimes Logical. Whether to drop negative lead times that
+#'   may arise after shifting.
+#' @param scale_fcst A named list of arguments to \link{scale_point_forecast}.
+#' @param scale_obs A names list of arguments to \link{scale_point_obs}.
+#' @param common_cases_only Logical. Whether to select only the common cases
+#'   before computing verification scores. The default is TRUE.
+#' @param check_obs_fcst Logical. Whether to check for errors in observations
+#'   by comparing with forecast values.
+#' @param vertical_coordinate The vertical co-ordinate.
+#' @param merge_lags_on_read Logical. Whether to merge lagged ensemble members
+#'   into the ensemble. This is the default behaviour. If FALSE,
+#'   \link{lag_forecast} will be used to do the lagging.
+#' @param fcst_shifts,keep_unshifted See \link{shift_forecast}.
+#' @param common_cases_xtra_cols Extra columns to use in the call to
+#'   \code{\link[harpCore]{common_cases}}
 #'
-#' @return A list containting two data frames: \code{ens_summary_scores} and
+#' @return A list containing two data frames: \code{ens_summary_scores} and
 #'   \code{ens_threshold_scores}.
 #' @export
 #'
-#' @examples
 ens_read_and_verify <- function(
   start_date,
   end_date,
@@ -108,9 +126,9 @@ ens_read_and_verify <- function(
   thresholds             = NULL,
   members                = NULL,
   vertical_coordinate    = c(NA_character_, "pressure", "model", "height"),
-  fctable_file_template  = "fctable_eps",
+  fctable_file_template  = "fctable",
   obsfile_template       = "obstable",
-  groupings              = "leadtime",
+  groupings              = "lead_time",
   by                     = "6h",
   lags                   = "0s",
   merge_lags_on_read     = TRUE,
@@ -138,14 +156,16 @@ ens_read_and_verify <- function(
 ) {
 
   first_obs <- start_date
-  last_obs  <- (suppressMessages(harpIO::str_datetime_to_unixtime(end_date)) + 3600 * max(lead_time)) %>%
-    harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
+  last_obs  <- harpCore::unixtime_to_YMDhm(
+    harpCore::as_unixtime(end_date) + 3600 * max(lead_time)
+  )
 
   vertical_coordinate <- match.arg(vertical_coordinate)
 
   obs_data <- harpIO::read_point_obs(
-    start_date          = first_obs,
-    end_date            = last_obs,
+    dttm                = harpCore::seq_dttm(
+      first_obs, last_obs, min(diff(lead_time))
+    ),
     parameter           = parameter,
     obs_path            = obs_path,
     obsfile_template    = obsfile_template,
@@ -237,8 +257,7 @@ ens_read_and_verify <- function(
     }
 
     fcst_data <- harpIO::read_point_forecast(
-      start_date          = start_date,
-      end_date            = end_date,
+      dttm                = harpCore::seq_dttm(start_date, end_date, by),
       fcst_model          = fcst_model,
       fcst_type           = "EPS",
       parameter           = parameter,
@@ -315,7 +334,7 @@ ens_read_and_verify <- function(
     }
 
     fcst_data <- fcst_data %>%
-      dplyr::filter(.data$leadtime %in% lead_list[[i]])
+      dplyr::filter(.data$lead_time %in% lead_list[[i]])
 
     if (common_cases_only) {
       col_names    <- unique(unlist(lapply(fcst_data, colnames)))
@@ -346,7 +365,19 @@ ens_read_and_verify <- function(
       }
     }
 
-    if (all(sapply(fcst_data, nrow)) < 1) {
+    go_next <- FALSE
+
+    if (inherits(fcst_data, "harp_list")) {
+      if (all(sapply(fcst_data, nrow)) < 1) {
+        go_next <- TRUE
+      }
+    } else {
+      if (nrow(fcst_data) < 1) {
+        go_next <- TRUE
+      }
+    }
+
+    if (go_next) {
       message("No forecast data available. Skipping to next iteration.")
       next()
     }
@@ -360,16 +391,43 @@ ens_read_and_verify <- function(
       }
     }
 
-    fcst_data <- join_to_fcst(fcst_data, obs_data)
-    stations_used[[i]] <- unique(unlist(dplyr::pull(fcst_data, .data[["SID"]])))
+    fcst_data <- harpCore::join_to_fcst(fcst_data, obs_data)
+    stations_used[[i]] <- harpCore::unique_stations(fcst_data)
 
-    if (any(purrr::map_int(fcst_data, nrow) == 0)) next()
+    if (inherits(fcst_data, "harp_list")) {
+      if (all(sapply(fcst_data, nrow)) < 1) {
+        go_next <- TRUE
+      }
+    } else {
+      if (nrow(fcst_data) < 1) {
+        go_next <- TRUE
+      }
+    }
+
+    if (go_next) {
+      message("No matching forecast and observations. Skipping to next iteration.")
+      next()
+    }
+
 
     if (check_obs_fcst) {
       fcst_data <- check_obs_against_fcst(fcst_data, !! parameter_sym, num_sd_allowed = num_sd_allowed)
     }
 
-    if (any(purrr::map_int(fcst_data, nrow) == 0)) next()
+    if (inherits(fcst_data, "harp_list")) {
+      if (all(sapply(fcst_data, nrow)) < 1) {
+        go_next <- TRUE
+      }
+    } else {
+      if (nrow(fcst_data) < 1) {
+        go_next <- TRUE
+      }
+    }
+
+    if (go_next) {
+      message("No data after observation error check. Skipping to next iteration.")
+      next()
+    }
 
     verif_data[[i]] <- ens_verify(
       fcst_data,
@@ -391,25 +449,11 @@ ens_read_and_verify <- function(
     stop("No data to verify", call. = FALSE)
   }
 
-  stations_used <- unique(unlist(stations_used))
-
-  verif_data       <- bind_point_verif(verif_data)
-  verif_attributes <- attributes(verif_data)
-
-  verif_data <- purrr::map(
-    verif_data,
-    ~ dplyr::mutate(
-      .x,
-      mname = case_when(
-        grepl("_unshifted$", .data$mname) ~ gsub("_unshifted", "", .data$mname),
-        TRUE                             ~ .data$mname
-      )
-    )
+  verif_data <- list_to_harp_verif(verif_data)
+  attr(verif_data, "lead_times") <- stats::setNames(
+    lead_list,
+    paste0("iter-", formatC(seq_along(lead_list), width = 3, flag = "0"))
   )
-
-  attributes(verif_data)           <- verif_attributes
-  attr(verif_data, "num_stations") <- as.character(length(stations_used))
-  attr(verif_data, "stations")     <- sort(stations_used)
 
   if (!is.null(verif_path)) {
     harpIO::save_point_verif(verif_data, verif_path = verif_path)

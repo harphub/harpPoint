@@ -21,7 +21,7 @@ backwards in time from the parent cycles and -1 lags forwards in time.}
 }
 \value{
 A harp_fcst object with \code{fcst_model} now containing the lagged
-  forecast.
+forecast.
 }
 \description{
 Lagging is done by supplying the parent forecast cycles. This function will

@@ -2,34 +2,58 @@
 % Please edit documentation in R/ens_roc.R
 \name{ens_roc}
 \alias{ens_roc}
+\alias{ens_roc.harp_ens_point_df}
 \title{Relative Operating Characteristics for an ensemble.}
 \usage{
 ens_roc(
   .fcst,
   parameter,
   thresholds,
-  groupings = "leadtime",
-  show_progress = FALSE
+  groupings = "lead_time",
+  show_progress = TRUE,
+  ...
+)
+
+\method{ens_roc}{harp_ens_point_df}(
+  .fcst,
+  parameter,
+  thresholds,
+  groupings = "lead_time",
+  show_progress = TRUE,
+  fcst_model = NULL,
+  ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
-ROC.}
+threshold based scores. Set to NULL (the default) to only compute summary
+scores.}
 
-\item{groupings}{The groups for which to compute the ROC. See
+\item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
+
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \value{
 A data frame with data grouped for the \code{groupings} column(s) and
-  a nested column for the ROC with each row containing a data frame with
-  columns: \code{prob} for the forecast probability bin, \code{HR} for the
-  hit rate and \code{FAR} for the false alarm rate. Use \link[tidyr]{unnest}
-  to unnest to the nested column.
+a nested column for the ROC with each row containing a data frame with
+columns: \code{prob} for the forecast probability bin, \code{HR} for the
+hit rate and \code{FAR} for the false alarm rate. Use \link[tidyr]{unnest}
+to unnest to the nested column.
 }
 \description{
 Relative Operating Characteristics for an ensemble.

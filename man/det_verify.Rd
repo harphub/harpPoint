@@ -2,21 +2,41 @@
 % Please edit documentation in R/det_verify.R
 \name{det_verify}
 \alias{det_verify}
+\alias{det_verify.harp_det_point_df}
 \title{Compute verification scores for deterministic forecasts.}
 \usage{
 det_verify(
   .fcst,
   parameter,
   thresholds = NULL,
-  groupings = "leadtime",
-  show_progress = TRUE
+  groupings = "lead_time",
+  circle = NULL,
+  hexbin = TRUE,
+  num_bins = 30,
+  show_progress = TRUE,
+  ...
+)
+
+\method{det_verify}{harp_det_point_df}(
+  .fcst,
+  parameter,
+  thresholds = NULL,
+  groupings = "lead_time",
+  circle = NULL,
+  hexbin = TRUE,
+  num_bins = 30,
+  show_progress = TRUE,
+  fcst_model = NULL,
+  ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
 \item{thresholds}{A numeric vector of thresholds for which to compute the
 threshold based scores. Set to NULL (the default) to only compute summary
@@ -25,12 +45,25 @@ scores.}
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
 
-\item{show_progress}{Logical - whether to show a progress bar. The default is
-FALSE.}
-}
-\value{
-A list containting two data frames: \code{det_summary_scores} and
-  \code{det_threshold_scores}.
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
+for radians.}
+
+\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
+pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
+
+\item{num_bins}{The number of bins into which to partition observations for
+the hexbin computation.}
+
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
+
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \description{
 Compute verification scores for deterministic forecasts.

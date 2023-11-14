@@ -12,9 +12,11 @@ check_obs_against_fcst(
 )
 }
 \arguments{
-\item{.fcst}{A data frame of class \code{harp_point_forecast_obs}.}
+\item{.fcst}{A \code{harp_df} data frame, or a \code{harp_list}, with an observations
+column.}
 
-\item{parameter}{The forecast parameter.}
+\item{parameter}{The observations column. Can be the column name, quoted, or
+unquoted. If a variable it should be embraced - i.e. wrapped in \code{{{}}}.}
 
 \item{num_sd_allowed}{The number of standard deviations of the forecast that
 the difference between the forecast and the observation must be smaller
@@ -27,9 +29,8 @@ but "quarter_day" can be passed to divide the observations into classes of
 is to stratify by station ("SID") and "quarter_day".}
 }
 \value{
-A data frame of class \code{harp_point_forecast_obs} with an
-  attribute named \code{removed_cases} containing a data frame of the removed
-  cases.
+An object of the sames class as \code{.fcst} with an attribute named
+\code{removed_cases} containing a data frame of the removed cases.
 }
 \description{
 For each stratification the standard deviation of the forecast over all

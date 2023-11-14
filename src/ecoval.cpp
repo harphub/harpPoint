@@ -9,7 +9,7 @@ using namespace Rcpp;
 //' @param pred A vector of probabilities [0,1].
 //' @param costloss A vector of cost/loss ratios
 //' @param thresholds A vector of threshold probabilities
-//' @value a list of cl, value, Vmax, Venv, H, F, s, n
+//' @return a list of cl, value, Vmax, Venv, H, F, s, n
 // [[Rcpp::export]]
 List ecoval(NumericVector obs, NumericVector pred,
     NumericVector costloss,

@@ -8,7 +8,7 @@ using namespace Rcpp;
 //' @param obs A vector observations (value 0,1)
 //' @param pred A vector of probabilities [0,1].
 //' @param thresholds A vector of threshold probabilities
-//' @value a list with area and vectors thresholds, H, F
+//' @return a list with area and vectors thresholds, H, F
 // [[Rcpp::export]]
 List roc(NumericVector obs, NumericVector pred,
     NumericVector thresholds ) {

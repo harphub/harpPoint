@@ -7,7 +7,7 @@
 #' @param pred A vector of probabilities [0,1].
 #' @param costloss A vector of cost/loss ratios
 #' @param thresholds A vector of threshold probabilities
-#' @value a list of cl, value, Vmax, Venv, H, F, s, n
+#' @return a list of cl, value, Vmax, Venv, H, F, s, n
 ecoval <- function(obs, pred, costloss, thresholds) {
     .Call('_harpPoint_ecoval', PACKAGE = 'harpPoint', obs, pred, costloss, thresholds)
 }
@@ -41,7 +41,7 @@ fcprob <- function(fc, thresholds) {
 #' @param obs A vector observations (value 0,1)
 #' @param pred A vector of probabilities [0,1].
 #' @param thresholds A vector of threshold probabilities
-#' @value a list with area and vectors thresholds, H, F
+#' @return a list with area and vectors thresholds, H, F
 roc <- function(obs, pred, thresholds) {
     .Call('_harpPoint_roc', PACKAGE = 'harpPoint', obs, pred, thresholds)
 }

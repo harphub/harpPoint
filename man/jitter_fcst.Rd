@@ -4,18 +4,21 @@
 \alias{jitter_fcst}
 \title{Jitter a forecast to account for observation errors.}
 \usage{
-jitter_fcst(.fcst, jitter_function, fcst_suffix = "_mbr")
+jitter_fcst(.fcst, jitter_func, obs_col = NULL, ...)
 }
 \arguments{
 \item{.fcst}{An object of class 'harp_fcst'.}
 
-\item{jitter_function}{The function to be applied to the forecast values.}
+\item{jitter_func}{The function to be applied to the forecast values.}
 
-\item{fcst_suffix}{The suffix that identifies forecast values in the
-harp_fcst object. This will normally be "_mbr".}
+\item{obs_col}{The observations column if it is to be used in the jitter
+function. Can be the column name, quoted, or unquoted. If a variable it
+should be embraced - i.e. wrapped in \code{{{}}}.}
+
+\item{...}{Other arguments to \code{jitter_func}.}
 }
 \value{
-An object of class harp_fcst with jittered forecast values.
+An object of the same class as \code{.fcst} with jittered forecast values.
 }
 \description{
 To account for observation errors in ensemble verification the forecast
@@ -24,11 +27,8 @@ Jittering the forecast is only likely to have an effect on the ensemble
 spread and rank histograms.
 }
 \details{
-Note that the function is applied rowwise so for sampling functions n should
-always be 1.
-}
-\examples{
-\donttest{
-jitter_fcst(fcst, function(x) x + rnorm(1, ))
-}
+Note that the jitter function should be a function that works on a vector of
+forecast values and it should have only one or two arguments. The first
+argument is for the forecast data, and if there is a second argument, that is
+for the observations.
 }

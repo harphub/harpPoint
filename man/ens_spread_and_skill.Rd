@@ -2,26 +2,47 @@
 % Please edit documentation in R/ens_spread_and_skill.R
 \name{ens_spread_and_skill}
 \alias{ens_spread_and_skill}
+\alias{ens_spread_and_skill.harp_ens_point_df}
 \title{Compute the skill (RMSE) and spread of an ensemble forecast}
 \usage{
 ens_spread_and_skill(
   .fcst,
   parameter,
-  groupings = "leadtime",
+  groupings = "lead_time",
+  circle = NULL,
   spread_drop_member = NULL,
   jitter_fcst = NULL,
+  show_progress = TRUE,
+  ...
+)
+
+\method{ens_spread_and_skill}{harp_ens_point_df}(
+  .fcst,
+  parameter,
+  groupings = "lead_time",
+  circle = NULL,
+  spread_drop_member = NULL,
+  jitter_fcst = NULL,
+  show_progress = TRUE,
+  fcst_model = NULL,
   ...
 )
 }
 \arguments{
-\item{.fcst}{A \code{harp_fcst} object with tables that have a column for
-observations, or a single forecast table.}
+\item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column
+for observations, or a single forecast table.}
 
-\item{parameter}{The name of the column for the observed data.}
+\item{parameter}{The name of the column for the observations data. Can be the
+column name, quoted, or unquoted. If a variable it should be embraced -
+i.e. wrapped in \code{{{}}}.}
 
-\item{groupings}{The groups for which to compute the ensemble mean and
-spread. See \link[dplyr]{group_by} for more information of how grouping
-works.}
+\item{groupings}{The groups for which to compute the scores. See
+\link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{circle}{If set the parameter is assumed to be cyclic for bias
+calculations. Should be this distance around a circle in the units of the
+parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
+for radians.}
 
 \item{spread_drop_member}{Which members to drop for the calculation of the
 ensemble variance and standard deviation. For harp_fcst objects, this can
@@ -30,19 +51,26 @@ a list or numeric vector of the same length as the harp_fcst object, or a
 named list with the names corresponding to names in the harp_fcst object.}
 
 \item{jitter_fcst}{A function to perturb the forecast values by. This is used
-to account for observation error in the spread. For other statistics it is
-likely to make little difference since it is expected that the observations
-will have a mean error of zero.}
+to account for observation error in the rank histogram. For other
+statistics it is likely to make little difference since it is expected that
+the observations will have a mean error of zero.}
 
-\item{...}{Not used.}
+\item{show_progress}{Logical - whether to show progress bars. Defaults to
+\code{TRUE}.}
+
+\item{...}{Reserved for methods.}
+
+\item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
+column of the output. If the function is dispatched on a \code{harp_list}
+object, the names of the \code{harp_list} are automatically used.}
 }
 \value{
 An object of the same format as the inputs but with data grouped for
-  the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
-  and \code{mean_bias}.
+the \code{groupings} column(s) and columns for \code{rmse}, \code{spread}
+and \code{mean_bias}.
 }
 \description{
-The ensemble mean and spread are computed as columns in a \code{harp_fcst}
+The ensemble mean and spread are computed as columns in a \code{harp_list}
 object. Typically the scores are aggregated over lead time by other grouping
 variables cam be chosen. The mean bias is also computed.
 }
