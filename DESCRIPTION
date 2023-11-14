@@ -8,7 +8,7 @@ Authors@R: as.person(c(
 Description: Functions for computing verification scores for NWP forecasts. 
     Part of the harp ecosystem. 
 Depends:
-    harpCore (>= 0.1.1),
+    harpCore (>= 0.2.0),
     R (>= 3.3.1)
 License: MIT + file LICENSE
 Encoding: UTF-8
@@ -40,7 +40,8 @@ Imports:
     hexbin,
     tidyselect
 Remotes:
-    harphub/harpIO@0.0.9
+    harphub/harpCore@0.2.0
+    harphub/harpIO@0.2.0
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
 Suggests: 
