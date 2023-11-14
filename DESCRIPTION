@@ -40,8 +40,8 @@ Imports:
     hexbin,
     tidyselect
 Remotes:
-    harphub/harpCore@develop,
-    harphub/harpIO@develop
+    harphub/harpCore,
+    harphub/harpIO
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
 Suggests: 
