@@ -27,6 +27,7 @@ bind_point_verif.list <- function(...) {
     dots <- dots[[1]]
   }
   if (all(sapply(dots, inherits, "harp_verif"))) {
+    dots <- lapply(dots, param_to_col)
     res <- list_to_harp_verif(dots)
     attrs <- attributes(res)
     groupings <- unlist(purrr::list_flatten(attrs[["group_vars"]]))
@@ -110,6 +111,7 @@ bind_point_verif.list <- function(...) {
 #' @export
 bind_point_verif.harp_verif <- function(...) {
   dots <- list(...)
+  dots <- lapply(dots, param_to_col)
   res <- list_to_harp_verif(dots)
   attrs <- attributes(res)
   groupings <- unlist(purrr::list_flatten(attrs[["group_vars"]]))
@@ -123,4 +125,16 @@ bind_point_verif.harp_verif <- function(...) {
   )
   attributes(res) <- attrs
   structure(res, class = "harp_verif")
+}
+
+param_to_col <- function(x) {
+  attrs <- attributes(x)
+  x <- lapply(x, function(d) {
+    if (!is.element("parameter", colnames(d))) {
+      d[["parameter"]] <- attrs[["parameter"]]
+    }
+    d
+  })
+  attributes(x) <- attrs
+  x
 }
