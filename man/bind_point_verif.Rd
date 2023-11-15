@@ -15,7 +15,7 @@ A harp verification object with all attributes moved up to columns
 and combined in the new attributes.
 }
 \description{
-For plotting it may be desirable to combine various differen verifications
+For plotting it may be desirable to combine various different verifications
 into a single object. For example, verification for different parameters for
 the same set of forecast models.
 }

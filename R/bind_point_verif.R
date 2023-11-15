@@ -1,6 +1,6 @@
 #' Bind harp verification objects into a single object
 #'
-#' For plotting it may be desirable to combine various differen verifications
+#' For plotting it may be desirable to combine various different verifications
 #' into a single object. For example, verification for different parameters for
 #' the same set of forecast models.
 #'
@@ -18,9 +18,29 @@ bind_point_verif <- function(...) {
 #' @export
 bind_point_verif.list <- function(...) {
 
+
+
   # Check attributes
   expected_attributes <- c("parameter", "start_date", "end_date", "num_stations")
   dots <- list(...)
+  if (length(dots) == 1 && !any(sapply(dots[[1]], inherits, "data.frame"))) {
+    dots <- dots[[1]]
+  }
+  if (all(sapply(dots, inherits, "harp_verif"))) {
+    res <- list_to_harp_verif(dots)
+    attrs <- attributes(res)
+    groupings <- unlist(purrr::list_flatten(attrs[["group_vars"]]))
+    res <- lapply(
+      res,
+      dplyr::mutate,
+      dplyr::across(
+        dplyr::any_of(groupings),
+        ~dplyr::case_when(is.na(.x) ~ "All", TRUE ~ as.character(.x))
+      )
+    )
+    attributes(res) <- attrs
+    return(structure(res, class = "harp_verif"))
+  }
   dots_check <- purrr::map_lgl(
     dots,
     ~ length(intersect(names(attributes(.x)), expected_attributes)) == length(expected_attributes)
