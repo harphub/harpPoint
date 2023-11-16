@@ -1,0 +1,165 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# harpPoint <img src='man/figures/harp_logo_dark.svg' align="right" width = "80" />
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+harpPoint provides functionality for the verification of meteorological data at 
+geographic points. Typically this would be the verification of forecasts 
+interpolated to the locations of weather stations. Functions are provided for 
+computing verification scores for both deterministic and ensemble forecasts. In 
+addition, confidence intervals for scores, or the differences between scores for
+different forecast models can be computed using bootstrapping.
+
+## Installation
+
+You can install harpPoint from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("remotes")
+remotes::install_github("harphub/harpPoint")
+```
+## Verification
+
+harpPoint functions for verification are designed to work with 
+data read in using functions from [harpIO](https://harphub.github.io/harpIO). 
+This means `harp_df` data frames and `harp_lists`. These data must include a 
+column for observations against which the forecasts should be verified. 
+
+There are two main functions for verification:
+
+[`det_verify()`](https://harphub.github.io/harpPoint/reference/det_verify.html) 
+- for deterministic forecasts;
+
+[`ens_verify()`](https://harphub.github.io/harpPoint/reference/ens_verify.html) 
+- for ensemble forecasts.
+
+Both of these functions will output a `harp_verif` list. This is a list of 
+data frames with scores separated out into summary scores and threshold scores. 
+Threshold scores are computed when thresholds are provided to the functions 
+and are computed for probabilities of threshold exceedance. 
+
+## Deterministic scores
+
+`det_verify()` computes scores with the following column names:
+
+### _Summary scores_
+
+* __bias__ - The mean difference between forecasts and observations
+* __rmse__ - The root mean squared error
+* __mae__ - The mean of the absolute error
+* __stde__ - The standard deviation of the error
+* __hexbin__ - A heat map of paired hexagonal bins of forecasts and observations
+
+### _Threshold scores_
+* __cont_tab__ - A contingency table of forecast hits, misses, false alarms and 
+correct rejections
+* __threat_score__ - The ratio of hits to the sum of hits, misses and false 
+alarms
+* __hit_rate__ - The ratio of hits to the sum of hits and misses
+* __miss_rate__ - The ratio of misses to the sum of hits and misses
+* __false_alarm_rate__ - The ratio of false alarms to the sum of false alarms 
+and correct rejections
+* __false_alarm_ratio__ - The ratio of false alarms to the sum of false alarms and 
+hits
+* __heidke_skill_score__ - The fraction of correct forecasts after eliminating 
+those forecasts that would be correct purely due to random chance
+* __pierce_skill_score__ - 1 - miss rate - false alarm rate
+* __kuiper_skill_score__ - How well forecasts separates hits from false alarms
+* __percent_correct__ - The ratio of the sum of hits and correct rejections to the 
+total number of cases
+* __frequency_bias__ - The ratio of the sum of hits and false alarms to the sum 
+of hits and misses
+* __equitable_threat_score__ - How well the forecast measures hits accounting 
+for hits due to pure chance
+* __odds_ratio__ - The ratio of the product of hits and correct rejections to the 
+product of misses and false alarms
+* __log_odds_ratio__ - The sum of the logs of hits and correct rejections minus 
+the sum of the logs of misses and false alarms. 
+* __odds_ratio_skill_score__ - The ratio of the product of hits and correct 
+rejections minus the product of misses and false alarms to the product of 
+hits and correct rejections plus the product of misses and false alarms
+* __extreme_dependency_score__ - The ratio of the difference between the logs of 
+observations climatology and hit rate to the sum of the logs of observations
+climatology and hit rate
+* __symmetric_eds__ - The symmetric extreme dependency score, which is the ratio
+of the difference between the logs of forecast climatology and hit rate to the 
+sum of the logs of forecast climatology and hit rate
+* __extreme_dependency_index__ - The ratio of the difference between the logs of
+false alarm rate and hit rate to the sum of the logs of false alarm rate and hit 
+rate
+* __symmetric_edi__ - The symmetric extreme dependency index, which is the ratio 
+of the sum of the difference between the logs of false alarm rate and hit rate
+and the difference between the logs of the inverse hit rate and false alarm rate 
+to the sum of the logs of hit rate, false alarm rate, inverse hit rate and 
+inverse false alarm rate. Here the inverse is 1 - the value. 
+
+## Ensemble scores
+
+`ens_verify()` computes scores with the following column names:
+
+### _Summary scores_
+
+* __mean_bias__ - The mean difference between the ensemble mean of forecasts and 
+observations
+* __rmse__ - The root mean squared error
+* __stde__ - The standard deviation of the error
+* __spread__ - The square root of the mean variance of the ensemble forecasts
+* __hexbin__ - A heat map of paired hexagonal bins of forecasts and observations
+* __rank_histogram__ - Observation counts ranked by ensemble member bins
+* __crps__- The cumulative rank probability score - the difference between the 
+cumulative distribution of the ensemble forecasts and the step function of the 
+observations
+* __crps_potential__ - The crps that could be achieved with a perfectly reliable 
+ensemble
+* __crps_reliability__ - Measures the ability of the ensemble to produce a 
+cumulative distribution with desired statisical properties.
+* __fair_crps__ - The crps that would be achieved for either an ensemble with an 
+infinite number of members, or for a number of members provided to the function
+
+### _Threshold scores_
+
+* __brier_score__ - The mean of the squared error of the ensemble in probability 
+space
+* __fair_brier_score__ - The Brier score that would be achieved for either an 
+ensemble with an infinite number of members, or for a number of members provided 
+to the function
+* __brier_skill_score__ - The Brier score compared to that of a reference 
+probabilistic forecast (usually the observed climatology)
+* __brier_score_reliability__ - A measure of the ensemble's ability to produce 
+reliable (forecast probability = observed frequency) forecasts
+* __brier_score_resolution__ - A measure of the ensemble's ability to 
+discriminate between "on the day" uncertainty and climatological uncertainty
+* __brier_score_uncertainty__ - The inherent uncertainty of the events
+* __reliability__ - The frequency of observations for bins of forecast 
+probability
+* __roc__ - The relative operating characteristic of the ensemble - the hit 
+rates and false alarm rates for forecast probability bins 
+* __roc_area__ - The area under a roc curve - summarises the ability of the 
+ensemble to discriminate between events and non events
+* __economic_value__ - The relative improvement in economic value of the 
+forecast compared to climatology for a range of cost / loss ratios
+
+
+## Getting gridded data to points
+
+For interpolation of gridded data to points see the 
+[Interpolate section](https://harphub.github.io/harpIO/articles/transformations.html#interpolate)
+of the [Transforming model data](https://harphub.github.io/harpIO/articles/transformations.html)
+article on the [harpIO website](https://harphub.github.io/harpIO), or the 
+documentation for [geo_points](https://harphub.github.io/harpCore/reference/geo_points.html).
+
