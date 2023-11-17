@@ -1,6 +1,6 @@
 Package: harpPoint
 Title: Point verifition for NWP forecasts
-Version: 0.2.0.9000
+Version: 0.2.0
 Authors@R: as.person(c(
     "Andrew Singleton <andrewts@met.no> [aut, cre]", 
     "Alex Deckmyn <alex.deckmyn@meteo.be> [aut]"
@@ -39,8 +39,8 @@ Imports:
     hexbin,
     tidyselect
 Remotes:
-    harphub/harpCore@develop,
-    harphub/harpIO@develop
+    harphub/harpCore@v0.2.0,
+    harphub/harpIO@v0.2.0
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
 Suggests: 
