@@ -135,7 +135,10 @@ lag_cycle <- function(df, direction) {
           ) %>%
           dplyr::select(-.data$fcst_cycle, -.data$parent_cycle),
         by = intersect(
-          c("SID", "fcdate", "leadtime", "validdate", "parameter", "units", "model_elevation"),
+          c(
+            "SID", "fcdate", "leadtime", "validdate", "parameter", "units",
+            "model_elevation", "fcst_dttm", "valid_dttm", "lead_time"
+          ),
           colnames(lagged_df)
         ),
         suffix = c("", "_lag")
