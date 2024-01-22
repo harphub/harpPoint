@@ -99,10 +99,18 @@ find_parent <- function(val, vec, direction) {
 }
 
 lag_cycle <- function(df, direction) {
+
+  colnames(df) <- suppressWarnings(harpCore::psub(
+    colnames(df),
+    c("fcdate", "validdate", "leadtime"),
+    c("fcst_dttm", "valid_dttm", "lead_time")
+  ))
+
   parent_cycle   <- unique(df$parent_cycle)
   child_cycles   <- df$fcst_cycle[df$fcst_cycle != parent_cycle]
   num_children   <- length(child_cycles)
   lagged_df      <- dplyr::filter(df, .data$fcst_cycle == parent_cycle)
+
   if (harpIO:::tidyr_new_interface()) {
     lagged_df <- tidyr::unnest(lagged_df, tidyr::one_of("data"))
   } else {
@@ -125,13 +133,14 @@ lag_cycle <- function(df, direction) {
       } else {
         child_members <- tidyr::unnest(child_members)
       }
+
       lagged_df <- dplyr::inner_join(
         lagged_df,
         child_members %>%
           dplyr::select_if(~ !all(is.na(.))) %>%
           dplyr::mutate(
-            leadtime = .data$leadtime - lag_hours * direction,
-            fcdate   = .data$fcdate   + lag_hours * 3600 * direction
+            lead_time = .data$lead_time - lag_hours * direction,
+            fcst_dttm = .data$fcst_dttm + lag_hours * 3600 * direction
           ) %>%
           dplyr::select(-.data$fcst_cycle, -.data$parent_cycle),
         by = intersect(
