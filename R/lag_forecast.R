@@ -57,7 +57,8 @@ lag_forecast.default <- function(fcst_df, fcst_model, parent_cycles, direction =
     )
 
   purrr::map_dfr(split(fcst_df, fcst_df$parent_cycle), lag_cycle, direction) %>%
-    tidyr::drop_na()
+    tidyr::drop_na() %>%
+    harpCore::as_harp_df()
 
 }
 

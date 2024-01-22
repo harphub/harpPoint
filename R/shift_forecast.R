@@ -45,12 +45,12 @@ shift_forecast.default <- function(.fcst, fcst_shifts, drop_negative_lead_times 
     .fcst <- dplyr::filter(.fcst, .data$lead_time >= 0)
   }
 
-  .fcst
+  harpCore::as_harp_df(.fcst)
 
 }
 
 #' @export
-shift_forecast.harp_fcst <- function(.fcst, fcst_shifts, keep_unshifted = FALSE, drop_negative_lead_times = TRUE) {
+shift_forecast.harp_list <- function(.fcst, fcst_shifts, keep_unshifted = FALSE, drop_negative_lead_times = TRUE) {
 
   if (!is.list(fcst_shifts)) {
     if (length(fcst_shifts) > 1) {
@@ -94,6 +94,6 @@ shift_forecast.harp_fcst <- function(.fcst, fcst_shifts, keep_unshifted = FALSE,
       USE.NAMES = FALSE
     )
   }
-  .fcst
+  harpCore::as_harp_list(.fcst)
 }
 
