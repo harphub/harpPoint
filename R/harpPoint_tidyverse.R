@@ -176,6 +176,17 @@ join_models.harp_list <- function(
   by = c("SID", "fcst_dttm", "valid_dttm", "lead_time"),
   ...
 ) {
+  # Make sure deterministic models get unique forecast columns
+  .fcst <- purrr::imap(
+    .fcst,
+    ~{
+      colnames(.x)[colnames(.x) == "fcst"] <- paste0(.y, "_fcst")
+      colnames(.x)[colnames(.x) == "forecast"] <- paste0(.y, "_fcst")
+      .x
+    }
+  )
+
+  # Do the join
   join_func <- get(paste0(join_type, "_join"), envir = asNamespace("dplyr"))
   purrr::reduce(.fcst, join_func, by = by, ...) %>%
     tibble::as_tibble() %>%

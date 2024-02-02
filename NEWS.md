@@ -1,3 +1,13 @@
+# harpPoint v0.2.1
+
+* HOTFIX released on 2nd February 2024
+
+* Fixes a bug that caused errors in `check_obs_against_fcst()` for deterministic
+forecasts
+
+* Fixes bug that meant `lag_forecast()` and `shift_forecast()` did not accept 
+the harp >= v0.2.0 column naming convention
+
 # harpPoint v0.2.0
 
 This is a major update. Most of the changes are internal, but there are some 

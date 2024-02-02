@@ -28,23 +28,29 @@ shift_forecast.default <- function(.fcst, fcst_shifts, drop_negative_lead_times 
     stop("Only one 'fcst_shifts' allowed per forecast model.", call. = FALSE)
   }
 
+  colnames(.fcst) <- suppressWarnings(harpCore::psub(
+    colnames(.fcst),
+    c("fcdate", "validdate", "leadtime"),
+    c("fcst_dttm", "valid_dttm", "lead_time")
+  ))
+
   .fcst <- .fcst %>%
     dplyr::mutate(
-      fcdate     = .data$fcdate + fcst_shifts * 3600,
-      leadtime   = .data$leadtime - fcst_shifts,
-      fcst_cycle = substr(harpIO::unixtime_to_str_datetime(.data$fcdate, harpIO::YMDh), 9, 10)
+      fcst_dttm  = .data$fcst_dttm + fcst_shifts * 3600,
+      lead_time  = .data$lead_time - fcst_shifts,
+      fcst_cycle = substr(harpIO::unixtime_to_str_datetime(.data$fcst_dttm, harpIO::YMDh), 9, 10)
     )
 
   if (drop_negative_lead_times) {
-    .fcst <- dplyr::filter(.fcst, .data$leadtime >= 0)
+    .fcst <- dplyr::filter(.fcst, .data$lead_time >= 0)
   }
 
-  .fcst
+  harpCore::as_harp_df(.fcst)
 
 }
 
 #' @export
-shift_forecast.harp_fcst <- function(.fcst, fcst_shifts, keep_unshifted = FALSE, drop_negative_lead_times = TRUE) {
+shift_forecast.harp_list <- function(.fcst, fcst_shifts, keep_unshifted = FALSE, drop_negative_lead_times = TRUE) {
 
   if (!is.list(fcst_shifts)) {
     if (length(fcst_shifts) > 1) {
@@ -88,6 +94,6 @@ shift_forecast.harp_fcst <- function(.fcst, fcst_shifts, keep_unshifted = FALSE,
       USE.NAMES = FALSE
     )
   }
-  .fcst
+  harpCore::as_harp_list(.fcst)
 }
 
