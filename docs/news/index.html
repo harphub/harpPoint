@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">harpPoint</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,6 +44,12 @@
       <small>Source: <a href="https://github.com/harphub/harpPoint/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="harppoint-v021">harpPoint v0.2.1<a class="anchor" aria-label="anchor" href="#harppoint-v021"></a></h2>
+<ul><li><p>HOTFIX released on 2nd February 2024</p></li>
+<li><p>Fixes a bug that caused errors in <code><a href="../reference/check_obs_against_fcst.html">check_obs_against_fcst()</a></code> for deterministic forecasts</p></li>
+<li><p>Fixes bug that meant <code><a href="../reference/lag_forecast.html">lag_forecast()</a></code> and <code><a href="../reference/shift_forecast.html">shift_forecast()</a></code> did not accept the harp &gt;= v0.2.0 column naming convention</p></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="harppoint-v020">harpPoint v0.2.0<a class="anchor" aria-label="anchor" href="#harppoint-v020"></a></h2>
 <p>This is a major update. Most of the changes are internal, but there are some changes that may lead to problems with downstream scripts that are listed below along with some selected new features.</p>
