@@ -53,7 +53,7 @@ check_obs_against_fcst <- function(
     .num_sd_allowed <- num_sd_allowed
   }
 
-  fcst_regex <- "_mbr[[:digit:]]{3}|_det$|^fcst$|^forecast$"
+  fcst_regex <- "_mbr[[:digit:]]{3}|_det$|_fcst$|^fcst$|^forecast$"
   if (.num_sd_allowed > 0) {
 
     tolerance <- join_models(
