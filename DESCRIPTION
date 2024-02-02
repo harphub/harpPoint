@@ -39,8 +39,8 @@ Imports:
     hexbin,
     tidyselect
 Remotes:
-    harphub/harpCore@v0.2.2,
-    harphub/harpIO@v0.2.2
+    harphub/harpCore,
+    harphub/harpIO
 URL: https://github.com/harphub/harpPoint
 BugReports: https://github.com/harphub/harpPoint/issues
 Suggests: 
