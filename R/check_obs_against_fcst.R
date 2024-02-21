@@ -181,7 +181,7 @@ check_obs_against_fcst <- function(
     num_bad_obs <- nrow(bad_obs)
     if (num_bad_obs > 0) {
       cli::cli_inform(c(
-        "!" = "{num_bad_obs} cases with more than {num_sd_allowed} std dev{?s} error.",
+        "!" = "{num_bad_obs} cases with more than {.num_sd_allowed} std dev{?s} error.",
         "i" = "Removed cases can be seen in the \"removed_cases\" attribute."
       ))
     }
