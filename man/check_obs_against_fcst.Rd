@@ -40,3 +40,22 @@ forecast is expected to be smaller than a number of multiples of the standard
 deviation. The number of multiples of the standard deviation can be supplied
 or a default value used depending on the parameter.
 }
+\details{
+The default values for \code{num_sd_allowed} for certain parameters are listed
+below:
+\itemize{
+\item t2m       = 6
+\item rh2m      = 6
+\item pmsl      = 6
+\item s10m      = 6
+\item g10m      = 6
+\item accpcp1h  = 8
+\item accpcp3h  = 8
+\item accpcp6h  = 8
+\item accpcp12h = 8
+\item accpcp24h = 8
+}
+
+If \code{num_sd_allowed} is not explicitly set and \code{parameter} is not one of the
+above parameters (not case senstive) no check is done.
+}
