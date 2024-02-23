@@ -162,13 +162,13 @@ ens_spread_and_skill.harp_list <- function(
   ...
 ) {
 
-  parameter   <- rlang::enquo(parameter)
-  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    if (is.character(rlang::eval_tidy(parameter))) {
-      parameter <- rlang::eval_tidy(parameter)
-      parameter <- rlang::ensym(parameter)
-    }
-  }
+  parameter   <- rlang::ensym(parameter)
+#  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+#    if (is.character(rlang::eval_tidy(parameter))) {
+#      parameter <- rlang::eval_tidy(parameter)
+#      parameter <- rlang::ensym(parameter)
+#    }
+#  }
 
   spread_drop_member <- parse_member_drop(spread_drop_member, names(.fcst))
 

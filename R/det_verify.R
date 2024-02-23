@@ -321,13 +321,13 @@ det_verify.harp_list <- function(
   show_progress = TRUE
 ) {
 
-  parameter   <- rlang::enquo(parameter)
-  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    if (is.character(rlang::eval_tidy(parameter))) {
-      parameter <- rlang::eval_tidy(parameter)
-      parameter <- rlang::ensym(parameter)
-    }
-  }
+  parameter   <- rlang::ensym(parameter)
+#  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+#    if (is.character(rlang::eval_tidy(parameter))) {
+#      parameter <- rlang::eval_tidy(parameter)
+#      parameter <- rlang::ensym(parameter)
+#    }
+#  }
 
   list_to_harp_verif(
     purrr::imap(

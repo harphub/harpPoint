@@ -69,14 +69,19 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 ens_probabilities.harp_list <- function(.fcst, thresholds, parameter = NULL) {
 
   parameter   <- rlang::enquo(parameter)
-  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-    if (is.character(rlang::eval_tidy(parameter))) {
-      parameter <- rlang::eval_tidy(parameter)
-      parameter <- rlang::ensym(parameter)
-    }
-  }
+#  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
+#    if (is.character(rlang::eval_tidy(parameter))) {
+#      parameter <- rlang::eval_tidy(parameter)
+#      parameter <- rlang::ensym(parameter)
+#    }
+#  }
 
   purrr::map(.fcst, ens_probabilities, thresholds, !! parameter) %>%
-    as_harp_list()
+    lapply(function(x) {
+      x <- harpCore::as_harp_df(x)
+      class(x) <- c("harp_ens_probs", class(x))
+      x
+    }) %>%
+    harpCore::as_harp_list()
 }
 
