@@ -66,6 +66,11 @@ check_obs_against_fcst <- function(
       "accpcp24h" = 8,
       0
     )
+    if (.num_sd_allowed > 0) {
+      cli::cli_inform(c(
+        "i" = "Using default {.arg num_sd_allowed = {(.num_sd_allowed)}} for {.arg parameter = {parameter_name}}"
+      ))
+    }
   } else {
     .num_sd_allowed <- num_sd_allowed
   }
@@ -103,6 +108,14 @@ check_obs_against_fcst <- function(
     tolerance,
     -dplyr::matches(".x$|.y$")
   )
+
+  # Check if the parameter is in the input
+  if (!is.element(parameter_name, colnames(tolerance))) {
+    cli::cli_abort(c(
+      "x" = "{.arg parameter = {parameter_name}} not found in data.",
+      "i" = "{.arg .fcst} does not include column {.var {parameter_name}}."
+    ))
+  }
 
   # Create extra columns for stratifying
   if (!is.element("valid_hour", colnames(tolerance))) {
@@ -210,9 +223,11 @@ check_obs_against_fcst <- function(
   )))
 
   num_bad_obs <- nrow(bad_obs)
+  cli::cli_inform(c(
+    "!" = "{num_bad_obs} cases with more than {(.num_sd_allowed)} std dev{?s} error."
+  ))
   if (num_bad_obs > 0) {
     cli::cli_inform(c(
-      "!" = "{num_bad_obs} cases with more than {(.num_sd_allowed)} std dev{?s} error.",
       "i" = "Removed cases can be seen in the \"removed_cases\" attribute."
     ))
   }
