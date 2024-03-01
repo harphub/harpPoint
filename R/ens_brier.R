@@ -89,6 +89,8 @@ ens_brier.harp_ens_probs <- function(
 
   num_members <- attr(.fcst, "num_members")
 
+  climatology <- get_climatology(.fcst, !! parameter, NULL, climatology)
+
   if (inherits(climatology, "data.frame")) {
     mandatory_cols  <- c("threshold", "climatology")
     check_clim_cols <- mandatory_cols %in% colnames(climatology)

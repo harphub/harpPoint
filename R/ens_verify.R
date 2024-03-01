@@ -354,8 +354,8 @@ get_climatology <- function(.fcst, parameter, thresholds, climatology) {
     if (!all(c("threshold", "climatology") %in% names(climatology))) {
       stop("climatology must at least contain columns named threshold and climatology", call. = FALSE)
     }
-    if (is.element("leadtime", names(climatology))) {
-      if (!all(.fcst$leadtime %in% climatology$leadtime)) {
+    if (is.element("lead_time", names(climatology))) {
+      if (!all(.fcst$lead_time %in% climatology$lead_time)) {
         stop("Not all leadtimes for the data exist in climatology", call. = FALSE)
       }
     }
@@ -402,14 +402,17 @@ get_climatology <- function(.fcst, parameter, thresholds, climatology) {
 
   }
 
-  if (!inherits(.fcst[[list_element]], "harp_ens_probs")) {
+  if (inherits(.fcst, "harp_list")) {
+    .fcst <- .fcst[[list_element]]
+  }
+  if (!inherits(.fcst, "harp_ens_probs")) {
     if (missing(parameter) | missing(thresholds)) {
       stop("parameter and thresholds must be passed as arguments", call. = FALSE)
     } else {
-      climatol <- ens_probabilities(.fcst[[list_element]], thresholds, !! member_col)
+      climatol <- ens_probabilities(.fcst, thresholds, !! member_col)
     }
   } else {
-    climatol <- .fcst[[list_element]]
+    climatol <- .fcst
   }
 
   climatol %>%
