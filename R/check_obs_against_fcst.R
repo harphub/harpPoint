@@ -95,7 +95,7 @@ check_obs_against_fcst <- function(
         .fcst,
         function(x) {
           grep(
-            paste0(fcst_regex, "|fcst_model"),
+            paste0(fcst_regex, "|fcst_model|model_elevation"),
             colnames(x),
             value = TRUE, invert = TRUE
           )
