@@ -106,7 +106,7 @@ check_obs_against_fcst <- function(
 
   tolerance <- dplyr::select(
     tolerance,
-    -dplyr::matches(".x$|.y$")
+    -dplyr::matches("\\.x$|\\.y$")
   )
 
   # Check if the parameter is in the input
