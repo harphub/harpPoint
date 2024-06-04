@@ -10,12 +10,28 @@
 #'
 #' @return An object of the same class as `.fcst` with columns for threshold,
 #' fcst_prob and optionally obs_prob instead of the raw forecast column.
-det_probabilities <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
+det_probabilities <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  comparator        = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low       = TRUE,
+  include_high      = TRUE,
+  obs_probabilities = TRUE
+) {
   UseMethod("det_probabilities")
 }
 
 #' @export
-det_probabilities.harp_det_point_df <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
+det_probabilities.harp_det_point_df <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  comparator        = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low       = TRUE,
+  include_high      = TRUE,
+  obs_probabilities = TRUE
+) {
 
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
@@ -24,15 +40,31 @@ det_probabilities.harp_det_point_df <- function(.fcst, parameter, thresholds, ob
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
+  comparator <- match.arg(comparator)
+
+  thresholds <- check_thresholds(thresholds, comparator)
+
   dplyr::bind_cols(
     .fcst,
-    harp_probs(.fcst, thresholds, chr_param, obs_prob = obs_probabilities, fcst_type = "det")
+    harp_probs(
+      .fcst, thresholds, comparator, include_low, include_high,
+      chr_param, obs_prob = obs_probabilities, fcst_type = "det"
+    )
   )
 
 }
 
 #' @export
-det_probabilities.harp_list <- function(.fcst, parameter, thresholds, obs_probabilities = TRUE) {
+det_probabilities.harp_list <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  comparator        = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low       = TRUE,
+  include_high      = TRUE,
+  obs_probabilities = TRUE
+) {
+
   parameter   <- rlang::enquo(parameter)
   if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
     if (is.character(rlang::eval_tidy(parameter))) {
@@ -40,7 +72,15 @@ det_probabilities.harp_list <- function(.fcst, parameter, thresholds, obs_probab
       parameter <- rlang::ensym(parameter)
     }
   }
-  purrr::map(.fcst, det_probabilities, !! parameter, thresholds, obs_probabilities) %>%
+
+  comparator <- match.arg(comparator)
+
+  thresholds <- check_thresholds(thresholds, comparator)
+
+  purrr::map(
+    .fcst, det_probabilities, !!parameter, thresholds, comparator,
+    include_low, include_high, obs_probabilities
+  ) %>%
     new_harp_fcst()
 }
 

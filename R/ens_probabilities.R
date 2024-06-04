@@ -4,12 +4,26 @@
 #' @return A \code{harp_list} object with each data frame having columns for threshold,
 #' fcst_prob and obs_prob instead of the columns for each member forecast.
 #' @export
-ens_probabilities <- function(.fcst, thresholds, parameter = NULL) {
+ens_probabilities <- function(
+  .fcst,
+  thresholds,
+  comparator   = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low  = TRUE,
+  include_high = TRUE,
+  parameter    = NULL
+) {
   UseMethod("ens_probabilities")
 }
 
 #' @export
-ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
+ens_probabilities.default <- function(
+  .fcst,
+  thresholds,
+  comparator   = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low  = TRUE,
+  include_high = TRUE,
+  parameter    = NULL
+) {
 
   parameter  <- rlang::enquo(parameter)
   if (rlang::quo_is_null(parameter)) {
@@ -24,20 +38,26 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
     obs_probabilities <- TRUE
   }
 
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
+
   meta_cols     <- grep("_mbr[[:digit:]]+", colnames(.fcst), invert = TRUE, value = TRUE) %>%
     .[!. %in% chr_param]
   meta_cols_sym <- rlang::syms(meta_cols)
 
   ens_probs <- dplyr::bind_cols(
     .fcst,
-    harp_probs(.fcst, thresholds, chr_param, obs_prob = obs_probabilities)
+    harp_probs(
+      .fcst, thresholds, comparator, include_low, include_high,
+      chr_param, obs_prob = obs_probabilities
+    )
   )
 
 
   fcst_thresh <- ens_probs %>%
     dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
     tidyr::gather(dplyr::contains("fcst_prob"), key = "threshold", value = "fcst_prob") %>%
-    dplyr::mutate(threshold = readr::parse_number(.data$threshold))
+    dplyr::mutate(threshold = gsub("fcst_prob_", "", .data$threshold))
 
   if (obs_probabilities) {
 
@@ -46,7 +66,7 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
     obs_thresh <- ens_probs %>%
       dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
       tidyr::gather(dplyr::contains("obs_prob"), key = "threshold", value = "obs_prob") %>%
-      dplyr::mutate(threshold = readr::parse_number(.data$threshold))
+      dplyr::mutate(threshold = gsub("obs_prob_", "", .data$threshold))
 
     ens_probs <- dplyr::inner_join(fcst_thresh, obs_thresh, by = join_cols)
 
@@ -66,7 +86,14 @@ ens_probabilities.default <- function(.fcst, thresholds, parameter = NULL) {
 }
 
 #' @export
-ens_probabilities.harp_list <- function(.fcst, thresholds, parameter = NULL) {
+ens_probabilities.harp_list <- function(
+  .fcst,
+  thresholds,
+  comparator   = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low  = TRUE,
+  include_high = TRUE,
+  parameter    = NULL
+) {
 
   parameter   <- rlang::enquo(parameter)
 #  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
@@ -76,7 +103,13 @@ ens_probabilities.harp_list <- function(.fcst, thresholds, parameter = NULL) {
 #    }
 #  }
 
-  purrr::map(.fcst, ens_probabilities, thresholds, !! parameter) %>%
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
+
+  purrr::map(
+    .fcst, ens_probabilities, thresholds, comparator, include_low, include_high,
+    !!parameter
+  ) %>%
     lapply(function(x) {
       x <- harpCore::as_harp_df(x)
       class(x) <- c("harp_ens_probs", class(x))

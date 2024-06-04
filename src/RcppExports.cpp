@@ -49,14 +49,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // fcprob
-NumericMatrix fcprob(NumericMatrix fc, NumericVector thresholds);
-RcppExport SEXP _harpPoint_fcprob(SEXP fcSEXP, SEXP thresholdsSEXP) {
+NumericMatrix fcprob(NumericMatrix fc, NumericVector thresholds, String comparator, bool includeLow, bool includeHigh);
+RcppExport SEXP _harpPoint_fcprob(SEXP fcSEXP, SEXP thresholdsSEXP, SEXP comparatorSEXP, SEXP includeLowSEXP, SEXP includeHighSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type fc(fcSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type thresholds(thresholdsSEXP);
-    rcpp_result_gen = Rcpp::wrap(fcprob(fc, thresholds));
+    Rcpp::traits::input_parameter< String >::type comparator(comparatorSEXP);
+    Rcpp::traits::input_parameter< bool >::type includeLow(includeLowSEXP);
+    Rcpp::traits::input_parameter< bool >::type includeHigh(includeHighSEXP);
+    rcpp_result_gen = Rcpp::wrap(fcprob(fc, thresholds, comparator, includeLow, includeHigh));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -78,7 +81,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_harpPoint_ecoval", (DL_FUNC) &_harpPoint_ecoval, 4},
     {"_harpPoint_sort_members", (DL_FUNC) &_harpPoint_sort_members, 2},
     {"_harpPoint_rankHistogram", (DL_FUNC) &_harpPoint_rankHistogram, 2},
-    {"_harpPoint_fcprob", (DL_FUNC) &_harpPoint_fcprob, 2},
+    {"_harpPoint_fcprob", (DL_FUNC) &_harpPoint_fcprob, 5},
     {"_harpPoint_roc", (DL_FUNC) &_harpPoint_roc, 3},
     {NULL, NULL, 0}
 };

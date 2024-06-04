@@ -103,6 +103,12 @@ ens_crps.harp_ens_point_df <- function(
 
   compute_crps <- function(compute_group, fcst_df, show_progress) {
 
+    crps_cols <- grep(
+      "_mbr[[:digit:]]{3}|alpha|beta|h0|hN", colnames(fcst_df), value = TRUE
+    )
+
+    fcst_df <- distinct_rows(fcst_df, compute_group, crps_cols, chr_param)
+
     fcst_df <- group_without_threshold(fcst_df, compute_group)
     group_vars <- dplyr::group_vars(fcst_df)
     group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")

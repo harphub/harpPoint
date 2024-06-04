@@ -32,8 +32,8 @@ rankHistogram <- function(obs, fc) {
 #'
 #' @param fc A two dimensional array of EPS data with members in columns.
 #' @param byrow The thresholds to compute probabilities for
-fcprob <- function(fc, thresholds) {
-    .Call('_harpPoint_fcprob', PACKAGE = 'harpPoint', fc, thresholds)
+fcprob <- function(fc, thresholds, comparator = "ge", includeLow = TRUE, includeHigh = TRUE) {
+    .Call('_harpPoint_fcprob', PACKAGE = 'harpPoint', fc, thresholds, comparator, includeLow, includeHigh)
 }
 
 #' Compute ROC and area under ROC

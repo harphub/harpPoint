@@ -90,6 +90,14 @@ ens_spread_and_skill.harp_ens_point_df <- function(
       fcst_df[[paste0("dropped_members_", ens_var)]] <- fcst_df[[ens_var]]
     }
 
+    fcst_cols <- grep(
+      paste(ens_mean, ens_var, sep = "|"), colnames(fcst_df), value = TRUE
+    )
+
+    fcst_df <- distinct_rows(
+      fcst_df, compute_group, fcst_cols, chr_param
+    )
+
     fcst_df <- dplyr::mutate(
       fcst_df,
       fcst_bias = bias(.data[[ens_mean]], .data[[chr_param]], circle)

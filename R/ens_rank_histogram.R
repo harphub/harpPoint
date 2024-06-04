@@ -64,6 +64,11 @@ ens_rank_histogram.harp_ens_point_df <- function(
   }
 
   compute_rank_hist <- function(compute_group, fcst_df) {
+
+    member_cols <- grep("_mbr[[:digit:]]{3}", col_names, value = TRUE)
+
+    fcst_df <- distinct_rows(fcst_df, compute_group, member_cols, chr_param)
+
     fcst_df <- group_without_threshold(fcst_df, compute_group)
     group_vars <- dplyr::group_vars(fcst_df)
     group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")

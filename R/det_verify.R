@@ -6,6 +6,9 @@
 det_verify <- function(
   .fcst,
   parameter,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
@@ -30,6 +33,9 @@ det_verify.harp_ens_point_df <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
   hexbin        = TRUE,
@@ -38,6 +44,8 @@ det_verify.harp_ens_point_df <- function(
   fcst_model    = NULL,
   ...
 ) {
+
+  comparator <- match.arg(comparator)
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
@@ -48,7 +56,8 @@ det_verify.harp_ens_point_df <- function(
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
   det_verify(
-    .fcst, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
+    .fcst, {{parameter}}, thresholds, comparator, include_low, include_high,
+    groupings, circle, hexbin, num_bins,
     show_progress, fcst_model
   )
 }
@@ -61,6 +70,9 @@ det_verify.harp_det_point_df <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
   hexbin        = TRUE,
@@ -70,7 +82,9 @@ det_verify.harp_det_point_df <- function(
   ...
 ) {
 
- if (!is.list(groupings)) {
+  comparator <- match.arg(comparator)
+
+  if (!is.list(groupings)) {
     groupings <- list(groupings)
   }
 
@@ -142,6 +156,9 @@ det_verify.harp_det_point_df <- function(
 
     local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
 
+    # Remove the non-grouping columns and ensure no row duplications
+    fcst_df <- distinct_rows(fcst_df, compute_group, local_fcst_col, chr_param)
+
     fcst_df <- dplyr::mutate(
       fcst_df,
       fcst_bias = bias(.data[[local_fcst_col]], .data[[chr_param]], circle)
@@ -197,15 +214,20 @@ det_verify.harp_det_point_df <- function(
     det_summary_scores
   )
 
-  if (is.numeric(thresholds)) {
+  if (!is.null(thresholds)) {
 
-    meta_cols     <- grep(
+    thresholds <- check_thresholds(thresholds, comparator)
+
+    meta_cols <- grep(
       "_mbr[[:digit:]]+", colnames(.fcst), value = TRUE, invert = TRUE
     )
+
     meta_cols_sym <- rlang::syms(meta_cols)
     thresh_col    <- rlang::sym("threshold")
 
-    .fcst <- det_probabilities(.fcst, !! parameter, thresholds)
+    .fcst <- det_probabilities(
+      .fcst, !! parameter, thresholds, comparator, include_low, include_high
+    )
 
     fcst_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
@@ -214,7 +236,7 @@ det_verify.harp_det_point_df <- function(
         names_to  = "threshold",
         values_to = "fcst_prob"
       ) %>%
-      dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+      dplyr::mutate(!!thresh_col := gsub("fcst_prob_", "", !!thresh_col))
 
     obs_thresh <- .fcst %>%
       dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
@@ -223,7 +245,7 @@ det_verify.harp_det_point_df <- function(
         names_to  = "threshold",
         values_to = "obs_prob"
       ) %>%
-      dplyr::mutate(!! thresh_col := readr::parse_number(!! thresh_col))
+      dplyr::mutate(!!thresh_col := gsub("obs_prob_", "", !!thresh_col))
 
     .fcst <- dplyr::mutate(fcst_thresh, obs_prob = obs_thresh[["obs_prob"]])
 
@@ -238,6 +260,11 @@ det_verify.harp_det_point_df <- function(
     groupings <- purrr::map(groupings, union, "threshold")
 
     compute_threshold_scores <- function(compute_group, fcst_df) {
+
+      fcst_obs_col <- c("fcst_prob", "obs_prob")
+
+      # Remove the non-grouping columns and ensure no row duplications
+      fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, chr_param)
 
       fcst_df <- dplyr::group_nest(
         fcst_df, dplyr::across(dplyr::all_of(compute_group)),
@@ -314,6 +341,9 @@ det_verify.harp_list <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
   hexbin        = TRUE,
@@ -329,11 +359,14 @@ det_verify.harp_list <- function(
 #    }
 #  }
 
+  comparator <- match.arg(comparator)
+
   list_to_harp_verif(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, groupings, circle, hexbin, num_bins,
+        .x, {{parameter}}, thresholds, comparator, include_low, include_high,
+        groupings, circle, hexbin, num_bins,
         show_progress, fcst_model = .y
       )
     )
@@ -471,4 +504,15 @@ check_circle <- function(x) {
       "i" = "Are you sure this is the value you want?"
     ))
   }
+}
+
+distinct_rows <- function(.df, grps, fc_cols, obs_col) {
+  std_cols <- c("fcst_dttm", "lead_time", "SID")
+  .df <- dplyr::select(
+    .df,
+    dplyr::any_of(c(std_cols, grps, fc_cols, obs_col))
+  )
+  # Do not include list columns - this is probably only an issue for CRPS
+  # where there is some randomness at a very high level of precision
+  dplyr::distinct(.df, dplyr::pick(-dplyr::where(is.list)), .keep_all = TRUE)
 }

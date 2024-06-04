@@ -185,6 +185,13 @@ compute_hexbin <- function(
   compute_group, fcst_df, parameter, num_bins, show_progress
 ) {
 
+  col_names <- colnames(fcst_df)
+  fcst_col  <- col_names[grep("_det$|^fcst$", col_names)]
+  local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
+
+  # Remove the non-grouping columns and ensure no row duplications
+  fcst_df <- distinct_rows(fcst_df, compute_group, local_fcst_col, parameter)
+
   fcst_df     <- group_without_threshold(fcst_df, compute_group, nest = TRUE)
   group_vars  <- grep(
     "grouped_data", colnames(fcst_df), invert = TRUE, value = TRUE

@@ -20,15 +20,44 @@ harp_rank_hist <- function (.fcst, .param) {
 
 #####################################################################################
 
-harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst_type = "EPS") {
+harp_probs <- function (
+  .fcst,
+  thresholds,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
+  .param = NULL,
+  obs_prob = FALSE,
+  fcst_type = "EPS"
+) {
+
+  comparator <- match.arg(comparator)
+
+  thresholds <- check_thresholds(thresholds, comparator)
 
   # Separate out a matrix of member forecasts and call the fast fcprob
   # function from HARPrcpp. The columns then need naming
 
   fcst_col_name   <- ifelse (fcst_type == "EPS", "_mbr", "_det|^fcst$")
   eps             <- dplyr::select(.fcst, dplyr::matches(fcst_col_name))
-  probs           <- fcprob(as.matrix(eps), thresholds)
-  colnames(probs) <- c(paste0("fcst_prob_", thresholds), "num_members", "ens_mean", "ens_var")
+  if (is.list(thresholds)) {
+    probs <- do.call(
+      cbind,
+      lapply(
+        thresholds,
+        function(x) fcprob(
+          as.matrix(eps), x, comparator, include_low, include_high
+        )
+      )
+    )
+  } else {
+    probs <- fcprob(
+      as.matrix(eps), thresholds, comparator, include_low, include_high
+    )
+  }
+  colnames(probs) <- make_colnames(
+    thresholds, comparator, include_low, include_high, "fcst_prob"
+  )
   probs           <- tibble::as_tibble(probs)
   probs           <- dplyr::select(probs, dplyr::contains("_prob_"))
 
@@ -37,9 +66,26 @@ harp_probs <- function (.fcst, thresholds, .param = NULL, obs_prob = FALSE, fcst
 
   if (obs_prob) {
 
-    obs                  <- dplyr::select(.fcst, .data[[.param]])
-    binary_obs           <- fcprob(as.matrix(obs), thresholds)
-    colnames(binary_obs) <- c(paste0("obs_prob_", thresholds), "numMember", "ensMean", "ensVar")
+    obs <- dplyr::select(.fcst, .data[[.param]])
+
+    if (is.list(thresholds)) {
+      binary_obs <- do.call(
+        cbind,
+        lapply(
+          thresholds,
+          function(x) fcprob(
+            as.matrix(obs), x, comparator, include_low, include_high
+          )
+        )
+      )
+    } else {
+      binary_obs <- fcprob(
+        as.matrix(obs), thresholds, comparator, include_low, include_high
+      )
+    }
+    colnames(binary_obs) <- make_colnames(
+      thresholds, comparator, include_low, include_high, "obs_prob"
+    )
     binary_obs           <- tibble::as_tibble(binary_obs)
 
     probs <- probs %>%
@@ -145,4 +191,39 @@ harp_roc0 <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
 
   list(roc_data = ROC, roc_area = ROCarea)
 
+}
+
+check_thresholds <- function(th, comp, caller = rlang::caller_env()) {
+  if (comp %in% c("between", "outside")) {
+    if (!is.list(th)) {
+      th <- list(th)
+    }
+    if (!all(vapply(th, length, numeric(1)) == 2)) {
+      cli::cli_abort(c(
+        "Incorrect {.arg thresholds} for {.arg comparator} = \"{comp}\"",
+        "i" = paste(
+          "For {.arg comparator} = \"{comp}\", {.arg thresholds} must",
+          "be list of length 2 vectors."
+        )
+      ))
+    }
+  }
+  th
+}
+
+make_colnames <- function(th, comp, il, ih, type) {
+  if (!is.list(th)) {
+    return(paste(type, comp, th, sep = "_"))
+  }
+  comp1 <- ifelse(il, "ge", "gt")
+  comp2 <- ifelse(ih, "le", "lt")
+  if (comp == "outside") {
+    comp1 <- ifelse(il, "le", "lt")
+    comp2 <- ifelse(ih, "ge", "gt")
+  }
+  vapply(
+    th,
+    function(x) paste(type, comp1, min(x), comp2, max(x), sep = "_"),
+    character(1)
+  )
 }

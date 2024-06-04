@@ -10,6 +10,9 @@ ens_brier <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator      = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low     = TRUE,
+  include_high    = TRUE,
   groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
@@ -33,6 +36,9 @@ ens_brier.harp_ens_point_df <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator      = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low     = TRUE,
+  include_high    = TRUE,
   groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
@@ -49,8 +55,13 @@ ens_brier.harp_ens_point_df <- function(
     )
   }
 
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
+
   ens_brier(
-    ens_probabilities(.fcst, thresholds, {{parameter}}),
+    ens_probabilities(
+      .fcst, thresholds, comparator, include_low, include_high, {{parameter}}
+    ),
     parameter       = {{parameter}},
     groupings       = groupings,
     climatology     = climatology,
@@ -89,7 +100,9 @@ ens_brier.harp_ens_probs <- function(
 
   num_members <- attr(.fcst, "num_members")
 
-  climatology <- get_climatology(.fcst, !! parameter, NULL, climatology)
+  climatology <- get_climatology(
+    .fcst, {{parameter}}, NULL, climatology = climatology
+  )
 
   if (inherits(climatology, "data.frame")) {
     mandatory_cols  <- c("threshold", "climatology")
@@ -136,6 +149,12 @@ ens_brier.harp_ens_probs <- function(
 
 
   compute_brier <- function(compute_group, fcst_df) {
+
+    fcst_obs_col <- c("fcst_prob", "obs_prob")
+
+    # Remove the non-grouping columns and ensure no row duplications
+    fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, NULL)
+
     compute_group_sym <- rlang::syms(compute_group)
     class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
     if (harpIO:::tidyr_new_interface()) {
@@ -245,6 +264,9 @@ ens_brier.harp_list <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator      = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low     = TRUE,
+  include_high    = TRUE,
   groupings       = "lead_time",
   climatology     = "sample",
   rel_probs       = NA,
@@ -262,10 +284,17 @@ ens_brier.harp_list <- function(
 #    }
 #  }
 
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
+
   if (missing(thresholds)) {
     thresholds <- NULL
   }
-  climatology <- get_climatology(.fcst, !! parameter, thresholds, climatology)
+
+  climatology <- get_climatology(
+    .fcst, !!parameter, thresholds,
+    comparator, include_low, include_high, climatology
+  )
 
   get_num_members <- function(df) {
     if (inherits(df, "harp_ens_probs")) {
@@ -284,6 +313,9 @@ ens_brier.harp_list <- function(
         .x,
         parameter       = !! parameter,
         thresholds      = thresholds,
+        comparator      = comparator,
+        include_low     = include_low,
+        include_high    = include_high,
         groupings       = groupings,
         climatology     = climatology,
         rel_probs       = rel_probs,

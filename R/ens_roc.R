@@ -12,6 +12,9 @@ ens_roc <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   show_progress = TRUE,
   ...
@@ -30,6 +33,9 @@ ens_roc.harp_ens_point_df <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   show_progress = TRUE,
   fcst_model    = NULL,
@@ -42,8 +48,13 @@ ens_roc.harp_ens_point_df <- function(
     )
   }
 
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
+
   ens_roc(
-    ens_probabilities(.fcst, thresholds, {{parameter}}),
+    ens_probabilities(
+      .fcst, thresholds, comparator, include_low, include_high, {{parameter}}
+    ),
     parameter     = {{parameter}},
     thresholds    = thresholds,
     groupings     = groupings,
@@ -79,6 +90,12 @@ ens_roc.harp_ens_probs <- function(
   }
 
   compute_roc <- function(compute_group, fcst_df) {
+
+    fcst_obs_col <- c("fcst_prob", "obs_prob")
+
+    # Remove the non-grouping columns and ensure no row duplications
+    fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, NULL)
+
     compute_group_sym <- rlang::syms(compute_group)
     class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
     if (harpIO:::tidyr_new_interface()) {
@@ -146,6 +163,9 @@ ens_roc.harp_list <- function(
   .fcst,
   parameter,
   thresholds,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
   groupings     = "lead_time",
   show_progress = TRUE,
   ...
@@ -163,7 +183,8 @@ ens_roc.harp_list <- function(
     purrr::imap(
       .fcst,
       ~ens_roc(
-        .x, !!parameter, thresholds, groupings, show_progress, fcst_model = .y
+        .x, !!parameter, thresholds, comparator, include_low, include_high,
+        groupings, show_progress, fcst_model = .y
       )
     )
   )

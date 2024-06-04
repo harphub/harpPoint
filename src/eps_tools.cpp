@@ -49,36 +49,74 @@ NumericVector rankHistogram(NumericVector obs, NumericMatrix fc) {
 //' @param fc A two dimensional array of EPS data with members in columns.
 //' @param byrow The thresholds to compute probabilities for
 // [[Rcpp::export]]
-NumericMatrix fcprob(NumericMatrix fc, NumericVector thresholds) {
-  int i, j, k, nmbr=fc.ncol(), npoints=fc.nrow(), nthresh=thresholds.size();
-  double mbrcount, mbrmean, dd;
-  NumericMatrix result(npoints, nthresh + 3);
+NumericMatrix fcprob(
+    NumericMatrix fc,
+    NumericVector thresholds,
+    String comparator = "ge",
+    bool includeLow = true,
+    bool includeHigh = true
+) {
+  int i, j, k, nmbr=fc.ncol(), npoints=fc.nrow(), nthresh;
+  float threshLow = min(thresholds);
+  float threshHigh = max(thresholds);
+
+  if (comparator == "between" || comparator == "outside") {
+    nthresh = 1;
+  } else {
+    nthresh = thresholds.size();
+  }
+
+  NumericMatrix result(npoints, nthresh);
 
   for (i=0 ; i < npoints ; i++ ){
+    // compute binary probabilities
     for (j=0 ; j < nmbr ; j++){
       if (!NumericMatrix::is_na(fc(i,j))){
-        for (k=0 ; k < nthresh ; k++) result(i,k) += (fc(i,j) > thresholds[k]);
-        /* member count & mean : */
-        result(i, nthresh) += 1 ;
-        result(i, nthresh+1) += fc(i,j) ;
+        for (k=0 ; k < nthresh ; k++) {
+          if (comparator == "ge") result(i,k) += (fc(i,j) >= thresholds[k]);
+          if (comparator == "gt") result(i,k) += (fc(i,j) >  thresholds[k]);
+          if (comparator == "le") result(i,k) += (fc(i,j) <= thresholds[k]);
+          if (comparator == "lt") result(i,k) += (fc(i,j) <  thresholds[k]);
+          if (comparator == "eq") result(i,k) += (fc(i,j) == thresholds[k]);
+          if (comparator == "between") {
+            if (includeLow && includeHigh) {
+              result(i,k) += (fc(i,j) >= threshLow && fc(i,j) <= threshHigh);
+            }
+            if (includeLow && !includeHigh) {
+              result(i,k) += (fc(i,j) >= threshLow && fc(i,j) < threshHigh);
+            }
+            if (!includeLow && includeHigh) {
+              result(i,k) += (fc(i,j) > threshLow && fc(i,j) <= threshHigh);
+            }
+            if (!includeLow && !includeHigh) {
+              result(i,k) += (fc(i,j) > threshLow && fc(i,j) < threshHigh);
+            }
+          }
+          if (comparator == "outside") {
+            if (includeLow && includeHigh) {
+              result(i,k) += (fc(i,j) >= threshHigh || fc(i,j) <= threshLow);
+            }
+            if (includeLow && !includeHigh) {
+              result(i,k) += (fc(i,j) >= threshHigh || fc(i,j) < threshLow);
+            }
+            if (!includeLow && includeHigh) {
+              result(i,k) += (fc(i,j) > threshHigh || fc(i,j) <= threshLow);
+            }
+            if (!includeLow && !includeHigh) {
+              result(i,k) += (fc(i,j) > threshHigh || fc(i,j) < threshLow);
+            }
+          }
+        }
+      }
+    }
+    // Compute ensemble probabilities
+    for (k=0 ; k < nthresh ; k++) {
+      if (!NumericMatrix::is_na(result(i, k))){
+        result(i, k) /= nmbr;
       }
     }
   }
 
-  /* variance : */
-  for (i=0 ; i < npoints ; i++){
-    mbrcount = result(i, nthresh) ;
-    /* probability = number_over_threshold / mbrcount */
-    for (k=0 ; k < nthresh ; k++) result(i,k) /= mbrcount ;
-    mbrmean = (result(i,nthresh+1) /= mbrcount);
-    for (j=0 ; j < nmbr; j++){
-      if (!NumericMatrix::is_na(fc(i,j))) {
-        dd = fc(i,j) - mbrmean;
-        result(i, nthresh+2) += dd*dd;
-      }
-    }
-    result(i, nthresh+2) /= (mbrcount-1);
-  }
   return result;
 }
 

@@ -63,6 +63,9 @@ ens_verify <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low        = TRUE,
+  include_high       = TRUE,
   groupings          = "lead_time",
   circle             = NULL,
   rel_probs          = NA,
@@ -101,6 +104,9 @@ ens_verify.harp_ens_point_df <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low        = TRUE,
+  include_high       = TRUE,
   groupings          = "lead_time",
   circle             = NULL,
   rel_probs          = NA,
@@ -123,6 +129,9 @@ ens_verify.harp_ens_point_df <- function(
   col_names  <- colnames(.fcst)
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
+
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
 
   if (!is.list(groupings)) {
     groupings <- list(groupings)
@@ -212,10 +221,12 @@ ens_verify.harp_ens_point_df <- function(
 
   }
 
-  if (is.numeric(thresholds) && num_members > 1) {
+  if (!is.null(thresholds) && num_members > 1) {
 
     if (!inherits(.fcst, "harp_ens_probs")) {
-      .fcst <- ens_probabilities(.fcst, thresholds, !! parameter)
+      .fcst <- ens_probabilities(
+        .fcst, thresholds, comparator, include_low, include_high, !!parameter
+      )
     }
 
     ens_threshold_scores <- list()
@@ -299,6 +310,9 @@ ens_verify.harp_list <- function(
   parameter,
   verify_members     = TRUE,
   thresholds         = NULL,
+  comparator         = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low        = TRUE,
+  include_high       = TRUE,
   groupings          = "lead_time",
   circle             = NULL,
   rel_probs          = NA,
@@ -324,17 +338,22 @@ ens_verify.harp_list <- function(
 #    }
 #  }
 
+  comparator <- match.arg(comparator)
+  threhsolds <- check_thresholds(thresholds, comparator)
+
   spread_drop_member <- parse_member_drop(spread_drop_member, names(.fcst))
 
   if (!is.null(thresholds)) climatology <- get_climatology(
-    .fcst, !! parameter, thresholds, climatology
+    .fcst, !!parameter, thresholds,
+    comparator, include_low, include_high, climatology
   )
 
   list_to_harp_verif(
     purrr::pmap(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_verify(
-        x, !!parameter, verify_members, thresholds, groupings, circle,
+        x, !!parameter, verify_members, thresholds, comparator, include_low,
+        include_high, groupings, circle,
         rel_probs, num_ref_members, z, jitter_fcst, climatology,
         hexbin, num_bins, rank_hist, crps, brier, roc, econ_val,
         show_progress, fcst_model = y
@@ -347,7 +366,18 @@ ens_verify.harp_list <- function(
 
 
 # Internal function to get climatology for Brier Skill Score
-get_climatology <- function(.fcst, parameter, thresholds, climatology) {
+get_climatology <- function(
+  .fcst,
+  parameter,
+  thresholds,
+  comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low   = TRUE,
+  include_high  = TRUE,
+  climatology   = "sample"
+) {
+
+  comparator <- match.arg(comparator)
+  thresholds <- check_thresholds(thresholds, comparator)
 
   if (inherits(climatology, "data.frame")) {
 
@@ -409,7 +439,9 @@ get_climatology <- function(.fcst, parameter, thresholds, climatology) {
     if (missing(parameter) | missing(thresholds)) {
       stop("parameter and thresholds must be passed as arguments", call. = FALSE)
     } else {
-      climatol <- ens_probabilities(.fcst, thresholds, !! member_col)
+      climatol <- ens_probabilities(
+        .fcst, thresholds, comparator, include_low, include_high, !!member_col
+      )
     }
   } else {
     climatol <- .fcst
