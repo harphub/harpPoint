@@ -2,41 +2,11 @@
 # that were of type integer became too large - here they are of type numeric to
 # prevent integer overflow.
 
-harp_table_stats <- function (obs, pred = NULL, fudge = 0.01, silent = FALSE)
+harp_table_stats <- function(a, b, c, d, n, fudge = 0.01, silent = FALSE)
 {
-    if (is.null(pred) & length(obs) == 4) {
-        if (!silent) {
-            print(" Assume data entered as c(n11, n01, n10, n00) Obs*Forecast")
-        }
-        a <- as.numeric(obs[1])
-        b <- as.numeric(obs[2])
-        c <- as.numeric(obs[3])
-        d <- as.numeric(obs[4])
-        tab.out <- matrix(c(a, c, b, d), nrow = 2)
-    }
-    if (is.null(pred) & is.matrix(obs) & prod(dim(obs)) == 4) {
-        if (!silent)
-            print(" Assume contingency table has observed values in columns, forecasts in rows")
-        obs <- as.numeric(obs)
-        a <- obs[1]
-        b <- obs[3]
-        c <- obs[2]
-        d <- obs[4]
-        tab.out <- matrix(c(a, c, b, d), nrow = 2)
-    }
-    if (!is.null(pred) & !is.null(obs)) {
-        tab.out <- table(as.numeric(obs), as.numeric(pred))
-        a <- tryCatch(tab.out["1", "1"], error = function(e) 0)
-        b <- tryCatch(tab.out["0", "1"], error = function(e) 0)
-        c <- tryCatch(tab.out["1", "0"], error = function(e) 0)
-        d <- tryCatch(tab.out["0", "0"], error = function(e) 0)
-    }
-#   a,b,c,d are integers - need to convert to reals
-    a <- as.numeric(a)
-    b <- as.numeric(b)
-    c <- as.numeric(c)
-    d <- as.numeric(d)
-    n <- a + b + c + d
+    tab.out <- as.table(
+      matrix(c(d, c, b, a), ncol = 2, dimnames = list(c(0, 1), c(0, 1)))
+    )
     if (n == 0)
         n <- fudge
     s <- (a + c)/n

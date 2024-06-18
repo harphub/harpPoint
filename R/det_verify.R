@@ -249,10 +249,17 @@ det_verify.harp_det_point_df <- function(
 
     .fcst <- dplyr::mutate(fcst_thresh, obs_prob = obs_thresh[["obs_prob"]])
 
+    .fcst <- dplyr::mutate(
+      .fcst,
+      a = .data[["fcst_prob"]] & .data[["obs_prob"]],
+      b = .data[["fcst_prob"]] & !.data[["obs_prob"]],
+      c = !.data[["fcst_prob"]] & .data[["obs_prob"]],
+      d = !.data[["fcst_prob"]] & !.data[["obs_prob"]],
+    )
+
     verif_func <- function(x) {
-      res <- harp_verify(
-        x[["obs_prob"]], x[["fcst_prob"]],
-        frcst.type = "binary", obs.type = "binary"
+      res <- harp_table_stats(
+        sum(x[["a"]]), sum(x[["b"]]), sum(x[["c"]]), sum(x[["d"]]), nrow(x)
       )
       sweep_det_thresh(res)
     }
@@ -261,7 +268,7 @@ det_verify.harp_det_point_df <- function(
 
     compute_threshold_scores <- function(compute_group, fcst_df) {
 
-      fcst_obs_col <- c("fcst_prob", "obs_prob")
+      fcst_obs_col <- letters[1:4]
 
       # Remove the non-grouping columns and ensure no row duplications
       fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, chr_param)
