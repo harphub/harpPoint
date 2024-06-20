@@ -4,9 +4,6 @@
 
 harp_table_stats <- function(a, b, c, d, n, fudge = 0.01, silent = FALSE)
 {
-    tab.out <- as.table(
-      matrix(c(d, c, b, a), ncol = 2, dimnames = list(c(0, 1), c(0, 1)))
-    )
     if (n == 0)
         n <- fudge
     s <- (a + c)/n
@@ -104,12 +101,47 @@ harp_table_stats <- function(a, b, c, d, n, fudge = 0.01, silent = FALSE)
         (1 - F)) * log(F * (1 - H)) + 2 * H/(1 - H) * log(H *
         (1 - F)))/(H * (log(F * (1 - H)) + log(H * (1 - F)))^2) *
         sqrt(H * (1 - H)/(p * n))
-    return(list(tab = tab.out, TS = TS, TS.se = TS.se, POD = POD,
-        POD.se = POD.se, M = M, F = F, F.se = F.se, FAR = FAR,
-        FAR.se = FAR.se, HSS = HSS, HSS.se = HSS.se, PSS = PSS,
-        PSS.se = PSS.se, KSS = KSS, PC = PC, PC.se = PC.se, BIAS = BIAS,
-        ETS = ETS, ETS.se = ETS.se, theta = theta, log.theta = log.theta,
-        LOR.se = LOR.se, n.h = n.h, orss = yules.q, orss.se = ORSS.se,
-        eds = eds, eds.se = eds.se, seds = seds, seds.se = seds.se,
-        EDI = EDI, EDI.se = EDI.se, SEDI = SEDI, SEDI.se = SEDI.se))
+
+    tibble::as_tibble(list(
+      num_cases_for_threshold_total      = n,
+      num_cases_for_threshold_observed   = a + c,
+      num_cases_for_threshold_forecast   = a + b,
+      hits                               = a,
+      false_alarms                       = b,
+      misses                             = c,
+      correct_rejections                 = d,
+      threat_score                       = TS,
+      hit_rate                           = POD,
+      miss_rate                          = M,
+      false_alarm_rate                   = F,
+      false_alarm_ratio                  = FAR,
+      heidke_skill_score                 = HSS,
+      pierce_skill_score                 = PSS,
+      kuiper_skill_score                 = KSS,
+      percent_correct                    = PC,
+      frequency_bias                     = BIAS,
+      equitable_threat_score             = ETS,
+      odds_ratio                         = theta,
+      log_odds_ratio                     = log.theta,
+      odds_ratio_skill_score             = ORSS,
+      extreme_dependency_score           = eds,
+      symmetric_eds                      = seds,
+      extreme_dependency_index           = EDI,
+      symmetric_edi                      = SEDI,
+      threat_score_std_error             = TS.se,
+      hit_rate_std_error                 = POD.se,
+      false_alarm_rate_std_error         = F.se,
+      false_alarm_ratio_std_error        = FAR.se,
+      heidke_skill_score_std_error       = HSS.se,
+      pierce_skill_score_std_error       = PSS.se,
+      percent_correct_std_error          = PC.se,
+      equitable_threat_score_std_error   = ETS.se,
+      log_odds_ratio_std_error           = LOR.se,
+      log_odds_ratio_degrees_of_freedom  = n.h,
+      odds_ratio_skill_score_std_error   = ORSS.se,
+      extreme_dependency_score_std_error = eds.se,
+      symmetric_eds_std_error            = seds.se,
+      extreme_dependency_index_std_error = EDI.se,
+      symmetric_edi_std_error            = SEDI.se
+    ))
 }

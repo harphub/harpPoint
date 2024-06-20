@@ -231,7 +231,10 @@ compute_hexbin <- function(
 }
 
 
-hexbin_df <- function(x, y, nbins, prm) {
+hexbin_df <- function(x, y, nbins, prm, no_compute = TRUE) {
+  if (no_compute && length(x) < 100) {
+    return(tibble::tibble(obs = x, fcst = y, count = 1))
+  }
   xrange <- range(x)
   yrange <- range(y)
   if (diff(xrange) == 0) {

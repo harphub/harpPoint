@@ -136,7 +136,7 @@ det_verify.harp_det_point_df <- function(
   }
 
   det_score_function <- function(x) {
-    tibble::tibble(
+    tibble::as_tibble(list(
       num_cases = nrow(x),
       num_stations = {
         if (is.element("SID", colnames(x))) {
@@ -149,7 +149,7 @@ det_verify.harp_det_point_df <- function(
       rmse      = sqrt(mean(x[["fcst_bias"]] ^ 2)),
       mae       = mean(abs(x[["fcst_bias"]])),
       stde      = stats::sd(x[["fcst_bias"]])
-    )
+    ))
   }
 
   compute_summary_scores <- function(compute_group, fcst_df) {
@@ -164,11 +164,13 @@ det_verify.harp_det_point_df <- function(
       fcst_bias = bias(.data[[local_fcst_col]], .data[[chr_param]], circle)
     )
 
-    fcst_df <- group_without_threshold(fcst_df, compute_group, nest = TRUE)
+    fcst_df <- group_without_threshold(fcst_df, compute_group, nest = FALSE)
 
     group_vars  <- compute_group[compute_group != "threshold"]
     group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
     score_text  <- cli::col_blue(glue::glue("Det summary for {group_names}"))
+
+    show_progress <- FALSE
 
     if (show_progress) {
       pb_name <- score_text
@@ -178,16 +180,14 @@ det_verify.harp_det_point_df <- function(
       score_text <- ""
     }
 
-    fcst_df <- dplyr::transmute(
+    fcst_df <- dplyr::summarise(
       fcst_df,
-      dplyr::across(
-        dplyr::all_of(colnames(fcst_df)[colnames(fcst_df) %in% group_vars])
-      ),
-      det_score = purrr::map(
-        .data[["grouped_data"]], det_score_function, .progress = pb_name
-      )
-    ) %>%
-      tidyr::unnest(dplyr::all_of("det_score"))
+      num_stations = length(unique(!!rlang::sym("SID"))),
+      bias         = mean(!!rlang::sym("fcst_bias")),
+      rmse         = sqrt(mean(!!rlang::sym("fcst_bias") * !!rlang::sym("fcst_bias"))),
+      mae          = mean(abs(!!rlang::sym("fcst_bias"))),
+      stde         = stats::sd(!!rlang::sym("fcst_bias"))
+    )
 
     message(score_text, cli::col_green(cli::symbol[["tick"]]))
     fcst_df
@@ -261,7 +261,8 @@ det_verify.harp_det_point_df <- function(
       res <- harp_table_stats(
         sum(x[["a"]]), sum(x[["b"]]), sum(x[["c"]]), sum(x[["d"]]), nrow(x)
       )
-      sweep_det_thresh(res)
+      res
+      #sweep_det_thresh(res)
     }
 
     groupings <- purrr::map(groupings, union, "threshold")
