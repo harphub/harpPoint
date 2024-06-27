@@ -14,6 +14,8 @@
 #'   scores.
 #' @param groupings The groups for which to compute the scores. See
 #'   \link[dplyr]{group_by} for more information of how grouping works.
+#' @param summary Logical. Whether to compute summary scores or not. Default is
+#'   `TRUE`.
 #' @param circle If set the parameter is assumed to be cyclic for bias
 #'   calculations. Should be this distance around a circle in the units of the
 #'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
@@ -67,6 +69,7 @@ ens_verify <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  summary            = TRUE,
   circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
@@ -108,6 +111,7 @@ ens_verify.harp_ens_point_df <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  summary            = TRUE,
   circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
@@ -179,45 +183,53 @@ ens_verify.harp_ens_point_df <- function(
 
   } else {
 
-    .fcst <- harpCore::ens_stats(
-      .fcst, sd = FALSE, var = TRUE, keep_members = TRUE
-    )
-
     ens_summary_scores <- list()
 
-    ens_summary_scores[["ss"]] <- ens_spread_and_skill(
-      .fcst, !!parameter, groupings = groupings, circle = circle,
-      spread_drop_member = spread_drop_member
-    )[["ens_summary_scores"]]
+    if (summary) {
 
-    if (hexbin) {
-      ens_summary_scores[["hexbin"]] <- dplyr::select(
-        bin_fcst_obs(
-          .fcst, !!parameter, groupings = groupings, num_bins = num_bins,
-          show_progress = show_progress
-        )[["ens_summary_scores"]],
-        -dplyr::all_of("num_cases")
+      .fcst <- harpCore::ens_stats(
+        .fcst, sd = FALSE, var = TRUE, keep_members = TRUE
       )
-    }
 
-    if (rank_hist) {
-      ens_summary_scores[["rh"]] <- ens_rank_histogram(
-        .fcst, !! parameter, groupings = groupings,
-        show_progress = show_progress
+      ens_summary_scores[["ss"]] <- ens_spread_and_skill(
+        .fcst, !!parameter, groupings = groupings, circle = circle,
+        spread_drop_member = spread_drop_member
       )[["ens_summary_scores"]]
-    }
 
-    if (crps) {
-      ens_summary_scores[["crps"]] <- ens_crps(
-        .fcst, !! parameter, groupings = groupings,
-        num_ref_members = num_ref_members, show_progress = show_progress
-      )[["ens_summary_scores"]]
-    }
+      if (hexbin) {
+        ens_summary_scores[["hexbin"]] <- dplyr::select(
+          bin_fcst_obs(
+            .fcst, !!parameter, groupings = groupings, num_bins = num_bins,
+            show_progress = show_progress
+          )[["ens_summary_scores"]],
+          -dplyr::all_of("num_cases")
+        )
+      }
 
-    ens_summary_scores <- Reduce(
-      function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-      ens_summary_scores
-    )
+      if (rank_hist) {
+        ens_summary_scores[["rh"]] <- ens_rank_histogram(
+          .fcst, !! parameter, groupings = groupings,
+          show_progress = show_progress
+        )[["ens_summary_scores"]]
+      }
+
+      if (crps) {
+        ens_summary_scores[["crps"]] <- ens_crps(
+          .fcst, !! parameter, groupings = groupings,
+          num_ref_members = num_ref_members, show_progress = show_progress
+        )[["ens_summary_scores"]]
+      }
+
+      ens_summary_scores <- Reduce(
+        function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+        ens_summary_scores
+      )
+
+    } else {
+
+      ens_summary_scores <- tibble::tibble()
+
+    }
 
   }
 
@@ -314,6 +326,7 @@ ens_verify.harp_list <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  summary            = TRUE,
   circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
@@ -353,7 +366,7 @@ ens_verify.harp_list <- function(
       list(.fcst, names(.fcst), spread_drop_member),
       function(x, y, z) ens_verify(
         x, !!parameter, verify_members, thresholds, comparator, include_low,
-        include_high, groupings, circle,
+        include_high, groupings, summary, circle,
         rel_probs, num_ref_members, z, jitter_fcst, climatology,
         hexbin, num_bins, rank_hist, crps, brier, roc, econ_val,
         show_progress, fcst_model = y

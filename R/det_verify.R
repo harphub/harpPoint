@@ -12,6 +12,7 @@ det_verify <- function(
   thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
+  summary       = TRUE,
   hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
@@ -38,6 +39,7 @@ det_verify.harp_ens_point_df <- function(
   include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
+  summary       = TRUE,
   hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
@@ -75,6 +77,7 @@ det_verify.harp_det_point_df <- function(
   include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
+  summary       = TRUE,
   hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE,
@@ -193,26 +196,30 @@ det_verify.harp_det_point_df <- function(
     fcst_df
   }
 
-  det_summary_scores <- list()
-  det_summary_scores[["basic"]] <- purrr::map(
-    groupings, compute_summary_scores, .fcst
-  ) %>%
-    purrr::list_rbind() %>%
-    fill_group_na(groupings) %>%
-    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
-
-  if (hexbin) {
-    det_summary_scores[["hexbin"]] <- bin_fcst_obs(
-      .fcst, !!parameter, groupings, num_bins, show_progress
-    )[["det_summary_scores"]]
-  }
-
   res <- list()
 
-  res[["det_summary_scores"]] <- Reduce(
-    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-    det_summary_scores
-  )
+  if (summary) {
+    det_summary_scores <- list()
+    det_summary_scores[["basic"]] <- purrr::map(
+      groupings, compute_summary_scores, .fcst
+    ) %>%
+      purrr::list_rbind() %>%
+      fill_group_na(groupings) %>%
+      dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+
+    if (hexbin) {
+      det_summary_scores[["hexbin"]] <- bin_fcst_obs(
+        .fcst, !!parameter, groupings, num_bins, show_progress
+      )[["det_summary_scores"]]
+    }
+
+    res[["det_summary_scores"]] <- Reduce(
+      function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+      det_summary_scores
+    )
+  } else {
+    res[["det_summary_scores"]] <- tibble::tibble()
+  }
 
   if (!is.null(thresholds)) {
 
@@ -354,6 +361,7 @@ det_verify.harp_list <- function(
   include_high  = TRUE,
   groupings     = "lead_time",
   circle        = NULL,
+  summary       = TRUE,
   hexbin        = TRUE,
   num_bins      = 30,
   show_progress = TRUE
@@ -374,7 +382,7 @@ det_verify.harp_list <- function(
       .fcst,
       ~det_verify(
         .x, {{parameter}}, thresholds, comparator, include_low, include_high,
-        groupings, circle, hexbin, num_bins,
+        groupings, circle, summary, hexbin, num_bins,
         show_progress, fcst_model = .y
       )
     )

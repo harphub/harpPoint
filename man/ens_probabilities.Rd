@@ -4,7 +4,14 @@
 \alias{ens_probabilities}
 \title{Compute probabilities of threshold exceedence for ensemble forecasts}
 \usage{
-ens_probabilities(.fcst, thresholds, parameter = NULL)
+ens_probabilities(
+  .fcst,
+  thresholds,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
+  parameter = NULL
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_df} or \code{harp_list} object with tables that have a column

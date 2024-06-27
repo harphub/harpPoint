@@ -10,7 +10,11 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
   groupings = "lead_time",
+  summary = TRUE,
   circle = NULL,
   rel_probs = NA,
   num_ref_members = NA,
@@ -33,7 +37,11 @@ ens_verify(
   parameter,
   verify_members = TRUE,
   thresholds = NULL,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
   groupings = "lead_time",
+  summary = TRUE,
   circle = NULL,
   rel_probs = NA,
   num_ref_members = NA,
@@ -71,6 +79,9 @@ scores.}
 
 \item{groupings}{The groups for which to compute the scores. See
 \link[dplyr]{group_by} for more information of how grouping works.}
+
+\item{summary}{Logical. Whether to compute summary scores or not. Default is
+\code{TRUE}.}
 
 \item{circle}{If set the parameter is assumed to be cyclic for bias
 calculations. Should be this distance around a circle in the units of the

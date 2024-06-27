@@ -4,7 +4,15 @@
 \alias{det_probabilities}
 \title{Compute binary probabilities for deterministic forecasts}
 \usage{
-det_probabilities(.fcst, parameter, thresholds, obs_probabilities = TRUE)
+det_probabilities(
+  .fcst,
+  parameter,
+  thresholds,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
+  obs_probabilities = TRUE
+)
 }
 \arguments{
 \item{.fcst}{A \code{harp_list} object with \code{harp_det_point_df} deta frames,

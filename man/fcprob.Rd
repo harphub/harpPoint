@@ -4,7 +4,13 @@
 \alias{fcprob}
 \title{Compute the forecast probabilities for given thresholds}
 \usage{
-fcprob(fc, thresholds)
+fcprob(
+  fc,
+  thresholds,
+  comparator = "ge",
+  includeLow = TRUE,
+  includeHigh = TRUE
+)
 }
 \arguments{
 \item{fc}{A two dimensional array of EPS data with members in columns.}

@@ -8,9 +8,13 @@
 det_verify(
   .fcst,
   parameter,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
   thresholds = NULL,
   groupings = "lead_time",
   circle = NULL,
+  summary = TRUE,
   hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
@@ -21,8 +25,12 @@ det_verify(
   .fcst,
   parameter,
   thresholds = NULL,
+  comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
+  include_low = TRUE,
+  include_high = TRUE,
   groupings = "lead_time",
   circle = NULL,
+  summary = TRUE,
   hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
@@ -49,6 +57,9 @@ scores.}
 calculations. Should be this distance around a circle in the units of the
 parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
 for radians.}
+
+\item{summary}{Logical. Whether to compute summary scores or not. Default is
+\code{TRUE}.}
 
 \item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
 pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
