@@ -364,7 +364,8 @@ det_verify.harp_list <- function(
   summary       = TRUE,
   hexbin        = TRUE,
   num_bins      = 30,
-  show_progress = TRUE
+  show_progress = TRUE,
+  ...
 ) {
 
   parameter   <- rlang::ensym(parameter)
@@ -383,7 +384,7 @@ det_verify.harp_list <- function(
       ~det_verify(
         .x, {{parameter}}, thresholds, comparator, include_low, include_high,
         groupings, circle, summary, hexbin, num_bins,
-        show_progress, fcst_model = .y
+        show_progress, fcst_model = .y, ...
       )
     )
   )
