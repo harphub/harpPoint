@@ -29,6 +29,9 @@ or a numeric vector of member numbers to generate ensemble data.}
 \item{seed}{A seed to generate random numbers. By setting this to a numeric
 value, the generated data are fully reproducible.}
 }
+\value{
+A \code{harp_point_df} data frame or a \code{harp_list}.
+}
 \description{
 This function generates fake point data to be used for testing functions, or
 for making reproducible examples. For each \code{fcst_dttm} and \code{SID} a time

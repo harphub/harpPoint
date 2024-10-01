@@ -17,7 +17,7 @@
 #' @param seed A seed to generate random numbers. By setting this to a numeric
 #'   value, the generated data are fully reproducible.
 #'
-#' @return
+#' @return A `harp_point_df` data frame or a `harp_list`.
 #' @export
 #'
 #' @examples
