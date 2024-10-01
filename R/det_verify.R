@@ -59,7 +59,7 @@ det_verify.harp_ens_point_df <- function(
 
   det_verify(
     .fcst, {{parameter}}, thresholds, comparator, include_low, include_high,
-    groupings, circle, hexbin, num_bins,
+    groupings, circle, summary, hexbin, num_bins,
     show_progress, fcst_model
   )
 }
