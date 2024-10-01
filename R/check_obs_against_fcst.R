@@ -89,6 +89,7 @@ check_obs_against_fcst <- function(
 
   tolerance <- join_models(
     .fcst,
+    join_type = "full",
     by = Reduce(
       intersect,
       lapply(
@@ -151,7 +152,8 @@ check_obs_against_fcst <- function(
   ) %>%
     dplyr::group_by(!!!rlang::syms(stratification)) %>%
     dplyr::summarise(
-      tolerance_allowed = stats::sd(.data[["value"]]) * .num_sd_allowed,
+      tolerance_allowed = stats::sd(.data[["value"]], na.rm = TRUE) *
+        .num_sd_allowed,
       num_cases         = dplyr::n()
     )
 
@@ -175,7 +177,8 @@ check_obs_against_fcst <- function(
     min_diff = matrixStats::rowMins(
       as.matrix(
         dplyr::select(tolerance, dplyr::matches(fcst_regex))
-      )
+      ),
+      na.rm = TRUE
     )
   )
 
