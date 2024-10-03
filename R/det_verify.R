@@ -185,6 +185,7 @@ det_verify.harp_det_point_df <- function(
 
     fcst_df <- dplyr::summarise(
       fcst_df,
+      num_cases    = dplyr::n(),
       num_stations = length(unique(!!rlang::sym("SID"))),
       bias         = mean(!!rlang::sym("fcst_bias")),
       rmse         = sqrt(mean(!!rlang::sym("fcst_bias") * !!rlang::sym("fcst_bias"))),
