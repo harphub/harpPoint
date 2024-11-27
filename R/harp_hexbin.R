@@ -220,7 +220,7 @@ compute_hexbin <- function(
     },
     hexbin = purrr::map(
       .data[["grouped_data"]],
-      ~hexbin_df(.x[[parameter]], .x[["fcst"]], num_bins, parameter),
+      ~hexbin_df(.x[[parameter]], .x[["fcst"]], num_bins),
       .progress = pb_name
     )
   )
@@ -231,8 +231,10 @@ compute_hexbin <- function(
 }
 
 
-hexbin_df <- function(x, y, nbins, prm, no_compute = TRUE) {
+hexbin_df <- function(
+    x, y, nbins, show_pb = FALSE, env = rlang::caller_env(), no_compute = TRUE) {
   if (no_compute && length(x) < 100) {
+    cli::cli_progress_update(.envir = env)
     return(tibble::tibble(obs = x, fcst = y, count = 1))
   }
   xrange <- range(x)
@@ -254,7 +256,7 @@ hexbin_df <- function(x, y, nbins, prm, no_compute = TRUE) {
     }
   }
   hexes <- hexbin::hexbin(x, y, xbins = nbins, xbnds = xrange, ybnds = yrange)
-  dplyr::rename(
+  res <- dplyr::rename(
     dplyr::mutate(
       tibble::as_tibble(hexbin::hcell2xy(hexes)),
       count = hexes@count
@@ -262,4 +264,8 @@ hexbin_df <- function(x, y, nbins, prm, no_compute = TRUE) {
     obs  = .data[["x"]],
     fcst = .data[["y"]]
   )
+  if (show_pb) {
+    cli::cli_progress_update(.envir = env)
+  }
+  res
 }

@@ -2,7 +2,7 @@
 # that were of type integer became too large - here they are of type numeric to
 # prevent integer overflow.
 
-harp_table_stats <- function(a, b, c, d, n, fudge = 0.01, silent = FALSE)
+harp_table_stats <- function(a, b, c, d, n, show_prog, env, fudge = 0.01, silent = FALSE)
 {
     if (n == 0)
         n <- fudge
@@ -102,8 +102,12 @@ harp_table_stats <- function(a, b, c, d, n, fudge = 0.01, silent = FALSE)
         (1 - F)))/(H * (log(F * (1 - H)) + log(H * (1 - F)))^2) *
         sqrt(H * (1 - H)/(p * n))
 
+    if (show_prog) {
+      cli::cli_progress_update(.envir = env)
+    }
+
     tibble::as_tibble(list(
-      num_cases_for_threshold_total      = n,
+      num_cases_for_threshold_total      = a + b + c,
       num_cases_for_threshold_observed   = a + c,
       num_cases_for_threshold_forecast   = a + b,
       hits                               = a,

@@ -44,13 +44,72 @@ det_probabilities.harp_det_point_df <- function(
 
   thresholds <- check_thresholds(thresholds, comparator)
 
-  dplyr::bind_cols(
-    .fcst,
-    harp_probs(
-      .fcst, thresholds, comparator, include_low, include_high,
-      chr_param, obs_prob = obs_probabilities, fcst_type = "det"
-    )
+  comparator_func <- switch(
+    comparator,
+    "ge" = function(x, y, ...) as.numeric(x >= y),
+    "gt" = function(x, y, ...) as.numeric(x > y),
+    "le" = function(x, y, ...) as.numeric(x <= y),
+    "lt" = function(x, y, ...) as.numeric(x < y),
+    "eq" = function(x, y, ...) as.numeric(x == y),
+    "between" = function(x, y, include_low, include_high) {
+      if (include_low && include_high) {
+        return(as.numeric(x >= y & x <= y))
+      }
+      if (include_low && !include_high) {
+        return(as.numeric(x >= y & x < y))
+      }
+      if (!include_low && include_high) {
+        return(as.numeric(x > y & x <= y))
+      }
+      if (!include_low && !include_high) {
+        return(as.numeric(x > y & x < y))
+      }
+    },
+    "outside" = function(x, y, include_low, include_high) {
+      if (include_low && include_high) {
+        return(as.numeric(x <= y & x >= y))
+      }
+      if (include_low && !include_high) {
+        return(as.numeric(x <= y & x > y))
+      }
+      if (!include_low && include_high) {
+        return(as.numeric(x < y & x >= y))
+      }
+      if (!include_low && !include_high) {
+        return(as.numeric(x < y & x > y))
+      }
+    }
   )
+
+
+  lapply(
+    thresholds,
+    function(x) {
+      res <- dplyr::mutate(
+        .fcst,
+        threshold = paste(comparator, x, sep = "_"),
+        fcst_prob = comparator_func(
+          .data[["fcst"]], x, include_low, include_high
+        )
+      )
+      if (obs_probabilities) {
+        res <- dplyr::mutate(
+          res,
+          obs_prob = comparator_func(
+            .data[[chr_param]], x, include_low, include_high
+          )
+        )
+      }
+    }
+  )
+
+  # dplyr::bind_cols(
+  #   .fcst,
+  #   harp_probs(
+  #     .fcst, thresholds, comparator, include_low, include_high,
+  #     chr_param, obs_prob = obs_probabilities, fcst_type = "det"
+  #   )
+  # )
 
 }
 

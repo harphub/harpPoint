@@ -1,13 +1,16 @@
+#' @export
 get_validdate <- function(.fcst, max_min) {
   UseMethod("get_validdate")
 }
 
+#' @export
 get_validdate.default <- function(.fcst, max_min) {
   .fcst[["validdate"]] %>%
     max_min() %>%
     harpIO::unixtime_to_str_datetime(harpIO::YMDhm)
 }
 
+#' @export
 get_validdate.harp_list <- function(.fcst, max_min) {
   purrr::map(.fcst, get_validdate, max_min) %>%
     unlist() %>%

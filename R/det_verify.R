@@ -128,7 +128,7 @@ det_verify.harp_det_point_df <- function(
 
       message("This looks like an ensemble - will compute deterministic scores for each member.")
 
-      .fcst     <- harpCore::pivot_members(.fcst) %>%
+      .fcst <- harpCore::pivot_members(.fcst) %>%
         dplyr::rename(forecast_det = .data$fcst)
 
       groupings <- purrr::map(groupings, union, c("member", "sub_model"))
@@ -138,199 +138,47 @@ det_verify.harp_det_point_df <- function(
 
   }
 
-  det_score_function <- function(x) {
-    tibble::as_tibble(list(
-      num_cases = nrow(x),
-      num_stations = {
-        if (is.element("SID", colnames(x))) {
-          length(unique(x[["SID"]]))
-        } else {
-          1L
-        }
-      },
-      bias      = mean(x[["fcst_bias"]]),
-      rmse      = sqrt(mean(x[["fcst_bias"]] ^ 2)),
-      mae       = mean(abs(x[["fcst_bias"]])),
-      stde      = stats::sd(x[["fcst_bias"]])
-    ))
-  }
-
-  compute_summary_scores <- function(compute_group, fcst_df) {
-
-    local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
-
-    # Remove the non-grouping columns and ensure no row duplications
-    fcst_df <- distinct_rows(fcst_df, compute_group, local_fcst_col, chr_param)
-
-    fcst_df <- dplyr::mutate(
-      fcst_df,
-      fcst_bias = bias(.data[[local_fcst_col]], .data[[chr_param]], circle)
-    )
-
-    fcst_df <- group_without_threshold(fcst_df, compute_group, nest = FALSE)
-
-    group_vars  <- compute_group[compute_group != "threshold"]
-    group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
-    score_text  <- cli::col_blue(glue::glue("Det summary for {group_names}"))
-
-    show_progress <- FALSE
-
-    if (show_progress) {
-      pb_name <- score_text
-    } else {
-      pb_name <- FALSE
-      message(score_text, appendLF = FALSE)
-      score_text <- ""
-    }
-
-    fcst_df <- dplyr::summarise(
-      fcst_df,
-      num_stations = length(unique(!!rlang::sym("SID"))),
-      bias         = mean(!!rlang::sym("fcst_bias")),
-      rmse         = sqrt(mean(!!rlang::sym("fcst_bias") * !!rlang::sym("fcst_bias"))),
-      mae          = mean(abs(!!rlang::sym("fcst_bias"))),
-      stde         = stats::sd(!!rlang::sym("fcst_bias"))
-    )
-
-    message(score_text, cli::col_green(cli::symbol[["tick"]]))
-    fcst_df
-  }
+  needed_cols <- unique(c(
+    "fcst_model", "fcst_dttm", "lead_time", "SID",
+    unique(unlist(groupings)), fcst_col, chr_param
+  ))
+  .fcst <- dplyr::select(.fcst, dplyr::any_of(needed_cols))
 
   res <- list()
 
+  res[["det_summary_scores"]] <- tibble::tibble()
+
+  det_summary_scores <- list()
+
   if (summary) {
-    det_summary_scores <- list()
-    det_summary_scores[["basic"]] <- purrr::map(
-      groupings, compute_summary_scores, .fcst
-    ) %>%
-      purrr::list_rbind() %>%
-      fill_group_na(groupings) %>%
-      dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
-
-    if (hexbin) {
-      det_summary_scores[["hexbin"]] <- bin_fcst_obs(
-        .fcst, !!parameter, groupings, num_bins, show_progress
-      )[["det_summary_scores"]]
-    }
-
-    res[["det_summary_scores"]] <- Reduce(
-      function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-      det_summary_scores
+    det_summary_scores[["basic"]] <- compute_det_score(
+      groupings, .fcst, fcst_col, chr_param, fcst_model, circle, num_bins,
+      "summary", show_progress
     )
-  } else {
-    res[["det_summary_scores"]] <- tibble::tibble()
   }
+
+  if (hexbin) {
+    det_summary_scores[["hexbin"]] <- compute_det_score(
+      groupings, .fcst, fcst_col, chr_param, fcst_model, circle, num_bins,
+      "hexbin", show_progress
+    )
+  }
+
+  res[["det_summary_scores"]] <- Reduce(
+    function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+    det_summary_scores
+  )
+
+  rm(det_summary_scores)
 
   if (!is.null(thresholds)) {
 
-    thresholds <- check_thresholds(thresholds, comparator)
-
-    meta_cols <- grep(
-      "_mbr[[:digit:]]+", colnames(.fcst), value = TRUE, invert = TRUE
+    res[["det_threshold_scores"]] <- compute_det_score(
+      groupings, .fcst, fcst_col, chr_param, fcst_model, circle, num_bins,
+      "threshold", show_progress, thresholds = thresholds,
+      comparator = comparator, include_low = include_low,
+      include_high = include_high
     )
-
-    meta_cols_sym <- rlang::syms(meta_cols)
-    thresh_col    <- rlang::sym("threshold")
-
-    .fcst <- det_probabilities(
-      .fcst, !! parameter, thresholds, comparator, include_low, include_high
-    )
-
-    fcst_thresh <- .fcst %>%
-      dplyr::select(!!! meta_cols_sym, dplyr::contains("fcst_prob")) %>%
-      tidyr::pivot_longer(
-        dplyr::contains("fcst_prob"),
-        names_to  = "threshold",
-        values_to = "fcst_prob"
-      ) %>%
-      dplyr::mutate(!!thresh_col := gsub("fcst_prob_", "", !!thresh_col))
-
-    obs_thresh <- .fcst %>%
-      dplyr::select(!!! meta_cols_sym, dplyr::contains("obs_prob")) %>%
-      tidyr::pivot_longer(
-        dplyr::contains("obs_prob"),
-        names_to  = "threshold",
-        values_to = "obs_prob"
-      ) %>%
-      dplyr::mutate(!!thresh_col := gsub("obs_prob_", "", !!thresh_col))
-
-    .fcst <- dplyr::mutate(fcst_thresh, obs_prob = obs_thresh[["obs_prob"]])
-
-    .fcst <- dplyr::mutate(
-      .fcst,
-      a = .data[["fcst_prob"]] & .data[["obs_prob"]],
-      b = .data[["fcst_prob"]] & !.data[["obs_prob"]],
-      c = !.data[["fcst_prob"]] & .data[["obs_prob"]],
-      d = !.data[["fcst_prob"]] & !.data[["obs_prob"]],
-    )
-
-    verif_func <- function(x) {
-      res <- harp_table_stats(
-        sum(x[["a"]]), sum(x[["b"]]), sum(x[["c"]]), sum(x[["d"]]), nrow(x)
-      )
-      res
-      #sweep_det_thresh(res)
-    }
-
-    groupings <- purrr::map(groupings, union, "threshold")
-
-    compute_threshold_scores <- function(compute_group, fcst_df) {
-
-      fcst_obs_col <- letters[1:4]
-
-      # Remove the non-grouping columns and ensure no row duplications
-      fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, chr_param)
-
-      fcst_df <- dplyr::group_nest(
-        fcst_df, dplyr::across(dplyr::all_of(compute_group)),
-        .key = "grouped_data"
-      )
-
-      group_names <- glue::glue_collapse(
-        compute_group, sep = ", ", last = " & "
-      )
-
-      score_text <- cli::col_blue(
-        glue::glue("Det categorical for {group_names}")
-      )
-
-      if (show_progress) {
-        pb_name <- score_text
-      } else {
-        pb_name <- FALSE
-        message(score_text, appendLF = FALSE)
-        score_text <- ""
-      }
-
-      fcst_df <- dplyr::transmute(
-        fcst_df,
-        dplyr::across(dplyr::all_of(compute_group)),
-        num_stations = {
-          if (is.element("SID", compute_group)) {
-            1L
-          } else {
-            purrr::map_int(.data[["grouped_data"]], ~length(unique(.x[["SID"]])))
-          }
-        },
-        verif = purrr::map(
-          .data[["grouped_data"]],
-          verif_func,
-          .progress = pb_name
-        )
-      )
-
-      message(score_text, cli::col_green(cli::symbol[["tick"]]))
-      fcst_df
-
-    }
-
-    res[["det_threshold_scores"]] <- purrr::map(
-      groupings, compute_threshold_scores, .fcst
-    ) %>%
-      purrr::list_rbind() %>%
-      fill_group_na(groupings) %>%
-      tidyr::unnest(dplyr::all_of("verif")) %>%
-      dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
 
   } else {
 
@@ -369,12 +217,6 @@ det_verify.harp_list <- function(
 ) {
 
   parameter   <- rlang::ensym(parameter)
-#  if (!inherits(try(rlang::eval_tidy(parameter), silent = TRUE), "try-error")) {
-#    if (is.character(rlang::eval_tidy(parameter))) {
-#      parameter <- rlang::eval_tidy(parameter)
-#      parameter <- rlang::ensym(parameter)
-#    }
-#  }
 
   comparator <- match.arg(comparator)
 
@@ -390,6 +232,233 @@ det_verify.harp_list <- function(
   )
 
 }
+
+check_circle <- function(x) {
+  if (is.null(x)) return()
+  if (!x %in% c(360, 2 * pi)) {
+    cli::cli_warn(c(
+      "{.arg circle} has a value not equal to 360 or 2 * pi.",
+      "i" = "You have set {.arg circle} = {x}.",
+      "i" = "Are you sure this is the value you want?"
+    ))
+  }
+}
+
+distinct_rows <- function(.df, grps, fc_cols, obs_col) {
+  std_cols <- c("fcst_dttm", "lead_time", "SID")
+  .df <- dplyr::select(
+    .df,
+    dplyr::any_of(c(std_cols, grps, fc_cols, obs_col))
+  )
+  # Do not include list columns - this is probably only an issue for CRPS
+  # where there is some randomness at a very high level of precision
+  dplyr::distinct(.df, dplyr::pick(-dplyr::where(is.list)), .keep_all = TRUE)
+}
+
+
+# Get the total for a progress bar
+get_pb_total <- function(df, grp, multi_grp) {
+  dplyr::n_groups(
+    group_without_threshold(
+      df, setdiff(grp, unique(multi_grp[["key"]])),
+      nest = FALSE
+    )
+  ) * nrow(multi_grp)
+}
+
+# Standard dev with a progress bar
+sd_pb <- function(x, show_prog, env) {
+  res <- stats::sd(x)
+  if (show_prog) {
+    cli::cli_progress_update(.envir = env)
+  }
+  res
+}
+
+# Score function for list of groups - this should be called by the user facing
+# function. score_name should have a matching function called
+# compute_det_<score_name>()
+compute_det_score <- function(
+  grps_list, fcst_df, fcst_col, obs_col, fcst_model, circle, num_bins,
+  score_name, show_progress, thresholds = NULL, comparator = "ge",
+  include_low = TRUE, include_high = TRUE
+) {
+  lapply(
+    grps_list,
+    function(g) {
+      compute_grp_det_score(
+        g, fcst_df, fcst_col, obs_col, circle, num_bins,
+        score_name, show_progress, thresholds,
+        comparator = comparator, include_low = include_low,
+        include_high = include_high
+      )
+    }
+  ) %>%
+    purrr::list_rbind() %>%
+    fill_group_na(grps_list) %>%
+    #tidyr::unnest(dplyr::all_of("verif")) %>%
+    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+}
+
+# Function to call a deterministic score function for a single set of groups
+compute_grp_det_score <- function(
+  compute_group, fcst_df, fcst_col, obs_col, circle, num_bins,
+  score_name, show_progress, thresholds = NULL, comparator = "ge",
+  include_low = TRUE, include_high = TRUE
+) {
+
+  local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
+
+  # Make generic observations column
+  colnames(fcst_df)[colnames(fcst_df) == obs_col] <- "obs"
+  obs_col <- "obs"
+
+  fcst_df <- dplyr::mutate(
+    fcst_df,
+    fcst_bias = bias(.data[[local_fcst_col]], .data[[obs_col]], circle)
+  )
+
+  # Where there are multiple groups per row, these should be filtered
+  # and looped over
+
+  multi_groups <- data.frame(key = NA, value = NA)
+  mg_attr <- attr(fcst_df, "multi_groups")
+  mg      <- intersect(compute_group, names(mg_attr))
+  if (length(mg) > 0) {
+    multi_groups <- dplyr::bind_rows(lapply(
+      mg,
+      function(g) data.frame(key = g, value = mg_attr[[g]])
+    ))
+  }
+
+  group_vars  <- compute_group
+  if (is.null(thresholds)) {
+    thresholds <- NA
+  } else {
+    group_vars <- union("threshold", group_vars)
+    thresholds <- check_thresholds(thresholds, comparator)
+  }
+  group_names <- glue::glue_collapse(group_vars, sep = ", ", last = " & ")
+  score_text  <- cli::col_blue(glue::glue("Det {score_name} for {group_names}"))
+
+  score_func <- get(paste0("compute_det_", score_name))
+
+  if (show_progress) {
+    pb_name  <- score_text
+    pb_total <- get_pb_total(fcst_df, compute_group, multi_groups) *
+      length(thresholds)
+    pb_env   <- environment()
+    cli::cli_progress_bar(pb_name, total = pb_total)
+  } else {
+    pb_name <- FALSE
+    message(score_text, appendLF = FALSE)
+    score_text <- ""
+  }
+
+
+  fcst_df <- dplyr::bind_rows(lapply(
+    thresholds,
+    function(t, ...) {
+      if (!is.na(t)) {
+        fcst_df <- prep_thresh_data(
+          fcst_df, obs_col, t, comparator, include_low, include_high
+        )
+        compute_group <- union("threshold", compute_group)
+      }
+      dplyr::bind_rows(
+        purrr::map2(
+          multi_groups$key, multi_groups$value,
+          function(key, value, fcst_data = fcst_df) {
+            if (!is.na(key) && !is.na(value)) {
+              fcst_data <- dplyr::filter(
+                fcst_data, grepl(value, .data[[key]], fixed = TRUE)
+              )
+              fcst_data[[key]] <- gsub("[<>]", "", value)
+            }
+            fcst_data <- dplyr::group_by(fcst_data, !!!rlang::syms(compute_group))
+            score_func(fcst_data, show_progress, pb_env, ...)
+          }
+        )
+      )
+    },
+    num_bins = num_bins
+  ))
+
+  message(score_text, cli::col_green(cli::symbol[["tick"]]))
+  if (show_progress) {
+    cli::cli_progress_done(.envir = pb_env)
+  }
+  fcst_df
+}
+
+
+# Summary scores
+compute_det_summary <- function(grouped_fcst, show_prog, pb_env, ...) {
+  dplyr::summarise(
+    grouped_fcst,
+    num_stations = length(unique(!!rlang::sym("SID"))),
+    num_cases    = dplyr::n(),
+    bias         = mean(!!rlang::sym("fcst_bias")),
+    rmse         = sqrt(mean((!!rlang::sym("fcst_bias")) ^ 2)),
+    mae          = mean(abs(!!rlang::sym("fcst_bias"))),
+    stde         = sd_pb(
+      !!rlang::sym("fcst_bias"), show_prog, pb_env
+    ),
+    .groups = "drop"
+  )
+}
+
+# Hexbin
+compute_det_hexbin <- function(grouped_fcst, show_prog, pb_env, num_bins, ...) {
+  dplyr::summarise(
+    grouped_fcst,
+    num_stations = length(unique(!!rlang::sym("SID"))),
+    num_cases    = dplyr::n(),
+    hexbin       = list(
+      hexbin_df(.data[["obs"]], .data[["fcst"]], num_bins, show_prog, pb_env)
+    ),
+    .groups = "drop"
+  )
+}
+
+
+# Threshold scores
+prep_thresh_data <- function(
+    fcst_df, obs_col, threshold, comparator, include_low, include_high
+) {
+  fcst_df <- det_probabilities(
+    fcst_df, !!rlang::sym(obs_col), threshold, comparator, include_low, include_high
+  )[[1]]
+
+  dplyr::mutate(
+    fcst_df,
+    a = as.numeric(.data[["fcst_prob"]] & .data[["obs_prob"]]),    # Hit
+    b = as.numeric(.data[["fcst_prob"]] & !.data[["obs_prob"]]),   # False Alarm
+    c = as.numeric(!.data[["fcst_prob"]] & .data[["obs_prob"]]),   # Miss
+    d = as.numeric(!.data[["fcst_prob"]] & !.data[["obs_prob"]])   # Correct Rejection
+  )
+}
+
+compute_det_threshold <- function(grouped_fcst, show_prog, pb_env, ...) {
+  dplyr::summarise(
+    grouped_fcst,
+    num_stations = length(unique(!!rlang::sym("SID"))),
+    num_cases    = dplyr::n(),
+    verif        = list(harp_table_stats(
+      sum(.data[["a"]]), sum(.data[["b"]]),
+      sum(.data[["c"]]), sum(.data[["d"]]),
+      dplyr::n(), show_prog, pb_env
+    )),
+    .groups = "drop"
+  ) %>%
+    tidyr::unnest("verif")
+}
+
+
+
+
+
+
 
 sweep_det_thresh <- function(x) {
 
@@ -512,24 +581,4 @@ empty_det_threshold_scores <- function(fcst_df, groupings) {
 
 }
 
-check_circle <- function(x) {
-  if (is.null(x)) return()
-  if (!x %in% c(360, 2 * pi)) {
-    cli::cli_warn(c(
-      "{.arg circle} has a value not equal to 360 or 2 * pi.",
-      "i" = "You have set {.arg circle} = {x}.",
-      "i" = "Are you sure this is the value you want?"
-    ))
-  }
-}
 
-distinct_rows <- function(.df, grps, fc_cols, obs_col) {
-  std_cols <- c("fcst_dttm", "lead_time", "SID")
-  .df <- dplyr::select(
-    .df,
-    dplyr::any_of(c(std_cols, grps, fc_cols, obs_col))
-  )
-  # Do not include list columns - this is probably only an issue for CRPS
-  # where there is some randomness at a very high level of precision
-  dplyr::distinct(.df, dplyr::pick(-dplyr::where(is.list)), .keep_all = TRUE)
-}
