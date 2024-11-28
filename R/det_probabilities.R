@@ -52,31 +52,35 @@ det_probabilities.harp_det_point_df <- function(
     "lt" = function(x, y, ...) as.numeric(x < y),
     "eq" = function(x, y, ...) as.numeric(x == y),
     "between" = function(x, y, include_low, include_high) {
+      lower <- min(y)
+      upper <- max(y)
       if (include_low && include_high) {
-        return(as.numeric(x >= y & x <= y))
+        return(as.numeric(x >= lower & x <= upper))
       }
       if (include_low && !include_high) {
-        return(as.numeric(x >= y & x < y))
+        return(as.numeric(x >= lower & x < upper))
       }
       if (!include_low && include_high) {
-        return(as.numeric(x > y & x <= y))
+        return(as.numeric(x > lower & x <= upper))
       }
       if (!include_low && !include_high) {
-        return(as.numeric(x > y & x < y))
+        return(as.numeric(x > lower & x < upper))
       }
     },
     "outside" = function(x, y, include_low, include_high) {
+      lower <- min(y)
+      upper <- max(y)
       if (include_low && include_high) {
-        return(as.numeric(x <= y & x >= y))
+        return(as.numeric(x <= lower | x >= upper))
       }
       if (include_low && !include_high) {
-        return(as.numeric(x <= y & x > y))
+        return(as.numeric(x <= lower | x > upper))
       }
       if (!include_low && include_high) {
-        return(as.numeric(x < y & x >= y))
+        return(as.numeric(x < lower | x >= upper))
       }
       if (!include_low && !include_high) {
-        return(as.numeric(x < y & x > y))
+        return(as.numeric(x < lower | x > upper))
       }
     }
   )
@@ -87,7 +91,7 @@ det_probabilities.harp_det_point_df <- function(
     function(x) {
       res <- dplyr::mutate(
         .fcst,
-        threshold = paste(comparator, x, sep = "_"),
+        threshold = make_threshcol(x, comparator, include_low, include_high),
         fcst_prob = comparator_func(
           .data[["fcst"]], x, include_low, include_high
         )
@@ -100,6 +104,7 @@ det_probabilities.harp_det_point_df <- function(
           )
         )
       }
+      res
     }
   )
 
@@ -143,3 +148,15 @@ det_probabilities.harp_list <- function(
     new_harp_fcst()
 }
 
+make_threshcol <- function(th, comp, il, ih) {
+  if (length(th) == 1) {
+    return(paste(comp, th, sep = "_"))
+  }
+  comp1 <- ifelse(il, "ge", "gt")
+  comp2 <- ifelse(ih, "le", "lt")
+  if (comp == "outside") {
+    comp1 <- ifelse(il, "le", "lt")
+    comp2 <- ifelse(ih, "ge", "gt")
+  }
+  paste(comp1, min(th), comp2, max(th), sep = "_")
+}
