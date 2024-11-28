@@ -359,7 +359,7 @@ compute_grp_det_score <- function(
   fcst_df <- dplyr::bind_rows(lapply(
     thresholds,
     function(t, ...) {
-      if (!is.na(t)) {
+      if (!all(is.na(t))) {
         fcst_df <- prep_thresh_data(
           fcst_df, obs_col, t, comparator, include_low, include_high
         )
