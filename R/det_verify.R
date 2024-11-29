@@ -6,10 +6,11 @@
 det_verify <- function(
   .fcst,
   parameter,
+  thresholds    = NULL,
+  clean_thresh  = TRUE,
   comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low   = TRUE,
   include_high  = TRUE,
-  thresholds    = NULL,
   groupings     = "lead_time",
   circle        = NULL,
   summary       = TRUE,
@@ -34,6 +35,7 @@ det_verify.harp_ens_point_df <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  clean_thresh  = TRUE,
   comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low   = TRUE,
   include_high  = TRUE,
@@ -72,6 +74,7 @@ det_verify.harp_det_point_df <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  clean_thresh  = TRUE,
   comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low   = TRUE,
   include_high  = TRUE,
@@ -136,6 +139,12 @@ det_verify.harp_det_point_df <- function(
 
     }
 
+  }
+
+  if (clean_thresh) {
+    thresholds <- clean_thresholds(
+      .fcst[c(fcst_col, chr_param)], thresholds, comparator
+    )
   }
 
   needed_cols <- unique(c(
@@ -204,6 +213,7 @@ det_verify.harp_list <- function(
   .fcst,
   parameter,
   thresholds    = NULL,
+  clean_thresh  = TRUE,
   comparator    = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low   = TRUE,
   include_high  = TRUE,
@@ -224,8 +234,8 @@ det_verify.harp_list <- function(
     purrr::imap(
       .fcst,
       ~det_verify(
-        .x, {{parameter}}, thresholds, comparator, include_low, include_high,
-        groupings, circle, summary, hexbin, num_bins,
+        .x, {{parameter}}, thresholds, clean_thresh, comparator,
+        include_low, include_high, groupings, circle, summary, hexbin, num_bins,
         show_progress, fcst_model = .y, ...
       )
     )
@@ -273,6 +283,43 @@ sd_pb <- function(x, show_prog, env) {
     cli::cli_progress_update(.envir = env)
   }
   res
+}
+
+# Remove thresholds that result in no cases
+clean_thresholds <- function(all_data, thresholds, comparator) {
+  if (is.null(thresholds) || comparator == "eq") {
+    return(thresholds)
+  }
+  data_range <- range(all_data)
+  if (!is.list(thresholds)) {
+    idx <- which(thresholds >= data_range[1] & thresholds <= data_range[2])
+    if (comparator %in% c("ge", "gt")) {
+      if (min(idx) >= 2) {
+        idx <- c((min(idx) - 1), idx)
+      }
+    }
+    if (comparator %in% c("le", "lt")) {
+      num_thresh <- length(thresholds)
+      if (max(idx) <= num_thresh - 1) {
+        idx <- c(idx, (max(idx) + 1))
+      }
+    }
+    return(thresholds[idx])
+  }
+
+  if (comparator == "between") {
+    first_last <- which(
+      vapply(
+        thresholds,
+        function(x) any((data_range <= max(x) & data_range >= min(x))),
+        logical(1)
+      )
+    )
+    return(thresholds[do.call(seq, as.list(first_last))])
+  }
+
+  # Not sure how to handle outside so just return thresholds
+  thresholds
 }
 
 # Score function for list of groups - this should be called by the user facing
