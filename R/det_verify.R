@@ -60,9 +60,10 @@ det_verify.harp_ens_point_df <- function(
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
   det_verify(
-    .fcst, {{parameter}}, thresholds, comparator, include_low, include_high,
+    .fcst, {{parameter}}, thresholds, clean_thresh,
+    comparator, include_low, include_high,
     groupings, circle, summary, hexbin, num_bins,
-    show_progress, fcst_model
+    show_progress, fcst_model, ...
   )
 }
 
