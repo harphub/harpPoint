@@ -153,7 +153,7 @@ ens_brier.harp_ens_probs <- function(
     fcst_obs_col <- c("fcst_prob", "obs_prob")
 
     # Remove the non-grouping columns and ensure no row duplications
-    fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, NULL)
+    #fcst_df <- distinct_rows(fcst_df, compute_group, fcst_obs_col, NULL)
 
     compute_group_sym <- rlang::syms(compute_group)
     class(fcst_df) <- class(fcst_df)[class(fcst_df) != "harp_ens_probs"]
