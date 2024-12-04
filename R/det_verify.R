@@ -399,6 +399,7 @@ compute_grp_det_score <- function(
     cli::cli_progress_bar(pb_name, total = pb_total)
   } else {
     pb_name <- FALSE
+    pb_env  <- NULL
     message(score_text, appendLF = FALSE)
     score_text <- ""
   }

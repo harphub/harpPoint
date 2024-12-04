@@ -234,7 +234,9 @@ compute_hexbin <- function(
 hexbin_df <- function(
     x, y, nbins, show_pb = FALSE, env = rlang::caller_env(), no_compute = TRUE) {
   if (no_compute && length(x) < 100) {
-    cli::cli_progress_update(.envir = env)
+    if (show_pb) {
+      cli::cli_progress_update(.envir = env)
+    }
     return(tibble::tibble(obs = x, fcst = y, count = 1))
   }
   xrange <- range(x)
