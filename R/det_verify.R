@@ -453,6 +453,8 @@ compute_det_summary <- function(grouped_fcst, show_prog, pb_env, ...) {
     stde         = sd_pb(
       !!rlang::sym("fcst_bias"), show_prog, pb_env
     ),
+    mean_fcst    = mean(!!rlang::sym("fcst")),
+    mean_obs     = mean(!!rlang::sym("obs")),
     .groups = "drop"
   )
 }
