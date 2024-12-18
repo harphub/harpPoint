@@ -55,15 +55,40 @@ det_verify.harp_ens_point_df <- function(
     groupings <- list(groupings)
   }
 
-  .fcst <- harpCore::as_harp_df(harpCore::pivot_members(.fcst))
+  member_cols <- grep("_mbr[0-9]{3}", colnames(.fcst), value = TRUE)
+  #.fcst <- harpCore::as_harp_df(harpCore::pivot_members(.fcst))
 
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
-  det_verify(
-    .fcst, {{parameter}}, thresholds, clean_thresh,
-    comparator, include_low, include_high,
-    groupings, circle, summary, hexbin, num_bins,
-    show_progress, fcst_model, ...
+  bind_point_verif(
+    lapply(
+      member_cols,
+      function(mbr) {
+        excluded_mbrs <- member_cols[member_cols != mbr]
+        sub_model_name <- regmatches(
+          mbr, regexpr("[[:graph:]]+(?=_mbr[0-9]{3})", mbr, perl = TRUE)
+        )
+        mbr_name <- regmatches(mbr, regexpr("mbr[0-9]{3}[[:graph:]]*", mbr))
+        cli::cli_inform(
+          cli::col_cyan(
+            "Det member verification for: {cli::col_br_yellow(mbr)}"
+          )
+        )
+        det_verify(
+          harpCore::as_det(
+            dplyr::mutate(
+              dplyr::select(.fcst, -dplyr::all_of(excluded_mbrs)),
+              member    = mbr_name,
+              sub_model = sub_model_name
+            )
+          ),
+          {{parameter}}, thresholds, clean_thresh,
+          comparator, include_low, include_high,
+          groupings, circle, summary, hexbin, num_bins,
+          show_progress, fcst_model, ...
+        )
+      }
+    )
   )
 }
 
