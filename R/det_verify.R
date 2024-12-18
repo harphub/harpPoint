@@ -56,7 +56,6 @@ det_verify.harp_ens_point_df <- function(
   }
 
   member_cols <- grep("_mbr[0-9]{3}", colnames(.fcst), value = TRUE)
-  #.fcst <- harpCore::as_harp_df(harpCore::pivot_members(.fcst))
 
   groupings <- purrr::map(groupings, ~union(c("sub_model", "member"), .x))
 
