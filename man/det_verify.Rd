@@ -8,16 +8,20 @@
 det_verify(
   .fcst,
   parameter,
+  thresholds = NULL,
+  clean_thresh = TRUE,
   comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low = TRUE,
   include_high = TRUE,
-  thresholds = NULL,
   groupings = "lead_time",
   circle = NULL,
   summary = TRUE,
   hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
+  new_det_score = NULL,
+  new_det_cont_score = NULL,
+  new_det_score_opts = list(),
   ...
 )
 
@@ -25,6 +29,7 @@ det_verify(
   .fcst,
   parameter,
   thresholds = NULL,
+  clean_thresh = TRUE,
   comparator = c("ge", "gt", "le", "lt", "eq", "between", "outside"),
   include_low = TRUE,
   include_high = TRUE,
@@ -34,6 +39,9 @@ det_verify(
   hexbin = TRUE,
   num_bins = 30,
   show_progress = TRUE,
+  new_det_score = NULL,
+  new_det_cont_score = NULL,
+  new_det_score_opts = list(),
   fcst_model = NULL,
   ...
 )
@@ -70,12 +78,172 @@ the hexbin computation.}
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
 \code{TRUE}.}
 
+\item{new_det_score}{String. The name of a new score to compute from
+forecast and observation pairs. \code{det_verify()} will search the global
+environment for a function called \verb{compute_det_<new_det_score>()} and
+optionally \verb{prep_det_<new_det_score>()}. \verb{compute_det_<new_det_score>}
+should take a grouped data frame, a logical indicating whether to use a
+progress bar, the progress bar environment and a named list of options to
+be used in the function. The function should do some form of aggregation
+for each group using \code{\link[dplyr]{summarize}} or similar and must
+call \code{tick_progress()} with the show progress logical and the progress bar
+environment. \verb{prep_det_<new_det_score>()} is used to create new columns in
+the data frame prior to the score aggregation and should take the data
+frame, the name of the forecast column, the name of the observations
+column and a named list of options to be used in the function. See
+\strong{Adding your own score} below.}
+
+\item{new_det_cont_score}{String. The name of a function that will compute
+a score from contingency table values and or binary probabilities. The
+function should exist in the global environment and take as its arguments
+(in this order): observed binary probability, forecast binary probability,
+hit, false alarm, miss, correct rejection, a logical of whether a progress
+bar is used the progress bar environment and a named list of options for
+the function. The function must call \code{tick_progress()} with the show
+progress logical and the progress bar environment. See
+\strong{Adding your own score} below.}
+
+\item{new_det_score_opts}{A named list of options for use in any of
+\verb{prep_det_<new_det_score>()}, \verb{compute_det_<new_det_score>()},
+\verb{<new_det_cont_score>}. See \strong{Adding your own score} below.}
+
 \item{...}{Reserved for methods.}
 
 \item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
 }
+\value{
+A list containing up to two data frames: \code{det_summary_scores}
+and \code{det_threshold_scores}.
+}
 \description{
 Compute verification scores for deterministic forecasts.
 }
+\section{Adding your own scores}{
+
+
+You can add functions to compute scores using the infrastructure of
+\code{det_verify()}. These can be for scores calculated from forecast observation
+pairs, or from binary probabilities and/or contingency table counts for a
+given threshold and comparator.
+\subsection{Scores computed from forecast observation pairs.}{
+
+The name of the score is specified in the \code{new_det_score} argument and
+\code{det_verify()} will look for a function with the name
+\verb{compute_ens_<new_det_score>} that will compute the score using
+\code{\link[dplyr]{summarize}} or similar. It will optionally look for a
+function with the name \verb{prep_ens_<new_det_score>} that will do some
+preparation of the data for each row before aggregation into the score. This
+is best illustrated with an example:
+
+Let's say we want to compute the route mean square error factor. That is to
+say, the RMS of the ratio of the forecasted value to the observed value. We
+can first prepare the data by writing a function to compute the sqaured
+factor for each forecast observation pair before aggregating:
+
+\preformatted{
+prep_det_rmsf <- function(df, fc_col, ob_col, ...) {
+  dplyr::mutate(
+    df,
+    fctr_sq = (.data[[fc_col]] / .data[[ob_col]]) ^ 2
+  )
+}
+}
+
+The above function will have the squared ratio of forecasted value to the
+observed value in the \code{fctr_sq} column.
+
+For the computation of the score, we can use \code{\link[dplyr]{summarize}}
+to compute the mean of the squared value for each group. The compute function
+needs to take grouped data frame, some details about the progress bar and
+optionally a list of arguments.
+
+\preformatted{
+compute_det_rmsf <- function(grouped_df, show_pb, pb_env, ...) {
+  res <- dplyr::summarize(
+    grouped_df,
+    rmsf = sqrt(mean(.data[["fctr_sq"]]))
+  )
+  tick_progress(show_pb, pb_env)
+  res
+}
+}
+
+We can now run \code{det_verify(data, obs_col, new_det_score = "rmsf")}
+
+We could also make it an option whether to compute the total factor or the
+ratio of the the difference in the forecasted and observed values. We can
+do this by adding the option to \code{new_det_score_opts}
+
+\preformatted{
+prep_det_rmsf <- function(df, fc_col, ob_col, opts) {
+  if (opts$diff){
+    dplyr::mutate(
+      df,
+      fctr_sq = ((.data[[fc_col]] - .data[[ob_col]]) / .data[[ob_col]]) ^ 2
+    )
+  } else {
+    dplyr::mutate(
+      df,
+      fctr_sq = (.data[[fc_col]] / .data[[ob_col]]) ^ 2
+    )
+  }.Las
+}
+}
+
+and then running:
+
+\preformatted{
+det_verify(
+  data,
+  obs_col,
+  new_det_score      = "rmsf",
+  new_det_score_opts = list(diff = TRUE)
+)
+}
+}
+
+\subsection{Scores computed from binary probabilities or contingency table counts}{
+
+Computing scores from binary probabilities or contingency table counts is
+much simpler, since \code{det_verify()} has already prepped the data and you have
+the binary forecast and the observed probabilities as well as the counts of
+hits, false alrms, misses and correct rejections. Here you need to write a
+function that takes the observed probability, the forecast probability, the
+hit, false alarm, miss and correct rejection, some information about
+the progress bar, and optionally some options for the function.
+
+Since \code{det_verify()} computes most known contingency table based scores, in
+this example we will compute the binary Brier Score as the MSE in
+probability space and (arbitrarily - this is for illustration purposes only)
+weight it by the success raio (hits / (hits + false alarms))
+\preformatted{
+prob_diff_brier <- function(
+  ob_prob, fc_prob, hit, false_alarm, miss, correct_rejection,
+  show_pb, pb_env, opts
+) {
+  brier  <- mean((fc_prob - ob_prob) ^ 2)
+  weight <- 1
+  if (opts$sr_weighting) {
+    weight <- sum(hit) / (sum(hit) + sum(false_alarm))
+  }
+  brier <- brier * weight
+  tick_progress(show_pb, pb_env)
+  brier
+}
+}
+
+And now we can run:
+\preformatted{
+det_verify(
+  data,
+  obs_col,
+  thresholds         = c(0, 0.5),
+  new_det_cont_score = "brier",
+  new_det_score_opts = list(sr_weighting = FALSE)
+)
+}
+}
+}
+

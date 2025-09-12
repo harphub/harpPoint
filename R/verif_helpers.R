@@ -101,3 +101,15 @@ bias <- function(fcst, obs, circle) {
 
   res
 }
+
+#' @export
+`[.harp_verif` <- function(x, i, ...) {
+  attrs <- attributes(x)
+  if (is.character(i)) {
+    i <- which(names(x) == i)
+  }
+  attrs[["names"]] <- names(x)[i]
+  x <- NextMethod()
+  attributes(x) <- attrs
+  x
+}

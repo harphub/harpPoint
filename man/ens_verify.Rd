@@ -25,10 +25,16 @@ ens_verify(
   num_bins = 30,
   rank_hist = TRUE,
   crps = TRUE,
+  crps_decomp = TRUE,
+  tw_crps = TRUE,
   brier = TRUE,
+  reliability = TRUE,
   roc = TRUE,
   econ_val = TRUE,
   show_progress = TRUE,
+  new_ens_score = NULL,
+  new_ens_prob_score = NULL,
+  new_ens_score_opts = list(),
   ...
 )
 
@@ -52,10 +58,16 @@ ens_verify(
   num_bins = 30,
   rank_hist = TRUE,
   crps = TRUE,
-  show_progress = TRUE,
+  crps_decomp = TRUE,
+  tw_crps = TRUE,
   brier = TRUE,
+  reliability = TRUE,
   roc = TRUE,
   econ_val = TRUE,
+  show_progress = TRUE,
+  new_ens_score = NULL,
+  new_ens_prob_score = NULL,
+  new_ens_score_opts = list(),
   fcst_model = NULL,
   ...
 )
@@ -124,8 +136,18 @@ there is a large number (> 1000) of groups.}
 
 \item{crps}{Logical. Whether to compute the CRPS. Defaults to \code{TRUE}.}
 
+\item{crps_decomp}{Logical. Whether to compute the decomposition of the CRPS
+into potential and reliability components.}
+
+\item{tw_crps}{Logical. Whether to compute the the threshold weighted CRPS.
+Note that tw_crps cannot be computed for \code{comparator = "eq"} or
+\code{comparator = "outside"}. Will be ignored if no thresholds are set.}
+
 \item{brier}{Logical. Whether to compute the Brier score. Defaults to \code{TRUE}.
 Will be ignored if no thresholds are set.}
+
+\item{reliability}{Logical. Whether to compute the reliability. Defaults to
+\code{TRUE}. Will be ignored if no thresholds are set.}
 
 \item{roc}{Logical. Whether to compute the Relative Operating Characteristic
 (ROC). Defaults to \code{TRUE}. Will be ignored if no thresholds are set.}
@@ -136,16 +158,158 @@ Will be ignored if no thresholds are set.}
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
 \code{TRUE}.}
 
+\item{new_ens_score}{Character vector. Names of other
+scores to be computed that are not part of this function. Requires a
+\verb{compute_ens_<name>()} and optionally a \verb{prep_ens_<name>()} function. See
+\strong{Adding your own scores}.}
+
+\item{new_ens_prob_score}{Character vector. Names of functions to compute
+scores from the observed and forecast probabilities. See
+\strong{Adding your own scores}.}
+
 \item{...}{Reserved for methods.}
 
 \item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
+
+\item{new_score_opts}{Named list of options for \code{new_ens_score} and
+\code{new_ens_prob_score}.}
 }
 \value{
-A list containting three data frames: \code{ens_summary_scores},
+A list containing three data frames: \code{ens_summary_scores},
 \code{ens_threshold_scores} and \code{det_summary_scores}.
 }
 \description{
 Compute all verification scores for an ensemble.
 }
+\section{Adding your own scores}{
+
+
+You can add functions to compute scores using the infrastructure of
+\code{ens_verify()}. These can be for scores calculated from the raw ensemble,
+or from probabilities based on the thresholds and comparator.
+\subsection{Scores computed from the raw ensemble}{
+
+The name of the score is specified in the \code{new_ens_score} argument and
+\code{ens_verify()} will look for a function with the name \verb{compute_ens_<name>}
+that will compute the score using \code{\link[dplyr]{summarize}} or
+similar. It will optionally look for a function with the name
+\verb{prep_ens_<name>} that will do some preparation of the data for each row
+before aggregation into the score. This is best illustrated with a
+(slightly contrived!) example:
+
+Let's say we want to compute the mean bias weighted by latitude, and we call
+the score "weighted_bias". We begin by writing a prep function, which has
+to take the forecast data frame, the name of the forecast columns, the
+name of the observation column and optionally a list of options as arguments.
+
+\preformatted{
+prep_ens_weighted_bias <- function(df, fc_col, obs_col, ...) {
+  df <- dplyr::mutate(
+    df,
+    dplyr::across(
+      dplyr::all_of(fc_col),
+      ~(.x - .data[[obs_col]]) * abs(lat / 90)
+     )
+  )
+  ens_stats(df, sd = FALSE)
+}
+}
+
+The above function will have the weighted mean bias in the \code{ens_mean} column
+created by the \code{\link[harpCore]{ens_stats()}} function.
+
+For the computation of the score, we can use \code{\link[dplyr]{summarize}}
+to compute the mean for each group. The compute function needs to take
+grouped data frame, some details about the progress bar and optionally a list
+of arguments.
+
+\preformatted{
+compute_ens_weighted_bias <- function(grouped_df, show_pb, pb_env, ...) {
+  res <- dplyr::summarize(
+    grouped_df,
+    weighted_bias = sum(ens_mean) / sum(abs(lat / 90))
+  )
+  tick_progress(show_pb, pb_env)
+  res
+}
+}
+
+We can now run \code{ens_verify(data, obs_col, new_ens_score = "weighted_bias")}
+
+We could also make it an option whether to weight by any column by modifying
+\code{prep_ens_weighted_bias} and \code{compute_ens_weighted_bias} and adding the
+option to \code{new_ens_score_opts}
+
+\preformatted{
+prep_ens_weighted_bias <- function(df, fc_col, obs_col, opts) {
+  df <- dplyr::mutate(
+    df,
+    dplyr::across(
+      dplyr::all_of(fc_col),
+      ~(.x - .data[[obs_col]]) * abs(.data[[opts$weight_col]])
+     )
+  )
+  ens_stats(df, sd = FALSE)
+}
+}
+
+\preformatted{
+compute_ens_weighted_bias <- function(grouped_df, show_pb, pb_env, opts) {
+  res <- dplyr::summarize(
+    grouped_df,
+    weighted_bias = sum(ens_mean) / sum(abs(.data[[opts$weight_col]]))
+  )
+  tick_progress(show_pb, pb_env)
+  res
+}
+}
+
+And then running
+
+\preformatted{
+ens_verify(
+  data,
+  obs_col,
+  new_ens_score = "weighted_bias",
+  new_ens_score_opts = list(weight_col = "lon")
+)
+}
+}
+
+\subsection{Scores computed from probabilities}{
+
+Computing scores from probabilities is much simpler, since \code{ens_verify()} has
+already prepped the data and you have the forecast probability and the
+observed (binary) probability. Here you need to write a function that takes
+the observed probability, the forecast probability, some information about
+the progress bar, and optionally some options for the function.
+
+In this example we will compute some quantiles of the difference between
+the forecast and observed probabilities.
+
+\preformatted{
+prob_diff_quant <- function(ob_prob, fc_prob, show_pb, pb_env, opts) {
+  res <- quantile(fc_prob - ob_prob, probs = opts$quants)
+  tick_progress(show_pb, pb_env)
+  if (length(res) < 1) {
+    return(res)
+  }
+  list(res) # we need to return a list if more than 1 value.
+}
+}
+
+And now we can run:
+\preformatted{
+ens_verify(
+  data,
+  obs_col,
+  thresholds         = c(0, 0.5),
+  new_ens_prob_score = "prob_diff_quant",
+  new_ens_score_opts = list(quants = c(0.9, 0.99, 0.995, 1))
+)
+}
+}
+}
+

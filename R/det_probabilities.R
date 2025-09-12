@@ -36,7 +36,7 @@ det_probabilities.harp_det_point_df <- function(
   parameter  <- rlang::enquo(parameter)
   chr_param  <- rlang::quo_name(parameter)
   col_names  <- colnames(.fcst)
-  if (length(grep(chr_param, col_names)) < 1) {
+  if (length(grep(chr_param, col_names)) < 1 && obs_probabilities) {
     stop(paste("No column found for", chr_param), call. = FALSE)
   }
 
@@ -44,49 +44,9 @@ det_probabilities.harp_det_point_df <- function(
 
   thresholds <- check_thresholds(thresholds, comparator)
 
-  comparator_func <- switch(
-    comparator,
-    "ge" = function(x, y, ...) as.numeric(x >= y),
-    "gt" = function(x, y, ...) as.numeric(x > y),
-    "le" = function(x, y, ...) as.numeric(x <= y),
-    "lt" = function(x, y, ...) as.numeric(x < y),
-    "eq" = function(x, y, ...) as.numeric(x == y),
-    "between" = function(x, y, include_low, include_high) {
-      lower <- min(y)
-      upper <- max(y)
-      if (include_low && include_high) {
-        return(as.numeric(x >= lower & x <= upper))
-      }
-      if (include_low && !include_high) {
-        return(as.numeric(x >= lower & x < upper))
-      }
-      if (!include_low && include_high) {
-        return(as.numeric(x > lower & x <= upper))
-      }
-      if (!include_low && !include_high) {
-        return(as.numeric(x > lower & x < upper))
-      }
-    },
-    "outside" = function(x, y, include_low, include_high) {
-      lower <- min(y)
-      upper <- max(y)
-      if (include_low && include_high) {
-        return(as.numeric(x <= lower | x >= upper))
-      }
-      if (include_low && !include_high) {
-        return(as.numeric(x <= lower | x > upper))
-      }
-      if (!include_low && include_high) {
-        return(as.numeric(x < lower | x >= upper))
-      }
-      if (!include_low && !include_high) {
-        return(as.numeric(x < lower | x > upper))
-      }
-    }
-  )
+  comparator_func <- get_comparator_func(comparator)
 
-
-  lapply(
+  harpCore::bind(lapply(
     thresholds,
     function(x) {
       res <- dplyr::mutate(
@@ -106,15 +66,7 @@ det_probabilities.harp_det_point_df <- function(
       }
       res
     }
-  )
-
-  # dplyr::bind_cols(
-  #   .fcst,
-  #   harp_probs(
-  #     .fcst, thresholds, comparator, include_low, include_high,
-  #     chr_param, obs_prob = obs_probabilities, fcst_type = "det"
-  #   )
-  # )
+  ))
 
 }
 
@@ -160,3 +112,49 @@ make_threshcol <- function(th, comp, il, ih) {
   }
   paste(comp1, min(th), comp2, max(th), sep = "_")
 }
+
+get_comparator_func <- function(comparator) {
+
+  switch(
+    comparator,
+    "ge" = function(x, y, ...) as.numeric(x >= y),
+    "gt" = function(x, y, ...) as.numeric(x > y),
+    "le" = function(x, y, ...) as.numeric(x <= y),
+    "lt" = function(x, y, ...) as.numeric(x < y),
+    "eq" = function(x, y, ...) as.numeric(x == y),
+    "between" = function(x, y, include_low, include_high) {
+      lower <- min(y)
+      upper <- max(y)
+      if (include_low && include_high) {
+        return(as.numeric(x >= lower & x <= upper))
+      }
+      if (include_low && !include_high) {
+        return(as.numeric(x >= lower & x < upper))
+      }
+      if (!include_low && include_high) {
+        return(as.numeric(x > lower & x <= upper))
+      }
+      if (!include_low && !include_high) {
+        return(as.numeric(x > lower & x < upper))
+      }
+    },
+    "outside" = function(x, y, include_low, include_high) {
+      lower <- min(y)
+      upper <- max(y)
+      if (include_low && include_high) {
+        return(as.numeric(x <= lower | x >= upper))
+      }
+      if (include_low && !include_high) {
+        return(as.numeric(x <= lower | x > upper))
+      }
+      if (!include_low && include_high) {
+        return(as.numeric(x < lower | x >= upper))
+      }
+      if (!include_low && !include_high) {
+        return(as.numeric(x < lower | x > upper))
+      }
+    }
+  )
+}
+
+

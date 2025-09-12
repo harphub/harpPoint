@@ -36,15 +36,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sort_members_df
+NumericMatrix sort_members_df(DataFrame df, bool byrow);
+RcppExport SEXP _harpPoint_sort_members_df(SEXP dfSEXP, SEXP byrowSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP);
+    Rcpp::traits::input_parameter< bool >::type byrow(byrowSEXP);
+    rcpp_result_gen = Rcpp::wrap(sort_members_df(df, byrow));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rankHistogram
-NumericVector rankHistogram(NumericVector obs, NumericMatrix fc);
-RcppExport SEXP _harpPoint_rankHistogram(SEXP obsSEXP, SEXP fcSEXP) {
+NumericVector rankHistogram(NumericVector obs, DataFrame df);
+RcppExport SEXP _harpPoint_rankHistogram(SEXP obsSEXP, SEXP dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type obs(obsSEXP);
-    Rcpp::traits::input_parameter< NumericMatrix >::type fc(fcSEXP);
-    rcpp_result_gen = Rcpp::wrap(rankHistogram(obs, fc));
+    Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP);
+    rcpp_result_gen = Rcpp::wrap(rankHistogram(obs, df));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -80,6 +92,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_harpPoint_ecoval", (DL_FUNC) &_harpPoint_ecoval, 4},
     {"_harpPoint_sort_members", (DL_FUNC) &_harpPoint_sort_members, 2},
+    {"_harpPoint_sort_members_df", (DL_FUNC) &_harpPoint_sort_members_df, 2},
     {"_harpPoint_rankHistogram", (DL_FUNC) &_harpPoint_rankHistogram, 2},
     {"_harpPoint_fcprob", (DL_FUNC) &_harpPoint_fcprob, 5},
     {"_harpPoint_roc", (DL_FUNC) &_harpPoint_roc, 3},

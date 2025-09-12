@@ -20,12 +20,20 @@ sort_members <- function(x, byrow = TRUE) {
     .Call('_harpPoint_sort_members', PACKAGE = 'harpPoint', x, byrow)
 }
 
+#' Sort a 2d array from a data frame.
+#'
+#' @param x A two dimensional numeric array.
+#' @param byrow Set to true sort rows, false to sort columns.
+sort_members_df <- function(df, byrow = TRUE) {
+    .Call('_harpPoint_sort_members_df', PACKAGE = 'harpPoint', df, byrow)
+}
+
 #' Compute the rank histogram for an EPS
 #'
 #' @param obs A vector of observations.
 #' @param fc A two dimensional array of EPS data with members in columns.
-rankHistogram <- function(obs, fc) {
-    .Call('_harpPoint_rankHistogram', PACKAGE = 'harpPoint', obs, fc)
+rankHistogram <- function(obs, df) {
+    .Call('_harpPoint_rankHistogram', PACKAGE = 'harpPoint', obs, df)
 }
 
 #' Compute the forecast probabilities for given thresholds

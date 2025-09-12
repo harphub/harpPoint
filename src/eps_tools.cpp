@@ -1,6 +1,7 @@
 // sorting & ordering all the rows of a large table can be very slow in R
 
 #include <Rcpp.h>
+#include "eps_tools.h"
 using namespace Rcpp;
 
 //' Sort a 2d array.
@@ -23,6 +24,47 @@ NumericMatrix sort_members(NumericMatrix x, bool byrow=true) {
   return result;
 }
 
+//' Sort a 2d array from a data frame.
+//'
+//' @param x A two dimensional numeric array.
+//' @param byrow Set to true sort rows, false to sort columns.
+// [[Rcpp::export]]
+NumericMatrix sort_members_df(DataFrame df, bool byrow=true) {
+  // Convert the data frame to numeric row by row
+
+  int nrows = df.nrows();
+  int ncols = df.size();
+
+  NumericMatrix result(nrows, ncols);
+  result = df_to_mat(df);
+    // Copy each column from the DataFrame to the NumericMatrix
+    // for (int j = 0; j < ncols; ++j) {
+    //   NumericVector col = df[j]; // Extract each column
+    //   result(_, j) = col;          // Copy column into the matrix
+    // }
+    if (byrow) result = transpose(result);
+    //int i;
+    //  for (i=0; i<result.ncol() ; i++) quicksort( result.begin() + i*result.nrow(), result.nrow());
+    for (int i=0; i<result.ncol() ; i++) std::sort(result.begin()+i*result.nrow(),
+      result.begin()+(i+1)*result.nrow());
+    if (byrow) result = transpose(result);
+    return result;
+}
+
+NumericMatrix df_to_mat(DataFrame df) {
+  int nrows = df.nrows();
+  int ncols = df.size();
+
+  NumericMatrix result(nrows, ncols);
+
+  // Copy each column from the DataFrame to the NumericMatrix
+  for (int j = 0; j < ncols; ++j) {
+    NumericVector col = df[j];    // Extract each column
+    result(_, j) = col;          // Copy column into the matrix
+  }
+
+  return result;
+}
 
 
 //' Compute the rank histogram for an EPS
@@ -30,9 +72,15 @@ NumericMatrix sort_members(NumericMatrix x, bool byrow=true) {
 //' @param obs A vector of observations.
 //' @param fc A two dimensional array of EPS data with members in columns.
 // [[Rcpp::export]]
-NumericVector rankHistogram(NumericVector obs, NumericMatrix fc) {
+NumericVector rankHistogram(NumericVector obs, DataFrame df) {
 // fc is a matrix with each column containing forecast of another ensemble member
 // return value is a vector (ncol+1) giving the position of every obs
+  int nrows = df.nrows();
+  int ncols = df.size();
+
+  NumericMatrix fc(nrows, ncols);
+  fc = df_to_mat(df);
+
   int i, j, k, nmbr=fc.ncol(), nobs=obs.size();
   NumericVector result(nmbr+1, 0.0); // initial value must be explicitly a real
 //  TODO : check if (fc.nrow() != nobs)

@@ -4,7 +4,7 @@
 \alias{rankHistogram}
 \title{Compute the rank histogram for an EPS}
 \usage{
-rankHistogram(obs, fc)
+rankHistogram(obs, df)
 }
 \arguments{
 \item{obs}{A vector of observations.}

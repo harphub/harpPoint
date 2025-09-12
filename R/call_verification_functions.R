@@ -105,14 +105,22 @@ harp_ecoval <- function(
   obs,
   pred,
   costloss   = seq(0.05, 0.95, by = 0.05),
-  thresholds = seq(0.05, 0.95, by = 0.05)
+  thresholds = seq(0.05, 0.95, by = 0.05),
+  show_prog  = FALSE,
+  pb_env     = ""
 ) {
 
   # We only want to return the outer envelope.
 
   fullValue <- ecoval(obs, pred, costloss = costloss, thresholds = thresholds)
 
-  tibble::tibble(cost_loss_ratio = fullValue$cl, value = fullValue$value_env)
+  res <- tibble::tibble(
+    cost_loss_ratio = fullValue$cl, value = fullValue$value_env
+  )
+
+  tick_progress(show_prog, pb_env)
+
+  res
 
 }
 
@@ -141,7 +149,10 @@ harp_ecoval0 <- function(obs, pred, costloss = seq(0.05, 0.95, by = 0.05)) {
 
 #####################################################################################
 
-harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
+harp_roc <- function(
+  obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05),
+  show_prog = FALSE, pb_env = ""
+) {
 
   # If there are not enough data, the roc.plot function from the verification package
   # fails, so wrap in a try.
@@ -154,7 +165,11 @@ harp_roc <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
     false_alarm_rate = c(1, ROCall$F, 0)
   )
 
-  list(roc_data = ROC, roc_area = ROCall$area)
+  res <- list(roc_data = ROC, roc_area = ROCall$area)
+
+  tick_progress(show_prog, pb_env)
+
+  res
 
 }
 
