@@ -61,7 +61,7 @@ harp_crps_alpha_beta <- function(eps, obs) {
   if (length(obs) > 10) {
     sd_obs <- stats::sd(obs)
   } else {
-    sd_obs <- mean(obs / 1000)
+    sd_obs <- sd(eps)
   }
   obs <- obs + stats::rnorm(length(obs), 0, 1e-6 * sd_obs)
 
