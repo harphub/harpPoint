@@ -1,7 +1,7 @@
 # Modified version of the crps function from the verification package to be used in harp.
 # The function is internal to the harpPoint package.
 #
-harp_crps <- function (.fcst, .param) {
+harp_crps <- function(.fcst, .param) {
 
   param <- rlang::enquo(.param)
   obs <- .fcst %>% dplyr::pull(!! param)
@@ -58,7 +58,12 @@ harp_crps_alpha_beta <- function(eps, obs) {
   # is used as the standard deviation in the random number generation
   # from a Gaussian distribution
 
-  obs <- obs + stats::rnorm(length(obs), 0, 1e-6 * stats::sd(obs))
+  if (length(obs) > 10) {
+    sd_obs <- stats::sd(obs)
+  } else {
+    sd_obs <- mean(obs / 1000)
+  }
+  obs <- obs + stats::rnorm(length(obs), 0, 1e-6 * sd_obs)
 
   nMember    <- dim(eps)[2]
   nObs       <- length(obs)

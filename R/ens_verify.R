@@ -812,8 +812,8 @@ compute_ens_crps_decomp <- function(grouped_fcst, show_prog, pb_env, ...) {
       crps_list = {
         tick_progress(show_prog, pb_env)
         list(verification::crpsFromAlphaBeta(
-          attr(grouped_fcst, "crps_prep")$alpha[dplyr::cur_group_rows(), ],
-          attr(grouped_fcst, "crps_prep")$beta[dplyr::cur_group_rows(), ],
+          attr(grouped_fcst, "crps_prep")$alpha[dplyr::cur_group_rows(), , drop = FALSE],
+          attr(grouped_fcst, "crps_prep")$beta[dplyr::cur_group_rows(), , drop = FALSE],
           attr(grouped_fcst, "crps_prep")$heaviside0[dplyr::cur_group_rows()],
           attr(grouped_fcst, "crps_prep")$heavisideN[dplyr::cur_group_rows()]
         ))
