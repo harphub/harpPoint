@@ -178,7 +178,7 @@ sweep_thresh_meta <- function(df) {
   if (!is.element("metadata", colnames(df))) {
     return(df)
   }
-  dplyr::mutate(
+  df <- dplyr::mutate(
     df,
     num_cases            = purrr::map_int(.data[["metadata"]], "num_cases"),
     num_stations         = purrr::map_int(.data[["metadata"]], "num_stations"),
@@ -191,7 +191,9 @@ sweep_thresh_meta <- function(df) {
     num_cases_forecasted = purrr::map_int(
       .data[["metadata"]], "num_cases_forecast"
     )
-  )[grep("metadata", colnames(df), value = TRUE, invert = TRUE)]
+  )
+
+  df[grep("metadata", colnames(df), value = TRUE, invert = TRUE)]
 }
 
 # Deterministic
