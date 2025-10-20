@@ -430,16 +430,21 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
-    ens_summary_scores[["meta"]] <- compute_score(
-      groupings,
-      .fcst,
-      harpCore::member_colnames(.fcst),
-      chr_param,
-      fcst_model,
-      "meta",
-      show_progress,
-      type = "ens"
-    )
+    # Only want metadata if some scores are actually computed!
+    if (any(c(
+      summary, hexbin, rank_hist, crps, crps_decomp, length(new_ens_score) > 0
+    ))) {
+      ens_summary_scores[["meta"]] <- compute_score(
+        groupings,
+        .fcst,
+        harpCore::member_colnames(.fcst),
+        chr_param,
+        fcst_model,
+        "meta",
+        show_progress,
+        type = "ens"
+      )
+    }
 
     ens_summary_scores <- Reduce(
       function(x, y) suppressMessages(dplyr::inner_join(x, y)),
@@ -519,6 +524,15 @@ ens_verify.harp_ens_point_df <- function(
       function(x, y) suppressMessages(dplyr::inner_join(x, y)),
       ens_threshold_scores
     )
+
+    verif_type <- switch(
+      comparator,
+      "between" = ,
+      "outside" = "Classes",
+      "Thresholds"
+    )
+
+    ens_threshold_scores$Type <- verif_type
 
   } else {
 
@@ -730,7 +744,7 @@ prep_ens_thresh_data <- function(
   if (opts[["tw_crps"]]) {
     return(prep_ens_crps(
       clamp_fcst(
-        fcst_df, threshold, comparator, obs_col
+        fcst_df, threshold, comparator, include_low, include_high, obs_col
       ),
       harpCore::member_colnames(fcst_df),
       obs_col,
@@ -1138,7 +1152,7 @@ compute_ens_tw_crps <- function(grouped_fcst, show_prog, pb_env, ...) {
 # Function to prepare data for threshold weighted crps. The values outside
 # of the range of interest are clamped to the threshold
 clamp_fcst <- function(
-  .fcst, threshold, comparator, obs_col
+  .fcst, threshold, comparator, include_low, include_high, obs_col
 ) {
   clamp_fun <- get_clamp_fun(comparator)
   mbr_cols  <- harpCore::member_colnames(.fcst)
@@ -1152,7 +1166,8 @@ clamp_fcst <- function(
     .fcst[[obs_col]] <- clamp_fun(.fcst[[obs_col]], threshold)
   }
 
-  .fcst[["threshold"]] <- make_threshcol(threshold, comparator, TRUE, TRUE)
+  .fcst[["threshold"]] <- make_threshcol(
+    threshold, comparator, include_low, include_high)
 
   .fcst
 }
