@@ -191,7 +191,10 @@ sweep_thresh_meta <- function(df) {
     num_cases_forecasted = purrr::map_int(
       .data[["metadata"]], "num_cases_forecast"
     )
-  )[grep("metadata", colnames(df), value = TRUE, invert = TRUE)]
+  )[grep("metadata",
+         c(colnames(df),"num_cases","num_stations","num_cases_total","num_cases_observed","num_cases_forecasted"),
+         value = TRUE,
+         invert = TRUE)]
 }
 
 # Deterministic
