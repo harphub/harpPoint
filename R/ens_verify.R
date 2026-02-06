@@ -15,9 +15,21 @@
 #' @param clean_thresh Logical. Whether to remove thresholds that are outside
 #'   the range of the forecasts and observations.
 #' @param groupings The groups for which to compute the scores. See
-#'   \link[dplyr]{group_by} for more information of how grouping works.
-#' @param summary Logical. Whether to compute summary scores or not. Default is
-#'   `TRUE`.
+#'   \link[dplyr]{group_by} for more information of how grouping works. Should
+#'   be a character vector, or a list of character vectors. If a list each
+#'   combination of groups in the list is computed separately for each score.
+#'   See \link[harpCore]{make_verif_groups} for a helper function for making
+#'   more complex grouping structures.
+#' @param map_groupings The groups for which to compute scores that could be
+#'   plotted on a map. Set to `"SID"`, or `c("lat", "lon")`, and add other
+#'   groups as desired to switch on. Requires that your data have at least "lon"
+#'   and "lat" columns. Can be constructed in the same way as `groupings`. Only
+#'   used for summary scores by default. Can be switched on by adding a second
+#'   logical elememt to the argument for the score, e.g. `hexbin = c(TRUE,
+#'   TRUE)`.
+#' @param summary Logical of length 1 or 2. Whether to compute summary scores or
+#'   not. The second element determines whether the score is computed if
+#'   `map_groupings` are set. Default is `c(TRUE, TRUE)`.
 #' @param circle If set the parameter is assumed to be cyclic for bias
 #'   calculations. Should be this distance around a circle in the units of the
 #'   parameter, so would typically have a value of 360 for degrees or `2 * pi`
@@ -41,32 +53,52 @@
 #'   elements eps_model and member to use a member of an eps model in the
 #'   harp_fcst object for the climatology, or a data frame with columns for
 #'   threshold and climatology and also optionally lead_time.
-#' @param hexbin Logical. Whether to compute hexbins for forecast, observation
-#'   pairs. Defaults to `TRUE`. See \link{bin_fcst_obs} for more details.
+#' @param hexbin Logical of length 1 or 2. Whether to compute hexbins for
+#'   forecast, observation pairs. The second element determines whether the
+#'   score is computed if `map_groupings` are set. Defaults to `TRUE`. See
+#'   \link{bin_fcst_obs} for more details.
 #' @param num_bins The number of bins into which to partition observations for
 #'   the hexbin computation.
-#' @param rank_hist Logical. Whether to compute the rank histogram. Defaults to
-#'   `TRUE`. Note that the computation of the rank histogram can be slow if
-#'   there is a large number (> 1000) of groups.
-#' @param crps Logical. Whether to compute the CRPS. Defaults to `TRUE`.
-#' @param crps_decomp Logical. Whether to compute the decomposition of the CRPS
-#'   into potential and reliability components.
-#' @param uui `r lifecycle::badge("experimental")` Logical. Whether to compute
-#'   the UUI spread-skill.
+#' @param rank_hist Logical of length 1 or 2. Whether to compute the rank
+#'   histogram. The second element determines whether the score is computed if
+#'   `map_groupings` are set. Defaults to `TRUE`. Note that the computation of
+#'   the rank histogram can be slow if there is a large number (> 1000) of
+#'   groups.
+#' @param crps Logical of length 1 or 2. Whether to compute the CRPS. The second
+#'   element determines whether the score is computed if `map_groupings` are
+#'   set. Defaults to `TRUE`.
+#' @param crps_decomp Logical of length 1 or 2. Whether to compute the
+#'   decomposition of the CRPS into potential and reliability components. The
+#'   second element determines whether the score is computed if `map_groupings`
+#'   are set. Defaults to `TRUE`.
+#' @param uui `r lifecycle::badge("experimental")` Logical of length 1 or 2.
+#'   Whether to compute the UUI spread-skill. The second element determines
+#'   whether the score is computed if `map_groupings` are set. Defaults to
+#'   `FALSE`.
 #' @param uui_cntrl `r lifecycle::badge("experimental")` The ensemble member to
 #'   consider as the control member in UUI spread-skill calculations. Defaults
 #'   to `0`.
-#' @param tw_crps Logical. Whether to compute the the threshold weighted CRPS.
-#'   Note that tw_crps cannot be computed for `comparator = "eq"` or
-#'   `comparator = "outside"`. Will be ignored if no thresholds are set.
-#' @param brier Logical. Whether to compute the Brier score. Defaults to `TRUE`.
-#'   Will be ignored if no thresholds are set.
-#' @param reliability Logical. Whether to compute the reliability. Defaults to
-#'   `TRUE`. Will be ignored if no thresholds are set.
-#' @param roc Logical. Whether to compute the Relative Operating Characteristic
-#'   (ROC). Defaults to `TRUE`. Will be ignored if no thresholds are set.
-#' @param econ_val Logical. Whether to compute the economic value. Defaults to
-#'   `TRUE`. Will be ignored if no thresholds are set.
+#' @param tw_crps Logical of length 1 or 2. Whether to compute the the threshold
+#'   weighted CRPS. Note that tw_crps cannot be computed for `comparator = "eq"`
+#'   or `comparator = "outside"`. The second element determines whether the
+#'   score is computed if `map_groupings` are set. Defaults to `TRUE`. Will be
+#'   ignored if no thresholds are set.
+#' @param brier Logical of length 1 or 2. Whether to compute the Brier score.
+#'   The second element determines whether the score is computed if
+#'   `map_groupings` are set. Defaults to `TRUE`. Will be ignored if no
+#'   thresholds are set.
+#' @param reliability Logical of length 1 or 2. Whether to compute the
+#'   reliability. The second element determines whether the score is computed if
+#'   `map_groupings` are set. Defaults to `TRUE`. Will be ignored if no
+#'   thresholds are set.
+#' @param roc Logical of length 1 or 2. Whether to compute the Relative
+#'   Operating Characteristic (ROC). The second element determines whether the
+#'   score is computed if `map_groupings` are set. Defaults to `TRUE`. Will be
+#'   ignored if no thresholds are set.
+#' @param econ_val Logical of length 1 or 2. Whether to compute the economic
+#'   value. The second element determines whether the score is computed if
+#'   `map_groupings` are set. Defaults to `TRUE`. Will be ignored if no
+#'   thresholds are set.
 #' @param dttm_pluck_freq,dttm_pluck_offset If verification is grouped by valid
 #'   date-time, select only date times at a frequency set by `dttm_pluck_freq`.
 #'   The frequency is relative to 00 UTC, so use `dttm_freq_offset` to change
@@ -76,36 +108,36 @@
 #'   if one of `groupings` is `"valid_dttm"`.
 #' @param show_progress Logical - whether to show progress bars. Defaults to
 #'   `TRUE`.
-#' @param new_ens_score Character vector. Names of other
-#'   scores to be computed that are not part of this function. Requires a
-#'   `compute_ens_<name>()` and optionally a `prep_ens_<name>()` function. See
-#'   \strong{Adding your own scores}.
+#' @param new_ens_score Character vector. Names of other scores to be computed
+#'   that are not part of this function. Requires a `compute_ens_<name>()` and
+#'   optionally a `prep_ens_<name>()` function. See \strong{Adding your own
+#'   scores}.
 #' @param new_ens_prob_score Character vector. Names of functions to compute
-#'   scores from the observed and forecast probabilities. See
-#'   \strong{Adding your own scores}.
+#'   scores from the observed and forecast probabilities. See \strong{Adding
+#'   your own scores}.
 #' @param new_score_opts Named list of options for `new_ens_score` and
 #'   `new_ens_prob_score`.
 #' @param ... Reserved for methods.
 #'
 #' @section Adding your own scores:
 #'
-#' You can add functions to compute scores using the infrastructure of
-#' `ens_verify()`. These can be for scores calculated from the raw ensemble,
-#' or from probabilities based on the thresholds and comparator.
+#'   You can add functions to compute scores using the infrastructure of
+#'   `ens_verify()`. These can be for scores calculated from the raw ensemble,
+#'   or from probabilities based on the thresholds and comparator.
 #'
-#' ## Scores computed from the raw ensemble
-#' The name of the score is specified in the `new_ens_score` argument and
-#' `ens_verify()` will look for a function with the name `compute_ens_<name>`
-#' that will compute the score using \code{\link[dplyr]{summarize}} or
-#' similar. It will optionally look for a function with the name
-#' `prep_ens_<name>` that will do some preparation of the data for each row
-#' before aggregation into the score. This is best illustrated with a
-#' (slightly contrived!) example:
+#'   ## Scores computed from the raw ensemble The name of the score is specified
+#'   in the `new_ens_score` argument and `ens_verify()` will look for a function
+#'   with the name `compute_ens_<name>` that will compute the score using
+#'   \code{\link[dplyr]{summarize}} or similar. It will optionally look for a
+#'   function with the name `prep_ens_<name>` that will do some preparation of
+#'   the data for each row before aggregation into the score. This is best
+#'   illustrated with a (slightly contrived!) example:
 #'
-#' Let's say we want to compute the mean bias weighted by latitude, and we call
-#' the score "weighted_bias". We begin by writing a prep function, which has
-#' to take the forecast data frame, the name of the forecast columns, the
-#' name of the observation column and optionally a list of options as arguments.
+#'   Let's say we want to compute the mean bias weighted by latitude, and we
+#'   call the score "weighted_bias". We begin by writing a prep function, which
+#'   has to take the forecast data frame, the name of the forecast columns, the
+#'   name of the observation column and optionally a list of options as
+#'   arguments.
 #'
 #' \preformatted{
 #' prep_ens_weighted_bias <- function(df, fc_col, obs_col, ...) {
@@ -120,13 +152,13 @@
 #' }
 #' }
 #'
-#' The above function will have the weighted mean bias in the `ens_mean` column
-#' created by the \code{\link[harpCore]{ens_stats()}} function.
+#'   The above function will have the weighted mean bias in the `ens_mean`
+#'   column created by the \code{\link[harpCore]{ens_stats()}} function.
 #'
-#' For the computation of the score, we can use \code{\link[dplyr]{summarize}}
-#' to compute the mean for each group. The compute function needs to take
-#' grouped data frame, some details about the progress bar and optionally a list
-#' of arguments.
+#'   For the computation of the score, we can use \code{\link[dplyr]{summarize}}
+#'   to compute the mean for each group. The compute function needs to take
+#'   grouped data frame, some details about the progress bar and optionally a
+#'   list of arguments.
 #'
 #' \preformatted{
 #' compute_ens_weighted_bias <- function(grouped_df, show_pb, pb_env, ...) {
@@ -139,11 +171,11 @@
 #' }
 #' }
 #'
-#' We can now run `ens_verify(data, obs_col, new_ens_score = "weighted_bias")`
+#'   We can now run `ens_verify(data, obs_col, new_ens_score = "weighted_bias")`
 #'
-#' We could also make it an option whether to weight by any column by modifying
-#' `prep_ens_weighted_bias` and `compute_ens_weighted_bias` and adding the
-#' option to `new_ens_score_opts`
+#'   We could also make it an option whether to weight by any column by
+#'   modifying `prep_ens_weighted_bias` and `compute_ens_weighted_bias` and
+#'   adding the option to `new_ens_score_opts`
 #'
 #' \preformatted{
 #' prep_ens_weighted_bias <- function(df, fc_col, obs_col, opts) {
@@ -169,7 +201,7 @@
 #' }
 #' }
 #'
-#' And then running
+#'   And then running
 #'
 #' \preformatted{
 #' ens_verify(
@@ -180,15 +212,15 @@
 #' )
 #' }
 #'
-#' ## Scores computed from probabilities
-#' Computing scores from probabilities is much simpler, since `ens_verify()` has
-#' already prepped the data and you have the forecast probability and the
-#' observed (binary) probability. Here you need to write a function that takes
-#' the observed probability, the forecast probability, some information about
-#' the progress bar, and optionally some options for the function.
+#'   ## Scores computed from probabilities Computing scores from probabilities
+#'   is much simpler, since `ens_verify()` has already prepped the data and you
+#'   have the forecast probability and the observed (binary) probability. Here
+#'   you need to write a function that takes the observed probability, the
+#'   forecast probability, some information about the progress bar, and
+#'   optionally some options for the function.
 #'
-#' In this example we will compute some quantiles of the difference between
-#' the forecast and observed probabilities.
+#'   In this example we will compute some quantiles of the difference between
+#'   the forecast and observed probabilities.
 #'
 #' \preformatted{
 #' prob_diff_quant <- function(ob_prob, fc_prob, show_pb, pb_env, opts) {
@@ -201,7 +233,7 @@
 #' }
 #' }
 #'
-#' And now we can run:
+#'   And now we can run:
 #' \preformatted{
 #' ens_verify(
 #'   data,
@@ -225,6 +257,7 @@ ens_verify <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
   summary            = TRUE,
   circle             = NULL,
   rel_probs          = NA,
@@ -278,7 +311,8 @@ ens_verify.harp_ens_point_df <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
-  summary            = TRUE,
+  map_groupings      = NULL,
+  summary            = c(TRUE, TRUE),
   circle             = NULL,
   rel_probs          = NA,
   num_ref_members    = NA,
@@ -318,6 +352,10 @@ ens_verify.harp_ens_point_df <- function(
     groupings <- list(groupings)
   }
 
+  if (!is.null(map_groupings) && !is.list(map_groupings)) {
+    map_groupings <- list(map_groupings)
+  }
+
   fcst_model <- parse_fcst_model(.fcst, fcst_model)
   .fcst[["fcst_model"]] <- fcst_model
 
@@ -327,6 +365,30 @@ ens_verify.harp_ens_point_df <- function(
     groupings,
     function(x) gsub("lead_time|leadtime", lead_time_col, x)
   )
+
+  if (!is.null(map_groupings)) {
+    if (length(intersect(c("lon", "lat"), colnames(.fcst))) != 2) {
+      cli::cli_warn(c(
+        "Data do not include lon and lat columns.",
+        "i" = "You will need to join to the output before plotting."
+      ))
+    }
+    if (!is.element("SID", colnames(.fcst))) {
+      cli::cli_abort(c(
+        "Data do not include required columns to do map grouping.",
+        "x" = "You are missing columns {c('lon', 'lat', 'SID')}."
+      ))
+    }
+
+    map_groupings <- lapply(
+      map_groupings,
+      function(x) {
+        x <- gsub("lead_time|leadtime", lead_time_col, x)
+        x <- union(c("SID", "lon", "lat"), x)
+        x
+      }
+    )
+  }
 
   if (length(grep(chr_param, col_names)) < 1) {
     stop(paste("No column found for", chr_param), call. = FALSE)
@@ -349,6 +411,7 @@ ens_verify.harp_ens_point_df <- function(
       .fcst,
       !!parameter,
       groupings          = groupings,
+      map_groupings      = map_groupings,
       circle             = circle,
       summary            = summary,
       hexbin             = hexbin,
@@ -357,10 +420,12 @@ ens_verify.harp_ens_point_df <- function(
       dttm_pluck_offset  = dttm_pluck_offset,
       show_progress      = show_progress,
       fcst_model         = fcst_model
-    ) %>%
-      purrr::pluck("det_summary_scores")
+    )
+    map_det_summary_scores <- det_summary_scores[["map_det_summary_scores"]]
+    det_summary_scores     <- det_summary_scores[["det_summary_scores"]]
   } else {
-    det_summary_scores <- tibble::tibble()
+    det_summary_scores     <- tibble::tibble()
+    map_det_summary_scores <- tibble::tibble()
   }
 
   num_members <- length(grep("_mbr[[:digit:]]+", colnames(.fcst)))
@@ -379,10 +444,13 @@ ens_verify.harp_ens_point_df <- function(
 
     ens_summary_scores <- list()
 
-    if (summary) {
+    if (summary[1]) {
+
+      score_map_groupings <- get_score_map_groupings(summary, map_groupings)
 
       ens_summary_scores[["summary"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -397,9 +465,13 @@ ens_verify.harp_ens_point_df <- function(
 
     }
 
-    if (hexbin) {
+    if (hexbin[1]) {
+
+      score_map_groupings <- get_score_map_groupings(hexbin, map_groupings)
+
       ens_summary_scores[["hexbin"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -413,9 +485,13 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
-    if (rank_hist) {
+    if (rank_hist[1]) {
+
+      score_map_groupings <- get_score_map_groupings(rank_hist, map_groupings)
+
       ens_summary_scores[["rank_histogram"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -429,9 +505,13 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
-    if (crps) {
+    if (crps[1]) {
+
+      score_map_groupings <- get_score_map_groupings(crps, map_groupings)
+
       ens_summary_scores[["crps"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -445,9 +525,13 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
-    if (crps_decomp) {
+    if (crps_decomp[1]) {
+
+      score_map_groupings <- get_score_map_groupings(crps_decomp, map_groupings)
+
       ens_summary_scores[["crps_decomp"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -458,17 +542,23 @@ ens_verify.harp_ens_point_df <- function(
         dttm_pluck_offset = dttm_pluck_offset,
         type = "ens"
       )
+
     }
 
-    if (crps && crps_decomp) {
-      ens_summary_scores[["crps"]] <- dplyr::select(
-        ens_summary_scores[["crps"]], -dplyr::all_of("crps")
+    if (crps[1] && crps_decomp[1]) {
+      ens_summary_scores[["crps"]] <- lapply(
+        ens_summary_scores[["crps"]],
+        function(x) dplyr::select(x, -dplyr::all_of("crps"))
       )
     }
 
-    if (uui) {
+    if (uui[1]) {
+
+      score_map_groupings <- get_score_map_groupings(uui, map_groupings)
+
       ens_summary_scores[["uui"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -483,8 +573,17 @@ ens_verify.harp_ens_point_df <- function(
     }
 
     for (new_score in new_ens_score) {
+
+      do_score <- TRUE
+      if (isTRUE(new_ens_score_opts[["map_groups"]]) ||
+          isTRUE(new_ens_score_opts[[new_score]][["map_groups"]])) {
+        do_score[2] <- TRUE
+      }
+      score_map_groupings <- get_score_map_groupings(do_score, map_groupings)
+
       ens_summary_scores[[new_score]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -500,10 +599,24 @@ ens_verify.harp_ens_point_df <- function(
 
     # Only want metadata if some scores are actually computed!
     if (any(c(
-      summary, hexbin, rank_hist, crps, crps_decomp, length(new_ens_score) > 0
+      summary[1], hexbin[1], rank_hist[1],
+      crps[1], crps_decomp[1], length(new_ens_score) > 0
     ))) {
+
+      do_score <- c(
+        TRUE,
+        any(
+          isTRUE(summary[2]), isTRUE(hexbin[2]), isTRUE(rank_hist[2]),
+          isTRUE(crps[2]), isTRUE(crps_decomp[2]),
+          isTRUE(new_ens_score_opts[["map_groups"]]),
+          any(isTRUE(unlist(lapply(new_ens_score_opts, function(x) x[["map_groups"]]))))
+        )
+      )
+      score_map_groupings <- get_score_map_groupings(do_score, map_groupings)
+
       ens_summary_scores[["meta"]] <- compute_score(
         groupings,
+        score_map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -516,9 +629,19 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
+    map_ens_summary_scores <- tibble::tibble()
+    if (!is.null(map_groupings)) {
+      map_ens_summary_scores <- Reduce(
+        function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+        purrr::compact(
+          lapply(ens_summary_scores, function(x) x[["map_groups"]])
+        )
+      )
+    }
+
     ens_summary_scores <- Reduce(
       function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-      ens_summary_scores
+      lapply(ens_summary_scores, function(x) x[["groups"]])
     )
 
   }
@@ -531,9 +654,11 @@ ens_verify.harp_ens_point_df <- function(
 
     ens_threshold_scores <- list()
 
-    if (any(brier, reliability, roc, econ_val)) {
+    if (any(brier[1], reliability[1], roc[1], econ_val[1])) {
+
       ens_threshold_scores[["prob_scores"]] <- compute_score(
         groupings,
+        map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -565,9 +690,11 @@ ens_verify.harp_ens_point_df <- function(
       )
     }
 
-    if (tw_crps) {
+    if (tw_crps[1]) {
+
       ens_threshold_scores[["tw_crps"]] <- compute_score(
         groupings,
+        map_groupings,
         .fcst,
         harpCore::member_colnames(.fcst),
         chr_param,
@@ -594,9 +721,20 @@ ens_verify.harp_ens_point_df <- function(
     }
 
 
+    map_ens_threshold_scores <- tibble::tibble()
+    if (!is.null(map_groupings)) {
+      map_ens_threshold_scores <- Reduce(
+        function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+        purrr::keep(
+          lapply(ens_threshold_scores, function(x) x[["map_groups"]]),
+          ~nrow(.x) > 0
+        )
+      )
+    }
+
     ens_threshold_scores <- Reduce(
       function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-      ens_threshold_scores
+      lapply(ens_threshold_scores, function(x) x[["groups"]])
     )
 
     verif_type <- switch(
@@ -607,10 +745,17 @@ ens_verify.harp_ens_point_df <- function(
     )
 
     ens_threshold_scores$Type <- verif_type
+    if (
+      !is.null(map_ens_threshold_scores) &&
+        nrow(map_ens_threshold_scores) > 0
+    ) {
+      map_ens_threshold_scores$Type <- verif_type
+    }
 
   } else {
 
-    ens_threshold_scores <- tibble::tibble()
+    ens_threshold_scores     <- tibble::tibble()
+    map_ens_threshold_scores <- tibble::tibble()
 
   }
 
@@ -632,11 +777,32 @@ ens_verify.harp_ens_point_df <- function(
       fcst_model = fcst_model, .before = dplyr::everything()
     )
   }
+  if (!is.null(map_ens_summary_scores)) {
+    map_ens_summary_scores <- dplyr::mutate(
+      map_ens_summary_scores,
+      fcst_model = fcst_model, .before = dplyr::everything()
+    )
+  }
+  if (!is.null(map_ens_threshold_scores)) {
+    map_ens_threshold_scores <- dplyr::mutate(
+      map_ens_threshold_scores,
+      fcst_model = fcst_model, .before = dplyr::everything()
+    )
+  }
+  if (!is.null(map_det_summary_scores)) {
+    map_det_summary_scores <- dplyr::mutate(
+      map_det_summary_scores,
+      fcst_model = fcst_model, .before = dplyr::everything()
+    )
+  }
 
   res <- list(
-    ens_summary_scores   = ens_summary_scores,
-    ens_threshold_scores = ens_threshold_scores,
-    det_summary_scores   = det_summary_scores
+    ens_summary_scores       = ens_summary_scores,
+    ens_threshold_scores     = ens_threshold_scores,
+    det_summary_scores       = det_summary_scores,
+    map_ens_summary_scores   = map_ens_summary_scores,
+    map_ens_threshold_scores = map_ens_threshold_scores,
+    map_det_summary_scores   = map_det_summary_scores
   )
 
   res <- res[!vapply(res, is.null, logical(1))]
@@ -647,7 +813,8 @@ ens_verify.harp_ens_point_df <- function(
       harpCore::unique_fcst_dttm(.fcst),
       !!parameter,
       harpCore::unique_stations(.fcst),
-      groupings
+      groupings,
+      map_groupings
     ),
     class = "harp_verif"
   )
@@ -666,6 +833,7 @@ ens_verify.harp_list <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
   summary            = TRUE,
   circle             = NULL,
   rel_probs          = NA,
@@ -718,6 +886,7 @@ ens_verify.harp_list <- function(
         include_low        = include_low,
         include_high       = include_high,
         groupings          = groupings,
+        map_groupings      = map_groupings,
         summary            = summary,
         circle             = circle,
         rel_probs          = rel_probs,
@@ -1435,13 +1604,17 @@ get_sample_climatology <- function(grpd_prob_fcst) {
 
 
 # Internal function to add forecast attributes to a verification output
-add_attributes <- function(.verif, dttm, parameter, stations, groupings) {
+add_attributes <- function(
+    .verif, dttm, parameter, stations, groupings, map_groupings = NULL) {
   parameter <- rlang::enquo(parameter)
 
   attr(.verif, "parameter") <- rlang::quo_name(parameter)
   attr(.verif, "dttm") <- dttm
   attr(.verif, "stations") <- stations
   attr(.verif, "group_vars") <- groupings
+  if (!is.null(map_groupings)) {
+    attr(.verif, "group_vars") <- map_groupings
+  }
 
   .verif
 }
@@ -1532,7 +1705,24 @@ list_to_harp_verif <- function(.l) {
 
     det_threshold_scores = purrr::list_rbind(
       purrr::map(.l, "det_threshold_scores")
+    ),
+
+    map_ens_summary_scores = purrr::list_rbind(
+      purrr::map(.l, "map_ens_summary_scores")
+    ),
+
+    map_ens_threshold_scores = purrr::list_rbind(
+      purrr::map(.l, "map_ens_threshold_scores")
+    ),
+
+    map_det_summary_scores = purrr::list_rbind(
+      purrr::map(.l, "map_det_summary_scores")
+    ),
+
+    map_det_threshold_scores = purrr::list_rbind(
+      purrr::map(.l, "map_det_threshold_scores")
     )
+
   )
 
   res <- res[vapply(res, function(x) !is.null(x), logical(1))]

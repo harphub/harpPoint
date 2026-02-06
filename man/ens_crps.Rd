@@ -23,7 +23,11 @@ column name, quoted, or unquoted. If a variable it should be embraced -
 i.e. wrapped in \code{{{}}}.}
 
 \item{groupings}{The groups for which to compute the scores. See
-\link[dplyr]{group_by} for more information of how grouping works.}
+\link[dplyr]{group_by} for more information of how grouping works. Should
+be a character vector, or a list of character vectors. If a list each
+combination of groups in the list is computed separately for each score.
+See \link[harpCore]{make_verif_groups} for a helper function for making
+more complex grouping structures.}
 
 \item{num_ref_members}{For "fair" scores, the score is scaled to be valid for
 this number of ensemble members. Set to NA (the default) to not modify the

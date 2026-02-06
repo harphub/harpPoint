@@ -1,6 +1,8 @@
 #' Compute verification scores for deterministic forecasts.
 #'
 #' @inheritParams ens_verify
+#' @param map_threhsholds Logical. Whether to compute threshold scores for
+#'   `map_groupings` if `map_groupings` is not `NULL`.
 #' @param new_det_score String. The name of a new score to compute from
 #'   forecast and observation pairs. `det_verify()` will search the global
 #'   environment for a function called `compute_det_<new_det_score>()` and
@@ -166,9 +168,11 @@ det_verify <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
+  map_thresholds     = FALSE,
   circle             = NULL,
-  summary            = TRUE,
-  hexbin             = TRUE,
+  summary            = c(TRUE, TRUE),
+  hexbin             = c(TRUE, FALSE),
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -199,9 +203,11 @@ det_verify.harp_ens_point_df <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
+  map_thresholds     = FALSE,
   circle             = NULL,
-  summary            = TRUE,
-  hexbin             = TRUE,
+  summary            = c(TRUE, TRUE),
+  hexbin             = c(TRUE, FALSE),
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -247,8 +253,8 @@ det_verify.harp_ens_point_df <- function(
           ),
           {{parameter}}, thresholds, clean_thresh,
           comparator, include_low, include_high,
-          groupings, circle, summary, hexbin, num_bins,
-          dttm_pluck_freq, dttm_pluck_offset,
+          groupings, map_groupings, map_thresholds = FALSE, circle, summary,
+          hexbin, num_bins, dttm_pluck_freq, dttm_pluck_offset,
           show_progress, new_det_score, new_det_cont_score, new_det_score_opts,
           fcst_model, ...
         )
@@ -270,9 +276,11 @@ det_verify.harp_det_point_df <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
+  map_thresholds     = FALSE,
   circle             = NULL,
-  summary            = TRUE,
-  hexbin             = TRUE,
+  summary            = c(TRUE, TRUE),
+  hexbin             = c(TRUE, FALSE),
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -290,6 +298,10 @@ det_verify.harp_det_point_df <- function(
     groupings <- list(groupings)
   }
 
+  if (!is.null(map_groupings) && !is.list(map_groupings)) {
+    map_groupings <- list(map_groupings)
+  }
+
   fcst_model <- parse_fcst_model(.fcst, fcst_model)
   .fcst[["fcst_model"]] <- fcst_model
 
@@ -299,6 +311,30 @@ det_verify.harp_det_point_df <- function(
     groupings,
     function(x) gsub("lead_time|leadtime", lead_time_col, x)
   )
+
+  if (!is.null(map_groupings)) {
+    if (length(intersect(c("lon", "lat"), colnames(.fcst))) != 2) {
+      cli::cli_warn(c(
+        "Data do not include lon and lat columns.",
+        "i" = "You will need to join to the output before plotting."
+      ))
+    }
+    if (!is.element("SID", colnames(.fcst))) {
+      cli::cli_abort(c(
+        "Data do not include required columns to do map grouping.",
+        "x" = "You are missing columns {c('lon', 'lat', 'SID')}."
+      ))
+    }
+
+    map_groupings <- lapply(
+      map_groupings,
+      function(x) {
+        x <- gsub("lead_time|leadtime", lead_time_col, x)
+        x <- union(c("SID", "lon", "lat"), x)
+        x
+      }
+    )
+  }
 
   col_names <- colnames(.fcst)
   parameter <- rlang::enquo(parameter)
@@ -331,6 +367,11 @@ det_verify.harp_det_point_df <- function(
         dplyr::rename(forecast_det = .data$fcst)
 
       groupings <- purrr::map(groupings, union, c("member", "sub_model"))
+      if (!is.null(map_groupings)) {
+        map_groupings <- purrr::map(
+          map_groupings, union, c("member", "sub_model")
+        )
+      }
       fcst_col  <- "forecast_det"
 
     }
@@ -345,7 +386,8 @@ det_verify.harp_det_point_df <- function(
 
   needed_cols <- unique(c(
     "fcst_model", "fcst_dttm", "lead_time", "SID",
-    unique(unlist(groupings)), fcst_col, chr_param
+    unique(unlist(groupings)), unique(unlist(map_groupings)),
+    fcst_col, chr_param
   ))
   .fcst <- dplyr::select(.fcst, dplyr::any_of(needed_cols))
 
@@ -355,25 +397,33 @@ det_verify.harp_det_point_df <- function(
 
   det_summary_scores <- list()
 
-  if (summary) {
+  if (summary[1]) {
+    score_map_groupings <- get_score_map_groupings(summary, map_groupings)
     det_summary_scores[["basic"]] <- compute_score(
-      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      groupings, score_map_groupings, .fcst, fcst_col, chr_param, fcst_model,
       "summary", show_progress, dttm_pluck_freq = dttm_pluck_freq,
       dttm_pluck_offset = dttm_pluck_offset, score_opts = list(circle = circle)
     )
   }
 
-  if (hexbin) {
+  if (hexbin[1]) {
+    score_map_groupings <- get_score_map_groupings(hexbin, map_groupings)
     det_summary_scores[["hexbin"]] <- compute_score(
-      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      groupings, score_map_groupings, .fcst, fcst_col, chr_param, fcst_model,
       "hexbin", show_progress, dttm_pluck_freq = dttm_pluck_freq,
       dttm_pluck_offset = dttm_pluck_offset, score_opts = list(num_bins = 30)
     )
   }
 
   for (new_score in new_det_score) {
+    do_score <- TRUE
+    if (isTRUE(new_det_score_opts[["map_groups"]]) ||
+        isTRUE(new_det_score_opts[[new_score]][["map_groups"]])) {
+      do_score[2] <- TRUE
+    }
+    score_map_groupings <- get_score_map_groupings(do_score, map_groupings)
     det_summary_scores[[new_score]] <- compute_score(
-      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      groupings, score_map_groupings, .fcst, fcst_col, chr_param, fcst_model,
       new_score, show_progress, dttm_pluck_freq = dttm_pluck_freq,
       dttm_pluck_offset = dttm_pluck_offset, score_opts = new_det_score_opts
     )
@@ -382,15 +432,28 @@ det_verify.harp_det_point_df <- function(
 
   res[["det_summary_scores"]] <- Reduce(
     function(x, y) suppressMessages(dplyr::inner_join(x, y)),
-    det_summary_scores
+    lapply(det_summary_scores, function(x) x[["groups"]])
   )
+
+  if (!is.null(map_groupings)) {
+    res[["map_det_summary_scores"]] <- Reduce(
+      function(x, y) suppressMessages(dplyr::inner_join(x, y)),
+      purrr::compact(
+        lapply(det_summary_scores, function(x) x[["map_groups"]])
+      )
+    )
+  }
 
   rm(det_summary_scores)
 
   if (!is.null(thresholds)) {
 
+    score_map_groupings <- get_score_map_groupings(
+      c(TRUE, map_thresholds), map_groupings
+    )
+
     res[["det_threshold_scores"]] <- compute_score(
-      groupings, .fcst, fcst_col, chr_param, fcst_model,
+      groupings, score_map_groupings, .fcst, fcst_col, chr_param, fcst_model,
       "threshold", show_progress, thresholds = thresholds,
       comparator = comparator, include_low = include_low,
       include_high = include_high, dttm_pluck_freq = dttm_pluck_freq,
@@ -402,6 +465,26 @@ det_verify.harp_det_point_df <- function(
         new_det_score_opts
       )
     )
+
+    verif_type <- switch(
+      comparator,
+      "between" = ,
+      "outside" = "Classes",
+      "Thresholds"
+    )
+
+    res[["det_threshold_scores"]]$Type <- verif_type
+    if (!is.null(score_map_groupings)) {
+      res[["map_det_threshold_scores"]]$Type <- verif_type
+    }
+
+
+    if (!is.null(score_map_groupings)) {
+      res[["map_det_threshold_scores"]] <-
+        res[["det_threshold_scores"]][["map_groups"]]
+    }
+
+    res[["det_threshold_scores"]] <- res[["det_threshold_scores"]][["groups"]]
 
   } else {
 
@@ -415,7 +498,8 @@ det_verify.harp_det_point_df <- function(
       harpCore::unique_fcst_dttm(.fcst),
       !!parameter,
       harpCore::unique_stations(.fcst),
-      groupings
+      groupings,
+      map_groupings
     ),
     class = "harp_verif"
   )
@@ -432,9 +516,11 @@ det_verify.harp_list <- function(
   include_low        = TRUE,
   include_high       = TRUE,
   groupings          = "lead_time",
+  map_groupings      = NULL,
+  map_thresholds     = FALSE,
   circle             = NULL,
-  summary            = TRUE,
-  hexbin             = TRUE,
+  summary            = c(TRUE, TRUE),
+  hexbin             = c(TRUE, FALSE),
   num_bins           = 30,
   dttm_pluck_freq    = NULL,
   dttm_pluck_offset  = NULL,
@@ -461,6 +547,8 @@ det_verify.harp_list <- function(
         include_low        = include_low,
         include_high       = include_high,
         groupings          = groupings,
+        map_groupings      = map_groupings,
+        map_thresholds     = map_thresholds,
         circle             = circle,
         summary            = summary,
         hexbin             = hexbin,
@@ -501,6 +589,12 @@ distinct_rows <- function(.df, grps, fc_cols, obs_col) {
   dplyr::distinct(.df, dplyr::pick(-dplyr::where(is.list)), .keep_all = TRUE)
 }
 
+get_score_map_groupings <- function(do_score, grps) {
+  if (length(do_score) < 2 || !do_score[2]) {
+    grps <- NULL
+  }
+  grps
+}
 
 # Get the total for a progress bar
 get_pb_total <- function(df, grp, multi_grp) {
@@ -582,7 +676,7 @@ clean_thresholds <- function(all_data, thresholds, comparator) {
 # function. score_name should have a matching function called
 # compute_det_<score_name>()
 compute_score <- function(
-  grps_list, fcst_df, fcst_col, obs_col, fcst_model,
+  grps_list, map_grps_list, fcst_df, fcst_col, obs_col, fcst_model,
   score_name, show_progress, thresholds = NULL, comparator = "ge",
   include_low = TRUE, include_high = TRUE, dttm_pluck_freq = NULL,
   dttm_pluck_offset = NULL, score_opts = list(), type = "det"
@@ -592,22 +686,32 @@ compute_score <- function(
     prep_fun <- get(prep_fun)
     fcst_df  <- prep_fun(fcst_df, fcst_col, obs_col, score_opts)
   }
+
+  all_grps <- list(groups = grps_list)
+  if (!is.null(map_grps_list)) {
+    map_grps_list <- lapply(map_grps_list, structure, class = "map_grp")
+    all_grps[["map_groups"]] <- map_grps_list
+  }
+
   lapply(
-    grps_list,
-    function(g) {
-      compute_grp_score(
-        g, fcst_df, fcst_col, obs_col,
-        score_name, show_progress, thresholds,
-        comparator = comparator, include_low = include_low,
-        include_high = include_high, dttm_pluck_freq, dttm_pluck_offset,
-        score_opts, type
-      )
-    }
-  ) %>%
-    purrr::list_rbind() %>%
-    fill_group_na(grps_list) %>%
-    #tidyr::unnest(dplyr::all_of("verif")) %>%
-    dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+    all_grps,
+    function(grps) lapply(
+      grps,
+      function(g) {
+        compute_grp_score(
+          g, fcst_df, fcst_col, obs_col,
+          score_name, show_progress, thresholds,
+          comparator = comparator, include_low = include_low,
+          include_high = include_high, dttm_pluck_freq, dttm_pluck_offset,
+          score_opts, type
+        )
+      }
+    ) %>%
+      purrr::list_rbind() %>%
+      fill_group_na(grps_list) %>%
+      #tidyr::unnest(dplyr::all_of("verif")) %>%
+      dplyr::mutate(fcst_model = fcst_model, .before = dplyr::everything())
+  )
 }
 
 # Function to call a deterministic score function for a single set of groups
@@ -617,6 +721,25 @@ compute_grp_score <- function(
   include_low = TRUE, include_high = TRUE, dttm_pluck_freq = NULL,
   dttm_pluck_offset = NULL, score_opts = list(), type = "det"
 ) {
+
+  i <- ifelse(inherits(compute_group, "map_grp"), 2, 1)
+  if (score_name %in% c("prob_scores", "tw_crps")) {
+    score_opts <- lapply(
+      score_opts,
+      function(x) {
+        if (!is.na(x[1]) && is.logical(x[1])) {
+          x <- isTRUE(x[i])
+        }
+        x
+      }
+    )
+    keep_going <- vapply(
+      score_opts, function(x) !is.na(x) && is.logical(x) && x, logical(1)
+    )
+    if (!any(keep_going)) {
+      return(tibble::tibble())
+    }
+  }
 
   local_fcst_col <- intersect(c(fcst_col, "fcst"), colnames(fcst_df))
 

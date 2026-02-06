@@ -14,9 +14,11 @@ det_verify(
   include_low = TRUE,
   include_high = TRUE,
   groupings = "lead_time",
+  map_groupings = NULL,
+  map_thresholds = FALSE,
   circle = NULL,
-  summary = TRUE,
-  hexbin = TRUE,
+  summary = c(TRUE, TRUE),
+  hexbin = c(TRUE, FALSE),
   num_bins = 30,
   dttm_pluck_freq = NULL,
   dttm_pluck_offset = NULL,
@@ -36,13 +38,15 @@ det_verify(
   include_low = TRUE,
   include_high = TRUE,
   groupings = "lead_time",
+  map_groupings = NULL,
+  map_thresholds = FALSE,
   circle = NULL,
-  summary = TRUE,
-  hexbin = TRUE,
+  summary = c(TRUE, TRUE),
+  hexbin = c(TRUE, FALSE),
   num_bins = 30,
-  show_progress = TRUE,
   dttm_pluck_freq = NULL,
   dttm_pluck_offset = NULL,
+  show_progress = TRUE,
   new_det_score = NULL,
   new_det_cont_score = NULL,
   new_det_score_opts = list(),
@@ -66,18 +70,32 @@ scores.}
 the range of the forecasts and observations.}
 
 \item{groupings}{The groups for which to compute the scores. See
-\link[dplyr]{group_by} for more information of how grouping works.}
+\link[dplyr]{group_by} for more information of how grouping works. Should
+be a character vector, or a list of character vectors. If a list each
+combination of groups in the list is computed separately for each score.
+See \link[harpCore]{make_verif_groups} for a helper function for making
+more complex grouping structures.}
+
+\item{map_groupings}{The groups for which to compute scores that could be
+plotted on a map. Set to \code{"SID"}, or \code{c("lat", "lon")}, and add other
+groups as desired to switch on. Requires that your data have at least "lon"
+and "lat" columns. Can be constructed in the same way as \code{groupings}. Only
+used for summary scores by default. Can be switched on by adding a second
+logical elememt to the argument for the score, e.g. \code{hexbin = c(TRUE, TRUE)}.}
 
 \item{circle}{If set the parameter is assumed to be cyclic for bias
 calculations. Should be this distance around a circle in the units of the
 parameter, so would typically have a value of 360 for degrees or \code{2 * pi}
 for radians.}
 
-\item{summary}{Logical. Whether to compute summary scores or not. Default is
-\code{TRUE}.}
+\item{summary}{Logical of length 1 or 2. Whether to compute summary scores or
+not. The second element determines whether the score is computed if
+\code{map_groupings} are set. Default is \code{c(TRUE, TRUE)}.}
 
-\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
-pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
+\item{hexbin}{Logical of length 1 or 2. Whether to compute hexbins for
+forecast, observation pairs. The second element determines whether the
+score is computed if \code{map_groupings} are set. Defaults to \code{TRUE}. See
+\link{bin_fcst_obs} for more details.}
 
 \item{num_bins}{The number of bins into which to partition observations for
 the hexbin computation.}
@@ -127,6 +145,9 @@ progress logical and the progress bar environment. See
 \item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
+
+\item{map_threhsholds}{Logical. Whether to compute threshold scores for
+\code{map_groupings} if \code{map_groupings} is not \code{NULL}.}
 }
 \value{
 A list containing up to two data frames: \code{det_summary_scores}

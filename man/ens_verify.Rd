@@ -15,6 +15,7 @@ ens_verify(
   include_low = TRUE,
   include_high = TRUE,
   groupings = "lead_time",
+  map_groupings = NULL,
   summary = TRUE,
   circle = NULL,
   rel_probs = NA,
@@ -53,7 +54,8 @@ ens_verify(
   include_low = TRUE,
   include_high = TRUE,
   groupings = "lead_time",
-  summary = TRUE,
+  map_groupings = NULL,
+  summary = c(TRUE, TRUE),
   circle = NULL,
   rel_probs = NA,
   num_ref_members = NA,
@@ -103,10 +105,22 @@ scores.}
 the range of the forecasts and observations.}
 
 \item{groupings}{The groups for which to compute the scores. See
-\link[dplyr]{group_by} for more information of how grouping works.}
+\link[dplyr]{group_by} for more information of how grouping works. Should
+be a character vector, or a list of character vectors. If a list each
+combination of groups in the list is computed separately for each score.
+See \link[harpCore]{make_verif_groups} for a helper function for making
+more complex grouping structures.}
 
-\item{summary}{Logical. Whether to compute summary scores or not. Default is
-\code{TRUE}.}
+\item{map_groupings}{The groups for which to compute scores that could be
+plotted on a map. Set to \code{"SID"}, or \code{c("lat", "lon")}, and add other
+groups as desired to switch on. Requires that your data have at least "lon"
+and "lat" columns. Can be constructed in the same way as \code{groupings}. Only
+used for summary scores by default. Can be switched on by adding a second
+logical elememt to the argument for the score, e.g. \code{hexbin = c(TRUE, TRUE)}.}
+
+\item{summary}{Logical of length 1 or 2. Whether to compute summary scores or
+not. The second element determines whether the score is computed if
+\code{map_groupings} are set. Default is \code{c(TRUE, TRUE)}.}
 
 \item{circle}{If set the parameter is assumed to be cyclic for bias
 calculations. Should be this distance around a circle in the units of the
@@ -137,43 +151,63 @@ elements eps_model and member to use a member of an eps model in the
 harp_fcst object for the climatology, or a data frame with columns for
 threshold and climatology and also optionally lead_time.}
 
-\item{hexbin}{Logical. Whether to compute hexbins for forecast, observation
-pairs. Defaults to \code{TRUE}. See \link{bin_fcst_obs} for more details.}
+\item{hexbin}{Logical of length 1 or 2. Whether to compute hexbins for
+forecast, observation pairs. The second element determines whether the
+score is computed if \code{map_groupings} are set. Defaults to \code{TRUE}. See
+\link{bin_fcst_obs} for more details.}
 
 \item{num_bins}{The number of bins into which to partition observations for
 the hexbin computation.}
 
-\item{rank_hist}{Logical. Whether to compute the rank histogram. Defaults to
-\code{TRUE}. Note that the computation of the rank histogram can be slow if
-there is a large number (> 1000) of groups.}
+\item{rank_hist}{Logical of length 1 or 2. Whether to compute the rank
+histogram. The second element determines whether the score is computed if
+\code{map_groupings} are set. Defaults to \code{TRUE}. Note that the computation of
+the rank histogram can be slow if there is a large number (> 1000) of
+groups.}
 
-\item{crps}{Logical. Whether to compute the CRPS. Defaults to \code{TRUE}.}
+\item{crps}{Logical of length 1 or 2. Whether to compute the CRPS. The second
+element determines whether the score is computed if \code{map_groupings} are
+set. Defaults to \code{TRUE}.}
 
-\item{crps_decomp}{Logical. Whether to compute the decomposition of the CRPS
-into potential and reliability components.}
+\item{crps_decomp}{Logical of length 1 or 2. Whether to compute the
+decomposition of the CRPS into potential and reliability components. The
+second element determines whether the score is computed if \code{map_groupings}
+are set. Defaults to \code{TRUE}.}
 
-\item{uui}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Logical. Whether to compute
-the UUI spread-skill.}
+\item{uui}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} Logical of length 1 or 2.
+Whether to compute the UUI spread-skill. The second element determines
+whether the score is computed if \code{map_groupings} are set. Defaults to
+\code{FALSE}.}
 
 \item{uui_cntrl}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}} The ensemble member to
 consider as the control member in UUI spread-skill calculations. Defaults
 to \code{0}.}
 
-\item{tw_crps}{Logical. Whether to compute the the threshold weighted CRPS.
-Note that tw_crps cannot be computed for \code{comparator = "eq"} or
-\code{comparator = "outside"}. Will be ignored if no thresholds are set.}
+\item{tw_crps}{Logical of length 1 or 2. Whether to compute the the threshold
+weighted CRPS. Note that tw_crps cannot be computed for \code{comparator = "eq"}
+or \code{comparator = "outside"}. The second element determines whether the
+score is computed if \code{map_groupings} are set. Defaults to \code{TRUE}. Will be
+ignored if no thresholds are set.}
 
-\item{brier}{Logical. Whether to compute the Brier score. Defaults to \code{TRUE}.
-Will be ignored if no thresholds are set.}
+\item{brier}{Logical of length 1 or 2. Whether to compute the Brier score.
+The second element determines whether the score is computed if
+\code{map_groupings} are set. Defaults to \code{TRUE}. Will be ignored if no
+thresholds are set.}
 
-\item{reliability}{Logical. Whether to compute the reliability. Defaults to
-\code{TRUE}. Will be ignored if no thresholds are set.}
+\item{reliability}{Logical of length 1 or 2. Whether to compute the
+reliability. The second element determines whether the score is computed if
+\code{map_groupings} are set. Defaults to \code{TRUE}. Will be ignored if no
+thresholds are set.}
 
-\item{roc}{Logical. Whether to compute the Relative Operating Characteristic
-(ROC). Defaults to \code{TRUE}. Will be ignored if no thresholds are set.}
+\item{roc}{Logical of length 1 or 2. Whether to compute the Relative
+Operating Characteristic (ROC). The second element determines whether the
+score is computed if \code{map_groupings} are set. Defaults to \code{TRUE}. Will be
+ignored if no thresholds are set.}
 
-\item{econ_val}{Logical. Whether to compute the economic value. Defaults to
-\code{TRUE}. Will be ignored if no thresholds are set.}
+\item{econ_val}{Logical of length 1 or 2. Whether to compute the economic
+value. The second element determines whether the score is computed if
+\code{map_groupings} are set. Defaults to \code{TRUE}. Will be ignored if no
+thresholds are set.}
 
 \item{dttm_pluck_freq, dttm_pluck_offset}{If verification is grouped by valid
 date-time, select only date times at a frequency set by \code{dttm_pluck_freq}.
@@ -186,14 +220,14 @@ if one of \code{groupings} is \code{"valid_dttm"}.}
 \item{show_progress}{Logical - whether to show progress bars. Defaults to
 \code{TRUE}.}
 
-\item{new_ens_score}{Character vector. Names of other
-scores to be computed that are not part of this function. Requires a
-\verb{compute_ens_<name>()} and optionally a \verb{prep_ens_<name>()} function. See
-\strong{Adding your own scores}.}
+\item{new_ens_score}{Character vector. Names of other scores to be computed
+that are not part of this function. Requires a \verb{compute_ens_<name>()} and
+optionally a \verb{prep_ens_<name>()} function. See \strong{Adding your own
+scores}.}
 
 \item{new_ens_prob_score}{Character vector. Names of functions to compute
-scores from the observed and forecast probabilities. See
-\strong{Adding your own scores}.}
+scores from the observed and forecast probabilities. See \strong{Adding
+your own scores}.}
 
 \item{...}{Reserved for methods.}
 
@@ -217,20 +251,20 @@ Compute all verification scores for an ensemble.
 You can add functions to compute scores using the infrastructure of
 \code{ens_verify()}. These can be for scores calculated from the raw ensemble,
 or from probabilities based on the thresholds and comparator.
-\subsection{Scores computed from the raw ensemble}{
+\subsection{Scores computed from the raw ensemble The name of the score is specified}{
 
-The name of the score is specified in the \code{new_ens_score} argument and
-\code{ens_verify()} will look for a function with the name \verb{compute_ens_<name>}
-that will compute the score using \code{\link[dplyr]{summarize}} or
-similar. It will optionally look for a function with the name
-\verb{prep_ens_<name>} that will do some preparation of the data for each row
-before aggregation into the score. This is best illustrated with a
-(slightly contrived!) example:
+in the \code{new_ens_score} argument and \code{ens_verify()} will look for a function
+with the name \verb{compute_ens_<name>} that will compute the score using
+\code{\link[dplyr]{summarize}} or similar. It will optionally look for a
+function with the name \verb{prep_ens_<name>} that will do some preparation of
+the data for each row before aggregation into the score. This is best
+illustrated with a (slightly contrived!) example:
 
-Let's say we want to compute the mean bias weighted by latitude, and we call
-the score "weighted_bias". We begin by writing a prep function, which has
-to take the forecast data frame, the name of the forecast columns, the
-name of the observation column and optionally a list of options as arguments.
+Let's say we want to compute the mean bias weighted by latitude, and we
+call the score "weighted_bias". We begin by writing a prep function, which
+has to take the forecast data frame, the name of the forecast columns, the
+name of the observation column and optionally a list of options as
+arguments.
 
 \preformatted{
 prep_ens_weighted_bias <- function(df, fc_col, obs_col, ...) {
@@ -245,13 +279,13 @@ prep_ens_weighted_bias <- function(df, fc_col, obs_col, ...) {
 }
 }
 
-The above function will have the weighted mean bias in the \code{ens_mean} column
-created by the \code{\link[harpCore]{ens_stats()}} function.
+The above function will have the weighted mean bias in the \code{ens_mean}
+column created by the \code{\link[harpCore]{ens_stats()}} function.
 
 For the computation of the score, we can use \code{\link[dplyr]{summarize}}
 to compute the mean for each group. The compute function needs to take
-grouped data frame, some details about the progress bar and optionally a list
-of arguments.
+grouped data frame, some details about the progress bar and optionally a
+list of arguments.
 
 \preformatted{
 compute_ens_weighted_bias <- function(grouped_df, show_pb, pb_env, ...) {
@@ -266,9 +300,9 @@ compute_ens_weighted_bias <- function(grouped_df, show_pb, pb_env, ...) {
 
 We can now run \code{ens_verify(data, obs_col, new_ens_score = "weighted_bias")}
 
-We could also make it an option whether to weight by any column by modifying
-\code{prep_ens_weighted_bias} and \code{compute_ens_weighted_bias} and adding the
-option to \code{new_ens_score_opts}
+We could also make it an option whether to weight by any column by
+modifying \code{prep_ens_weighted_bias} and \code{compute_ens_weighted_bias} and
+adding the option to \code{new_ens_score_opts}
 
 \preformatted{
 prep_ens_weighted_bias <- function(df, fc_col, obs_col, opts) {
@@ -306,13 +340,13 @@ ens_verify(
 }
 }
 
-\subsection{Scores computed from probabilities}{
+\subsection{Scores computed from probabilities Computing scores from probabilities}{
 
-Computing scores from probabilities is much simpler, since \code{ens_verify()} has
-already prepped the data and you have the forecast probability and the
-observed (binary) probability. Here you need to write a function that takes
-the observed probability, the forecast probability, some information about
-the progress bar, and optionally some options for the function.
+is much simpler, since \code{ens_verify()} has already prepped the data and you
+have the forecast probability and the observed (binary) probability. Here
+you need to write a function that takes the observed probability, the
+forecast probability, some information about the progress bar, and
+optionally some options for the function.
 
 In this example we will compute some quantiles of the difference between
 the forecast and observed probabilities.
