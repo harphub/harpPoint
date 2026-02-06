@@ -18,8 +18,6 @@ bind_point_verif <- function(...) {
 #' @export
 bind_point_verif.list <- function(...) {
 
-
-
   # Check attributes
   expected_attributes <- c("parameter", "start_date", "end_date", "num_stations")
   dots <- list(...)

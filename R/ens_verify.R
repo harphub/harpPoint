@@ -1753,14 +1753,18 @@ list_to_harp_verif <- function(.l) {
   group_vars_attr <- compare_attrs(
     lapply(res_attrs, function(x) x[["group_vars"]])
   )
+  map_group_vars_attr <- compare_attrs(
+    lapply(res_attrs, function(x) x[["map_group_vars"]])
+  )
 
   structure(
     res[which(vapply(res, nrow, integer(1)) > 0)],
-    class      = "harp_verif",
-    parameter  = param_attr,
-    dttm       = dttm_attr,
-    stations   = stations_attr,
-    group_vars = group_vars_attr
+    class          = "harp_verif",
+    parameter      = param_attr,
+    dttm           = dttm_attr,
+    stations       = stations_attr,
+    group_vars     = group_vars_attr,
+    map_group_vars = map_group_vars_attr
   )
 
 
