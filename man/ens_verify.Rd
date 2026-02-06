@@ -16,6 +16,7 @@ ens_verify(
   include_high = TRUE,
   groupings = "lead_time",
   map_groupings = NULL,
+  member_map_groupings = FALSE,
   summary = TRUE,
   circle = NULL,
   rel_probs = NA,
@@ -55,6 +56,7 @@ ens_verify(
   include_high = TRUE,
   groupings = "lead_time",
   map_groupings = NULL,
+  member_map_groupings = FALSE,
   summary = c(TRUE, TRUE),
   circle = NULL,
   rel_probs = NA,
@@ -234,6 +236,10 @@ your own scores}.}
 \item{fcst_model}{The name of the forecast model to use in the \code{fcst_model}
 column of the output. If the function is dispatched on a \code{harp_list}
 object, the names of the \code{harp_list} are automatically used.}
+
+\item{member_map_groupoings}{Logical. Whether to include \code{map_groupings} in
+the computation of scores for individual members when
+\code{verify_members = TRUE}. Defaults to \code{FALSE}.}
 
 \item{new_score_opts}{Named list of options for \code{new_ens_score} and
 \code{new_ens_prob_score}.}
