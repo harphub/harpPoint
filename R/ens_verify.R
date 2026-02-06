@@ -1613,7 +1613,7 @@ add_attributes <- function(
   attr(.verif, "stations") <- stations
   attr(.verif, "group_vars") <- groupings
   if (!is.null(map_groupings)) {
-    attr(.verif, "group_vars") <- map_groupings
+    attr(.verif, "map_group_vars") <- map_groupings
   }
 
   .verif
