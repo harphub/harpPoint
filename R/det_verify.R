@@ -567,7 +567,7 @@ clean_thresholds <- function(all_data, thresholds, comparator) {
     first_last <- which(
       vapply(
         thresholds,
-        function(x) any((data_range <= max(x) & data_range >= min(x))),
+        function(x) (min(data_range) <= max(x) & max(data_range) >= min(x)),
         logical(1)
       )
     )
