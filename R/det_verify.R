@@ -564,13 +564,13 @@ clean_thresholds <- function(all_data, thresholds, comparator) {
   }
 
   if (comparator == "between") {
-    first_last <- which(
+    first_last <- range(which(
       vapply(
         thresholds,
         function(x) (min(data_range) <= max(x) & max(data_range) >= min(x)),
         logical(1)
       )
-    )
+    ))
     return(thresholds[do.call(seq, as.list(first_last))])
   }
 
