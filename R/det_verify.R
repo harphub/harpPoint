@@ -658,14 +658,13 @@ clean_thresholds <- function(all_data, thresholds, comparator) {
   }
 
   if (comparator == "between") {
-    first_last <- which(
+    return(thresholds[
       vapply(
         thresholds,
-        function(x) any((data_range <= max(x) & data_range >= min(x))),
+        function(x) min(data_range) <= max(x) && max(data_range) >= min(x),
         logical(1)
       )
-    )
-    return(thresholds[do.call(seq, as.list(first_last))])
+    ])
   }
 
   # Not sure how to handle outside so just return thresholds

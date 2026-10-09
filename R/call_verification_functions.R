@@ -209,6 +209,7 @@ harp_roc0 <- function(obs, pred, prob_thresholds = seq(0.05, 0.95, by = 0.05)) {
 }
 
 check_thresholds <- function(th, comp, caller = rlang::caller_env()) {
+  if (is.null(th)) {return(th)}
   if (comp %in% c("between", "outside")) {
     if (!is.list(th)) {
       th <- list(th)
