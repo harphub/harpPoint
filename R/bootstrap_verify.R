@@ -471,5 +471,34 @@ calc_diff_confidence <- function(
 
 }
 
+# From ens_crps.R (prior to Sep 12 2025)
+bind_crps_vars <- function(.fcst, parameter) {
+  
+  parameter <- rlang::enquo(parameter)
+  
+  crps_func <- function(df, col) {
+    
+    col            <- rlang::enquo(col)
+    crps_data_cols <- c("alpha", "beta", "h0", "hN")
+    
+    if (!identical(crps_data_cols, intersect(crps_data_cols, colnames(df)))) {
+      crps_data     <- harp_crps(df, !!col)
+      df[["alpha"]] <- unname(split(crps_data[["alpha"]], 1:nrow(crps_data[["alpha"]])))
+      df[["beta"]]  <- unname(split(crps_data[["beta"]], 1:nrow(crps_data[["beta"]])))
+      df[["h0"]]    <- crps_data[["heaviside0"]]
+      df[["hN"]]    <- crps_data[["heavisideN"]]
+    }
+    
+    df
+    
+  }
+  
+  if (inherits(.fcst, "harp_list")) {
+    harpCore::as_harp_list(lapply(.fcst, crps_func, !!parameter))
+  } else {
+    crps_func(.fcst, !!parameter)
+  }
+  
+}
 
 
